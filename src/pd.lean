@@ -8,7 +8,6 @@ import ring_theory.ideal.basic
 
 -/
 
-
 /-- Number of possibilities of choosing m groups of n-element subsets out of mn elements -/
 def mchoose (m n : ℕ) : ℕ := finset.prod (finset.range m) (λ p, nat.choose (p * n + n - 1) (n - 1))
 
@@ -75,21 +74,10 @@ structure has_divided_powers (A : Type*) [comm_ring A] (I : ideal A) :=
 (dpow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : I),
   dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
 
-class divided_power_ring (A : Type*) extends comm_ring A:= 
-(pd_ideal : ideal A)
-(dpow : ℕ → pd_ideal → A)
-(dpow_zero : dpow 0 = 1)
-(dpow_one : dpow 1 = coe)
-(dpow_mem : ∀ (n : ℕ) (x : pd_ideal), 1 ≤ n → dpow n x ∈ pd_ideal)
-(dpow_sum : ∀ (n : ℕ) (x y : pd_ideal), dpow n (x + y)
-  = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
-(dpow_smul : ∀ (n : ℕ) (a : A) (x : pd_ideal), dpow n (a • x) = (a ^ n) * (dpow n x))
-(dpow_mul : ∀ (m n : ℕ) (x : pd_ideal), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (m + n) x)
-(dpow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : pd_ideal),
-  dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
 
-
-variables {A : Type*} [comm_ring A] [hA: divided_power_ring A] [hA': divided_power_ring A]
+namespace has_divided_powers
+variables {A : Type*} [comm_ring A] {I : ideal A} (hI : has_divided_powers A I)
+include hI
 
 structure is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] (I : ideal A) (J : ideal B )
   [hI : has_divided_powers A I] [hJ : has_divided_powers B J] (f : A →+* B) :=
@@ -103,17 +91,10 @@ structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
 (dpow_comp : ∀ (n : ℕ) (a : I), 
   hJ.dpow n (⟨to_ring_hom a, ideal_comp a⟩) = to_ring_hom (hI.dpow n a))
 
-notation `(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
+--notation `(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
 
-structure is_pd_morphism' {A B : Type*} [hA : divided_power_ring A] [hB : divided_power_ring B]
-  (f : A →+* B) :=
-(ideal_comp : ∀ (a : hA.pd_ideal), f a ∈ hB.pd_ideal)
-(dpow_comp : ∀ (n : ℕ) (a : hA.pd_ideal), 
-divided_power_ring.dpow n (⟨f a, ideal_comp a⟩) = f (divided_power_ring.dpow n a))
+structure is_sub_pd_ideal (J : ideal A) :=
+(is_sub_ideal : ∀ j : J, (j : A) ∈ I)
+(dpow_mem_ideal : ∀ (n : ℕ) (hn : 0 < n) (j : J), hI.dpow n ⟨j, is_sub_ideal j⟩ ∈ J )
 
-
-#check has_divided_powers
-
-#print is_pd_morphism
-
-#lint
+end has_divided_powers
