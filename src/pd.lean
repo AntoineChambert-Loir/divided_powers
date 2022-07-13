@@ -1,7 +1,7 @@
 /- Copyright ACL and MIdFF -/
 
 -- import algebra.ring
-import ring_theory.ideal.basic
+import ring_theory.ideal.quotient
 
 /-! # Divided powers 
 
@@ -93,8 +93,18 @@ structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
 
 --notation `(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
 
-structure is_sub_pd_ideal (J : ideal A) :=
+structure is_sub_pd_ideal (J : ideal A) : Prop :=
 (is_sub_ideal : ∀ j : J, (j : A) ∈ I)
 (dpow_mem_ideal : ∀ (n : ℕ) (hn : 0 < n) (j : J), hI.dpow n ⟨j, is_sub_ideal j⟩ ∈ J )
+
+
+
+def quot.has_divided_powers (J : ideal A) (hIJ : is_sub_pd_ideal hI (I ⊓ J)) :
+  has_divided_powers (A ⧸ J) (I ⧸ J)↔ false := sorry
+
+lemma is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
+  is_sub_pd_ideal hI (ideal.span S) ↔ 
+  ∀ (n : ℕ) (hn : 0 < n) (s : S), hI.dpow n ⟨s, hS s.property⟩ ∈ ideal.span S :=
+sorry
 
 end has_divided_powers
