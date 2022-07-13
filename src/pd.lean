@@ -1,8 +1,15 @@
+/- Copyright ACL and MIdFF -/
 
 -- import algebra.ring
 import ring_theory.ideal.basic
 
-/-- Multiple choose -/
+/-! # Divided powers 
+
+
+-/
+
+
+/-- Number of possibilities of choosing m groups of n-element subsets out of mn elements -/
 def mchoose (m n : ℕ) : ℕ := finset.prod (finset.range m) (λ p, nat.choose (p * n + n - 1) (n - 1))
 
 lemma mchoose_zero (n : ℕ) : mchoose 0 n = 1 := 
@@ -57,16 +64,35 @@ end
 
 /-- The divided power structure on an ideal I of a commutative ring A -/
 structure has_divided_powers (A : Type*) [comm_ring A] (I : ideal A) := 
-(div_pow : ℕ → I → A)
-(div_pow_zero : div_pow 0 = 1)
-(div_pow_one : div_pow 1 = coe)
-(div_pow_mem : ∀ (n : ℕ) (x : I), 1 ≤ n → div_pow n x ∈ I)
-(div_pow_sum : ∀ (n : ℕ) (x y : I), div_pow n (x + y)
-  = finset.sum (finset.range (n + 1)) (λ k, (div_pow k x) * (div_pow (n - k) y)))
-(div_pow_smul : ∀ (n : ℕ) (a : A) (x : I), div_pow n (a • x) = (a ^ n) * (div_pow n x))
-(div_pow_mul : ∀ (m n : ℕ) (x : I), (div_pow m x) * (div_pow n x) = (nat.choose (n+m) m) * div_pow (m + n) x)
-(div_pow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : I),
-  div_pow m (⟨div_pow n x, div_pow_mem n x hn⟩) = (mchoose m n) * div_pow (m * n) x)
+(dpow : ℕ → I → A)
+(dpow_zero : dpow 0 = 1)
+(dpow_one : dpow 1 = coe)
+(dpow_mem : ∀ (n : ℕ) (x : I), 1 ≤ n → dpow n x ∈ I)
+(dpow_sum : ∀ (n : ℕ) (x y : I), dpow n (x + y)
+  = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
+(dpow_smul : ∀ (n : ℕ) (a : A) (x : I), dpow n (a • x) = (a ^ n) * (dpow n x))
+(dpow_mul : ∀ (m n : ℕ) (x : I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (m + n) x)
+(dpow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : I),
+  dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
+
+class divided_power_ring (A : Type*) extends comm_ring A:= 
+(I : ideal A)
+(dpow : ℕ → I → A)
+(dpow_zero : dpow 0 = 1)
+(dpow_one : dpow 1 = coe)
+(dpow_mem : ∀ (n : ℕ) (x : I), 1 ≤ n → dpow n x ∈ I)
+(dpow_sum : ∀ (n : ℕ) (x y : I), dpow n (x + y)
+  = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
+(dpow_smul : ∀ (n : ℕ) (a : A) (x : I), dpow n (a • x) = (a ^ n) * (dpow n x))
+(dpow_mul : ∀ (m n : ℕ) (x : I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (m + n) x)
+(dpow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : I),
+  dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
+
+
+structure is_pd_morphism {A B : Type*} [hA : divided_power_ring A] [hB : divided_power_ring B] (f : A →+* B) :=
+(ideal_comp : ∀ (a ∈ hA.I), f a ∈ hB.I)
+(dpow_comp : ∀ (n : ℕ) (a ∈ hA.I), hA.dpow n (⟨f a, ideal_comp a⟩ : hB.I) = f (hB.dpow n a))
+
 
 
 #print has_divided_powers
