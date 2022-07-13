@@ -89,12 +89,31 @@ class divided_power_ring (A : Type*) extends comm_ring A:=
   dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
 
 
-structure is_pd_morphism {A B : Type*} [hA : divided_power_ring A] [hB : divided_power_ring B] (f : A →+* B) :=
+variables {A : Type*} [comm_ring A] [hA: divided_power_ring A] [hA': divided_power_ring A]
+
+structure is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] (I : ideal A) (J : ideal B )
+  [hI : has_divided_powers A I] [hJ : has_divided_powers B J] (f : A →+* B) :=
+(ideal_comp : ∀ (a : I), f a ∈ J)
+(dpow_comp : ∀ (n : ℕ) (a : I), hJ.dpow n (⟨f a, ideal_comp a⟩) = f (hI.dpow n a))
+
+structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
+  (hI : has_divided_powers A I) (hJ : has_divided_powers B J) :=
+(to_ring_hom : A →+* B)
+(ideal_comp : ∀ (a : I), to_ring_hom a ∈ J)
+(dpow_comp : ∀ (n : ℕ) (a : I), 
+  hJ.dpow n (⟨to_ring_hom a, ideal_comp a⟩) = to_ring_hom (hI.dpow n a))
+
+notation `(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
+
+structure is_pd_morphism' {A B : Type*} [hA : divided_power_ring A] [hB : divided_power_ring B]
+  (f : A →+* B) :=
 (ideal_comp : ∀ (a : hA.pd_ideal), f a ∈ hB.pd_ideal)
 (dpow_comp : ∀ (n : ℕ) (a : hA.pd_ideal), 
 divided_power_ring.dpow n (⟨f a, ideal_comp a⟩) = f (divided_power_ring.dpow n a))
 
 
-#print has_divided_powers
+#check has_divided_powers
+
+#print is_pd_morphism
 
 #lint
