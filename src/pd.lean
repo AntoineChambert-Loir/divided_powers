@@ -57,10 +57,15 @@ include hI
 
 lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : I) : (n.factorial : A) * (hI.dpow n x) = x^n :=
 begin
-  induction n with n hn,
+  induction n with n ih,
   { rw [pow_zero, nat.factorial_zero, nat.cast_one, one_mul, dpow_zero, pi.one_apply] },
   { have hn : nat.choose (n + 1) 1 = n + 1 := (n + 1).choose_one_right,
     rw [nat.factorial_succ, mul_comm (n + 1), nat.cast_mul, mul_assoc],
+    rw pow_succ', 
+    rw ← ih,
+    rw mul_assoc,
+    apply congr_arg, 
+    
     sorry }
 end
 
