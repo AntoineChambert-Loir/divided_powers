@@ -1,12 +1,13 @@
 /- Copyright ACL and MIdFF -/
 
--- import algebra.ring
+import ring_theory.ideal.operations
 import ring_theory.ideal.quotient
 
 /-! # Divided powers 
 
 
 -/
+
 
 /-- Number of possibilities of choosing m groups of n-element subsets out of mn elements -/
 def mchoose (m n : ℕ) : ℕ := 
@@ -47,7 +48,7 @@ structure has_divided_powers {A : Type*} [comm_ring A] (I : ideal A) :=
 (dpow_sum : ∀ (n : ℕ) (x y : I), dpow n (x + y)
   = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
 (dpow_smul : ∀ (n : ℕ) (a : A) (x : I), dpow n (a • x) = (a ^ n) * (dpow n x))
-(dpow_mul : ∀ (m n : ℕ) (x : I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (m + n) x)
+(dpow_mul : ∀ (m n : ℕ) (x : I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (n + m) x)
 (dpow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : I),
   dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
 
@@ -59,14 +60,8 @@ lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : I) : (n.factorial : A) * (hI.dpow
 begin
   induction n with n ih,
   { rw [pow_zero, nat.factorial_zero, nat.cast_one, one_mul, dpow_zero, pi.one_apply] },
-  { have hn : nat.choose (n + 1) 1 = n + 1 := (n + 1).choose_one_right,
-    rw [nat.factorial_succ, mul_comm (n + 1), nat.cast_mul, mul_assoc],
-    rw pow_succ', 
-    rw ← ih,
-    rw mul_assoc,
-    apply congr_arg, 
-    
-    sorry }
+  { rw [nat.factorial_succ, mul_comm (n + 1), nat.cast_mul, mul_assoc, pow_succ', ← ih, mul_assoc,
+      ← (n + 1).choose_one_right, nat.succ_eq_add_one, ← hI.dpow_mul, dpow_one, mul_comm (x : A)], }
 end
 
 lemma dpow_eval_zero {n : ℕ} (hn : 0 < n) : hI.dpow n 0 = 0 := 
@@ -91,8 +86,11 @@ structure is_sub_pd_ideal (J : ideal A) : Prop :=
 (dpow_mem_ideal : ∀ (n : ℕ) (hn : 0 < n) (j : J), hI.dpow n ⟨j, is_sub_ideal j⟩ ∈ J )
 
 
-/- def quot.has_divided_powers (J : ideal A) (hIJ : is_sub_pd_ideal hI (I ⊓ J)) :
-  has_divided_powers (A ⧸ J) (I ⧸ J : (ideal A/ J)) ↔ false := sorry -/
+-- We solved the ideal quotient problem, but we need to refactor has_divided_powers so that it does
+-- not contain any data
+/- 
+def quot.has_divided_powers (J : ideal A) (hIJ : is_sub_pd_ideal hI (I ⊓ J)) :
+  has_divided_powers (I.map (ideal.quotient.mk J)) ↔ false := sorry -/
 
 lemma is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   is_sub_pd_ideal hI (ideal.span S) ↔ 
