@@ -88,8 +88,8 @@ structure is_sub_pd_ideal (J : ideal A) : Prop :=
 (dpow_mem_ideal : ∀ (n : ℕ) (hn : 0 < n) (j : J), dpow n ⟨j, is_sub_ideal j⟩ ∈ J )
 
 def quot.has_divided_powers (J : ideal A) (hIJ : is_sub_pd_ideal dpow hI (I ⊓ J)) :
-  ∃ (dpow_quot : ℕ → (I.map (ideal.quotient.mk J)) → (A ⧸ J)),
-  divided_powers dpow_quot ↔ false := sorry
+  ∃ (dpow_quot : ℕ → (I.map (ideal.quotient.mk J)) → (A ⧸ J)), divided_powers dpow_quot ↔
+  false := sorry
 
 lemma is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   is_sub_pd_ideal dpow hI (ideal.span S) ↔ 
