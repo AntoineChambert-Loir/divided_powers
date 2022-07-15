@@ -5,13 +5,11 @@ import ring_theory.ideal.quotient
 
 /-! # Divided powers 
 
-Let `A` be a commutative ring and `I` be an ideal of `A`. A *divided power* structure on `I`
-is the datum of operations `div_pow : ℕ → I → A` satisfying relations that model the 
+Let `A` be a commutative ring and `I` be an ideal of `A`. 
+A *divided power* structure on `I` is the datum of operations `div_pow : ℕ → I → A` 
+satisfying relations that model the 
 intuitive formula `div_pow n a = a ^ n / n.factorial` and collected by the structure `divided_powers`.
-
-
-
-
+To avoid coercions, we rather consider `div_pow : ℕ → A → A`, extended by 0.
 
 ## References 
 
@@ -60,16 +58,17 @@ end combinatorics
 section divided_powers_definition
 
 /-- The divided power structure on an ideal I of a commutative ring A -/
-structure divided_powers {A : Type*} [comm_ring A] {I : ideal A} (dpow : ℕ → I → A) : Prop := 
-(dpow_zero : ∀ (x : I), dpow 0 x = 1)
-(dpow_one : ∀ (x : I), dpow 1 x = x)
-(dpow_mem : ∀ (n : ℕ) (x : I), 1 ≤ n → dpow n x ∈ I)
-(dpow_sum : ∀ (n : ℕ) (x y : I), dpow n (x + y)
+structure divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ → A → A) : Prop := 
+(dpow_null : ∀ {n x} (hx : x ∉ I), dpow n x = 0)
+(dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
+(dpow_one : ∀ {x} (hx : x ∈ I), dpow 1 x = x)
+(dpow_mem : ∀ {n} (hn : n ≠ 0) {x} (hx : x ∈ I), dpow n x ∈ I)
+(dpow_sum : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y)
   = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
-(dpow_smul : ∀ (n : ℕ) (a : A) (x : I), dpow n (a • x) = (a ^ n) * (dpow n x))
-(dpow_mul : ∀ (m n : ℕ) (x : I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (n + m) x)
-(dpow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : I),
-  dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
+(dpow_smul : ∀ n {a} {x} (hx : x ∈ I), dpow n (a * x) = (a ^ n) * (dpow n x))
+(dpow_mul : ∀ m n {x} (hx : x ∈ I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (n + m) x)
+(dpow_comp : ∀ m {n} (hn : n ≠ 0) {x} (hx : x ∈ I),
+  dpow m (dpow n x) = (mchoose m n) * dpow (m * n) x)
 
 end divided_powers_definition
 
@@ -77,20 +76,23 @@ namespace divided_powers
 
 section divided_powers_examples
 
-variables {A : Type*} [comm_ring A] {I : ideal A} {dpow : ℕ → I → A} (hI : divided_powers dpow)
+variables {A : Type*} [comm_ring A] {I : ideal A} {dpow : ℕ → A → A} (hI : divided_powers I dpow)
 include hI
 
-lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : I) : (n.factorial : A) * (dpow n x) = x^n :=
+lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : A) (hx : x ∈ I) : (n.factorial : A) * (dpow n x) = x^n :=
 begin
   induction n with n ih,
-  { rw [pow_zero, nat.factorial_zero, nat.cast_one, one_mul, hI.dpow_zero] },
+  { rw [nat.nat_zero_eq_zero, nat.factorial_zero, nat.cast_one, one_mul, pow_zero, hI.dpow_zero hx], },
   { rw [nat.factorial_succ, mul_comm (n + 1), nat.cast_mul, mul_assoc, pow_succ', ← ih, mul_assoc,
-      ← (n + 1).choose_one_right, nat.succ_eq_add_one, ← hI.dpow_mul, hI.dpow_one,
+      ← (n + 1).choose_one_right, nat.succ_eq_add_one, ← hI.dpow_mul _ _ hx, hI.dpow_one hx,
       mul_comm (x : A)], }
 end
 
 lemma dpow_eval_zero {n : ℕ} (hn : 0 < n) : dpow n 0 = 0 := 
-by rw [← smul_zero (0 : A), hI.dpow_smul, zero_pow hn, zero_mul]
+begin
+  rw [← mul_zero (0 : A), hI.dpow_smul, zero_pow hn, zero_mul, zero_mul],
+  exact ideal.zero_mem I,
+end
 
 end divided_powers_examples
 
@@ -98,22 +100,22 @@ section divided_powers_morphisms
 
 /-- Compatibility of a ring morphism with pd-structures -/
 structure is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] (I : ideal A) (J : ideal B )
-  (dpow_I : ℕ → I → A) (dpow_J : ℕ → J → B)
-  (hI : divided_powers dpow_I) (hJ : divided_powers dpow_J) (f : A →+* B) :=
-(ideal_comp : ∀ (a : I), f a ∈ J)
-(dpow_comp : ∀ (n : ℕ) (a : I), dpow_J n (⟨f a, ideal_comp a⟩) = f (dpow_I n a))
+  (dpow_I : ℕ → A → A) (dpow_J : ℕ → B → B)
+  (hI : divided_powers I dpow_I) (hJ : divided_powers J dpow_J) (f : A →+* B) :=
+(ideal_comp : I.map f ≤ J)
+(dpow_comp : ∀ (n : ℕ) (a ∈ I), dpow_J n (f a) = f (dpow_I n a))
 
 /-- The structure of a pd_morphism between rings endowed with pd-rings -/
 structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
-  (dpow_I : ℕ → I → A) (dpow_J : ℕ → J → B) (hI : divided_powers dpow_I)
-  (hJ : divided_powers dpow_J) :=
+  (dpow_I : ℕ → A → A) (dpow_J : ℕ → B → B) (hI : divided_powers I dpow_I)
+  (hJ : divided_powers J dpow_J) :=
 (to_ring_hom : A →+* B)
-(ideal_comp : ∀ (a : I), to_ring_hom a ∈ J)
-(dpow_comp : ∀ (n : ℕ) (a : I), 
-  dpow_J n (⟨to_ring_hom a, ideal_comp a⟩) = to_ring_hom (dpow_I n a))
+(ideal_comp : I.map to_ring_hom ≤ J)
+(dpow_comp : ∀ (n : ℕ) (a ∈ I), 
+  dpow_J n (to_ring_hom a) = to_ring_hom (dpow_I n a))
 
 -- For the moment, the notation does not work
---notation `(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
+-- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
 -- Also, we expect a `pd` subscript
 
 /- TODO : identity, composition… -/
@@ -122,67 +124,44 @@ end divided_powers_morphisms
 
 section sub_pd_ideals
 
-variables {A : Type*} [comm_ring A] {I : ideal A} {dpow : ℕ → I → A} (hI : divided_powers dpow)
+variables {A : Type*} [comm_ring A] {I : ideal A} {dpow : ℕ → A → A} (hI : divided_powers I dpow)
 include hI
-
 
 /-- The structure of a sub-pd-ideal of a pd-ideal -/
 structure is_sub_pd_ideal (J : ideal A) : Prop :=
-(is_sub_ideal : ∀ j : J, (j : A) ∈ I)
-(dpow_mem_ideal' : ∀ (n : ℕ) (hn : 1 ≤ n) (j : I) (hj : ↑j ∈ J), dpow n j ∈ J )
-
-/- There are two possible ways of phrasing the compatibility condition, 
-we had first used `dpow_mem_ideal`,  but it seems easier to use `dpow_mem_ideal'`.
-The following lemma makes the translation.  -/
-lemma is_sub_pd_ideal.dpow_mem_ideal (J : ideal A) (hIJ : is_sub_pd_ideal hI J) 
-  (n : ℕ) (hn : 1 ≤ n) (j : J) : dpow n ⟨↑j, hIJ.is_sub_ideal j⟩ ∈ J := 
-begin
-  convert hIJ.dpow_mem_ideal' n hn _ _,
-  simp only [submodule.coe_mk, submodule.coe_mem],
-end
-
-/- If we needed to go in the other direction, we would require this -/
-example (J : ideal A) (hIJ : is_sub_pd_ideal hI J) 
-  (n : ℕ) (hn : 1 ≤ n) (j : I) (hj : ↑j ∈ J) : dpow n j ∈ J :=
-begin
-  have : j = ⟨(⟨↑j, hj⟩ : J), hIJ.is_sub_ideal ⟨↑j, hj⟩⟩, 
-  by simp only [submodule.coe_mk, set_like.eta],
-  rw this,
-  apply  is_sub_pd_ideal.dpow_mem_ideal hI J hIJ n hn,
-end
-
+(is_sub_ideal : J ≤ I)
+(dpow_mem_ideal' : ∀ (n : ℕ) (hn : 1 ≤ n) (j ∈ I), dpow n j ∈ J )
 
 lemma dpow_quot_aux (J : ideal A) (hIJ : is_sub_pd_ideal hI (J ⊓ I)) : 
-  ∀ (n : ℕ) (a b : I) (hab : (b : A) - (a : A) ∈ J), dpow n b - dpow n a ∈ J := 
+  ∀ (n : ℕ) (a b : A) (ha : a ∈ I) (hb : b ∈ I) (hab : (b - a) ∈ J), dpow n b - dpow n a ∈ J := 
 begin
-  intros n a b hab,
-  have hb : b = a + (b - a), by rw [add_comm, sub_add_cancel],
-  rw hb,
+  intros n a b ha hb hab,
+  have hb' : b = a + (b - a), by rw [add_comm, sub_add_cancel],
+  have hab' : b - a ∈ I := ideal.sub_mem I hb ha,  
+  rw hb',
   rw hI.dpow_sum, 
   rw finset.range_succ, 
   rw finset.sum_insert (finset.not_mem_range_self),
-  simp only [tsub_self, hI.dpow_zero, mul_one, add_sub_cancel'], 
+  simp only [tsub_self, hI.dpow_zero hab', mul_one, add_sub_cancel'], 
   apply ideal.sum_mem ,
   intros i hi, 
   simp only [finset.mem_range] at hi,
   apply J.smul_mem,
   apply semilattice_inf.inf_le_left J I,
-  apply hIJ.dpow_mem_ideal' (n - i) (nat.sub_pos_of_lt hi), 
-  split,
-    simp only [add_subgroup_class.coe_sub], exact hab,
-    exact (b - a).prop, 
+  apply hIJ.dpow_mem_ideal' (n - i) (nat.sub_pos_of_lt hi) _ hab', 
+  exact ha, exact hab'
 end
 
 -- We wish for a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
 /-- When `I ⊓ J` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I(A⧸J)` of the quotient -/
-def dpow_quot (J  : ideal A) (hIJ : is_sub_pd_ideal hI (I ⊓ J)) : ℕ → (I.map (ideal.quotient.mk J)) → (A ⧸ J) := sorry
+def dpow_quot (J  : ideal A) (hIJ : is_sub_pd_ideal hI (I ⊓ J)) : ℕ → (A ⧸ J) → (A ⧸ J) := sorry
 
 lemma divided_powers_quot (J : ideal A) (hIJ : is_sub_pd_ideal hI (I ⊓ J)) :
-  divided_powers (dpow_quot hI J hIJ) := sorry
+  divided_powers (I.map (ideal.quotient.mk J)) (dpow_quot hI J hIJ) := sorry
 
 lemma is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   is_sub_pd_ideal hI (ideal.span S) ↔ 
-  ∀ (n : ℕ) (hn : 0 < n) (s : S), dpow n ⟨s, hS s.property⟩ ∈ ideal.span S :=
+  ∀ (n : ℕ) (hn : 0 < n) (s : S), dpow n s ∈ ideal.span S :=
 sorry
 
 end sub_pd_ideals
