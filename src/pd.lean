@@ -1,4 +1,4 @@
-/- Copyright ACL and MIdFF -/
+/- ACL and MIdFF, Lean 2022 meeting at Icerm -/
 
 import ring_theory.ideal.operations
 import ring_theory.ideal.quotient
@@ -23,6 +23,7 @@ Princeton University Press.
 
 -/
 
+section combinatorics
 
 /-- Number of possibilities of choosing m groups of n-element subsets out of mn elements -/
 def mchoose (m n : ℕ) : ℕ := 
@@ -54,6 +55,10 @@ begin
     ring_nf, }
 end
 
+end combinatorics
+
+section divided_powers_definition
+
 /-- The divided power structure on an ideal I of a commutative ring A -/
 structure divided_powers {A : Type*} [comm_ring A] {I : ideal A} (dpow : ℕ → I → A) : Prop := 
 (dpow_zero : ∀ (x : I), dpow 0 x = 1)
@@ -66,7 +71,12 @@ structure divided_powers {A : Type*} [comm_ring A] {I : ideal A} (dpow : ℕ →
 (dpow_comp : ∀ (m n : ℕ) (hn : 1 ≤ n) (x : I),
   dpow m (⟨dpow n x, dpow_mem n x hn⟩) = (mchoose m n) * dpow (m * n) x)
 
+end divided_powers_definition
+
 namespace divided_powers
+
+section divided_powers_examples
+
 variables {A : Type*} [comm_ring A] {I : ideal A} {dpow : ℕ → I → A} (hI : divided_powers dpow)
 include hI
 
@@ -81,6 +91,10 @@ end
 
 lemma dpow_eval_zero {n : ℕ} (hn : 0 < n) : dpow n 0 = 0 := 
 by rw [← smul_zero (0 : A), hI.dpow_smul, zero_pow hn, zero_mul]
+
+end divided_powers_examples
+
+section divided_powers_morphisms
 
 /-- Compatibility of a ring morphism with pd-structures -/
 structure is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] (I : ideal A) (J : ideal B )
@@ -100,6 +114,17 @@ structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
 
 -- For the moment, the notation does not work
 --notation `(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
+-- Also, we expect a `pd` subscript
+
+/- TODO : identity, composition… -/
+
+end divided_powers_morphisms
+
+section sub_pd_ideals
+
+variables {A : Type*} [comm_ring A] {I : ideal A} {dpow : ℕ → I → A} (hI : divided_powers dpow)
+include hI
+
 
 /-- The structure of a sub-pd-ideal of a pd-ideal -/
 structure is_sub_pd_ideal (J : ideal A) : Prop :=
@@ -148,7 +173,7 @@ begin
     exact (b - a).prop, 
 end
 
--- We wish a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
+-- We wish for a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
 /-- When `I ⊓ J` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I(A⧸J)` of the quotient -/
 def dpow_quot (J  : ideal A) (hIJ : is_sub_pd_ideal hI (I ⊓ J)) : ℕ → (I.map (ideal.quotient.mk J)) → (A ⧸ J) := sorry
 
@@ -159,5 +184,7 @@ lemma is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   is_sub_pd_ideal hI (ideal.span S) ↔ 
   ∀ (n : ℕ) (hn : 0 < n) (s : S), dpow n ⟨s, hS s.property⟩ ∈ ideal.span S :=
 sorry
+
+end sub_pd_ideals
 
 end divided_powers
