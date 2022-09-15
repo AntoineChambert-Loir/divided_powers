@@ -363,12 +363,12 @@ lemma span_is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   ∀ (n : ℕ) (hn : 0 < n) (s : S), hI.dpow n s ∈ ideal.span S := sorry
 
 
-/- 3.7 Lemma. Suppose A is a ring, В and С are A-algebras, and
-I С В and J С С are augmentation ideals (i.e. there is a sec-
-section of В -* B/I, etc.) with P.D. structures у and 6, respec-
-respectively. Then the ideal К = Ker (Вв.С + B/I8C/J) has a unique
-P.D. structure e such that (B,I,y) * (ВвС,К,е) and
-(C,J,6) + (B8C,K,e) are P.D. morphisms. q-/
+/- 3.7 Lemma. Suppose R is a ring, В and С are R-algebras, and
+I ⊆ В and J ⊆ С are augmentation ideals (i.e. there is a section of В → B/I, etc.) 
+with P.D. structures γ and δ, respectively. 
+Then the ideal К = Ker (В ⊗ С → B/I ⊗ C/J) has a unique P.D. structure ε 
+such that (B,I,γ) → (В ⊗ С,К,ε) and
+(C,J,δ) → (B ⊗ C,K,ε) are P.D. morphisms. -/
 
 open_locale tensor_product
 
