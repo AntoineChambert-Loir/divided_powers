@@ -370,16 +370,21 @@ respectively. Then the ideal К = Ker (Вв.С + B/I8C/J) has a unique
 P.D. structure e such that (B,I,y) * (ВвС,К,е) and
 (C,J,6) + (B8C,K,e) are P.D. morphisms. q-/
 
+open algebra
 open_locale tensor_product
 
 /- Lemma 3.7 of [BO] -/
-lemma foo (R B C : Type*) [comm_ring R] [comm_ring B] [comm_ring C] [algebra R B]
+def foo (R B C : Type*) [comm_ring R] [comm_ring B] [comm_ring C] [algebra R B]
   [algebra R C] {I : ideal B} {J : ideal C} (hI : divided_powers I) (hJ : divided_powers J)
   (hIs : function.has_right_inverse (ideal.quotient.mk I))
   (hJs : function.has_right_inverse (ideal.quotient.mk J)) :
-  let K := (B ⊗[R] C) in false :=
+  divided_powers (algebra.tensor_product.map (ideal.quotient.mkₐ R I) 
+    (ideal.quotient.mkₐ R J)).to_ring_hom.ker  :=
+begin
+  let K := (algebra.tensor_product.map (ideal.quotient.mkₐ R I)
+    (ideal.quotient.mkₐ R J)).to_ring_hom.ker,
 sorry
-
+end
 
 end sub_pd_ideals
 
