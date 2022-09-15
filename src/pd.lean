@@ -366,7 +366,7 @@ that was just defined
 * maybe other… 
 -/
 
-/-- Lemma 3.6 of [BO] -/
+/-- Lemma 3.6 of [BO] (Antoine) -/
 lemma span_is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   is_sub_pd_ideal hI (ideal.span S) ↔ 
   ∀ (n : ℕ) (hn : 0 < n) (s : S), hI.dpow n s ∈ ideal.span S := sorry
@@ -383,6 +383,7 @@ open_locale tensor_product
 
 /- Lemma 3.7 of [BO] -> Change to 1.7.1 -/
 /- TODO:
+  * 1.2.7 (María Inés)
   * Given hI, hJ compatible, get divided powers on I + J (1.6.4) 
   * Do 1.6.5
   * Formalize 1.4 (d.p. algebra) -/
