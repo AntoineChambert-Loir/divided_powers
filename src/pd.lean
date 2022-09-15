@@ -78,7 +78,7 @@ structure is_divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ 
  -/
 
 /-- The divided power structure on an ideal I of a commutative ring A -/
-structure divided_powers {A : Type*} [comm_ring A] (I : ideal A) := 
+@[ext] structure divided_powers {A : Type*} [comm_ring A] (I : ideal A) := 
 (dpow : ℕ → A → A)
 (dpow_null : ∀ {n x} (hx : x ∉ I), dpow n x = 0)
 (dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
@@ -352,6 +352,7 @@ begin
 end }
 
 /- TODO : 
+* prove uniqueness
 * add rfl lemma that gives analogue of dpow_quot_eq for the divided_powers 
 that was just defined 
 * maybe other… 
@@ -370,22 +371,50 @@ Then the ideal К = Ker (В ⊗ С → B/I ⊗ C/J) has a unique P.D. structure 
 such that (B,I,γ) → (В ⊗ С,К,ε) and
 (C,J,δ) → (B ⊗ C,K,ε) are P.D. morphisms. -/
 
-open algebra
 open_locale tensor_product
 
-/- Lemma 3.7 of [BO] -/
-def foo (R B C : Type*) [comm_ring R] [comm_ring B] [comm_ring C] [algebra R B]
-  [algebra R C] {I : ideal B} {J : ideal C} (hI : divided_powers I) (hJ : divided_powers J)
-  (hIs : function.has_right_inverse (ideal.quotient.mk I))
+/- Lemma 3.7 of [BO] -> Change to 1.7.1 -/
+/- TODO:
+  * Given hI, hJ compatible, get divided powers on I + J (1.6.4) 
+  * Do 1.6.5
+  * Formalize 1.4 (d.p. algebra) -/
+
+def dpow_tensor_product (R B C : Type*) [comm_ring R] [comm_ring B] [comm_ring C]
+  [algebra R B] [algebra R C] {I : ideal B} {J : ideal C} (hI : divided_powers I)
+  (hJ : divided_powers J) (hIs : function.has_right_inverse (ideal.quotient.mk I))
+  (hJs : function.has_right_inverse (ideal.quotient.mk J)) :
+  ℕ → (B ⊗[R] C) → (B ⊗[R] C) := sorry
+
+def divided_powers_tensor_product (R B C : Type*) [comm_ring R] [comm_ring B] [comm_ring C]
+  [algebra R B] [algebra R C] {I : ideal B} {J : ideal C} (hI : divided_powers I)
+  (hJ : divided_powers J) (hIs : function.has_right_inverse (ideal.quotient.mk I))
   (hJs : function.has_right_inverse (ideal.quotient.mk J)) :
   divided_powers (algebra.tensor_product.map (ideal.quotient.mkₐ R I) 
     (ideal.quotient.mkₐ R J)).to_ring_hom.ker  :=
+{ dpow := dpow_tensor_product R B C hI hJ hIs hJs,
+  dpow_null := sorry,
+  dpow_zero := sorry,
+  dpow_one  := sorry,
+  dpow_mem  := sorry,
+  dpow_sum  := sorry,
+  dpow_smul := sorry,
+  dpow_mul  := sorry,
+  dpow_comp := sorry }
+
+lemma divided_powers_tensor_product_unique (R B C : Type*) [comm_ring R] [comm_ring B] [comm_ring C]
+  [algebra R B] [algebra R C] {I : ideal B} {J : ideal C} (hI : divided_powers I)
+  (hJ : divided_powers J) (hIs : function.has_right_inverse (ideal.quotient.mk I))
+  (hJs : function.has_right_inverse (ideal.quotient.mk J)) 
+  (hK : divided_powers (algebra.tensor_product.map (ideal.quotient.mkₐ R I) 
+  (ideal.quotient.mkₐ R J)).to_ring_hom.ker) :
+  hK = (divided_powers_tensor_product R B C hI hJ hIs hJs) :=
 begin
-  let K := (algebra.tensor_product.map (ideal.quotient.mkₐ R I)
-    (ideal.quotient.mkₐ R J)).to_ring_hom.ker,
-sorry
+  ext n x,
+  sorry
 end
 
 end sub_pd_ideals
+
+
 
 end divided_powers
