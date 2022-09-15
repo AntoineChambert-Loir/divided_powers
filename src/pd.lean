@@ -22,6 +22,14 @@ Lectures notes in mathematics 407, Springer-Verlag.
 * P. Berthelot and A. Ogus (1978), *Notes on crystalline cohomology*, 
 Princeton University Press.
 
+* N. Roby (1968), *Construction de certaines algèbres à puissances divisées*, 
+Bulletin de la Société Mathématique de France, Tome 96, p. 97-113. 
+doi: https://doi.org/10.24033/bsmf.1661
+
+* N. Roby (1966), *Sur l'algèbre des puissances divisées d'un module et le module de ses différentielles*,
+Annales scientifiques de l'École Normale Supérieure, Série 3, Tome 83,no. 2, p. 75-89. 
+doi: https://doi.org/10.24033/asens.1148
+
 -/
 
 open_locale classical
