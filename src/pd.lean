@@ -5,6 +5,7 @@ import ring_theory.ideal.operations
 import ring_theory.ideal.quotient
 import linear_algebra.quotient
 import ring_theory.tensor_product
+import ring_theory.ideal.operations
 
 /-! # Divided powers 
 
@@ -365,6 +366,16 @@ end }
 that was just defined 
 * maybe other… 
 -/
+
+/-- Proposition 1.2.7 of [B74], part (i). -/
+lemma nilpotent_of_pd_ideal_mem {n : ℕ} (hn : n ≠ 0) (hnI : ∀ {y : A}(hy : y ∈ I), n • y = 0)
+  {x : A} (hx : x ∈ I) : x^n = 0 := 
+begin
+  have h_fac: (n.factorial : A) * hI.dpow n x = n • ((n-1).factorial : A) * hI.dpow n x,
+  { rw [nsmul_eq_mul, ← nat.cast_mul, nat.mul_factorial_pred (nat.pos_of_ne_zero hn)] },
+  rw [← factorial_mul_dpow_eq_pow hI _ _ hx, h_fac, smul_mul_assoc],
+  exact hnI (I.mul_mem_left ((n - 1).factorial : A) (hI.dpow_mem hn hx)),
+end
 
 /-- Lemma 3.6 of [BO] (Antoine) -/
 lemma span_is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
