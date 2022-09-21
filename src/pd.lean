@@ -193,14 +193,17 @@ noncomputable def factorial_unit {n : ℕ} (hn_fac : is_unit ((n-1).factorial : 
   {m : ℕ} (hmn : m < n) : Aˣ :=
 (factorial_is_unit hn_fac hmn).unit
 
+@[simp]
 lemma factorial_unit_coe {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
   (factorial_unit hn_fac hmn : A) = (m.factorial : A) :=
 rfl
 
+@[simp]
 lemma factorial_inverse_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
   ((factorial_unit hn_fac hmn).inv : A) * (m.factorial : A) = 1 :=
 by simp only [units.inv_eq_coe_inv, units.inv_mul_eq_one, factorial_unit, is_unit.unit_spec]
 
+@[simp]
 lemma factorial_inverse_one {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hn1 : 1 < n) :
   (factorial_unit hn_fac hn1).inv = 1 :=
 begin
@@ -262,6 +265,16 @@ begin
   { exact ideal.zero_mem I },
 end
 
+example (u : Aˣ) (a b : A) : ↑(u⁻¹) * a = b ↔ a = u * b :=
+begin
+exact units.inv_mul_eq_iff_eq_mul u,
+end
+
+example (a b : A)(n : ℕ) : (a + b) ^ n = a ^ n + b ^ n :=
+begin
+
+end
+
 lemma dpow_sum {n : ℕ} (hn0 : n ≠ 0)(hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0)
   (m : ℕ) {x : A} (hx : x ∈ I) {y : A} (hy : y ∈ I) :
   dpow I hn0 hn_fac m (x + y) = (finset.range (m + 1)).sum (λ (k : ℕ), dpow I hn0 hn_fac k x * 
@@ -270,6 +283,11 @@ begin
   by_cases hmn : m < n,
   { rw dpow_if_pos I hn0 hn_fac hmn (ideal.add_mem I hx hy),
     simp only [dpow],
+    simp only [units.inv_eq_coe_inv, units.inv_mul_eq_iff_eq_mul, factorial_unit_coe],
+    rw finset.mul_sum , 
+    rw add_pow, 
+    apply finset.sum_congr rfl,
+    intros p hp, 
     sorry, },
   { sorry }
 end
@@ -414,7 +432,7 @@ noncomputable def divided_powers {n : ℕ} (hn0 : n ≠ 0)
   dpow_comp := λ m k hk x hx, dpow_comp hn0 hn_fac hnI m hk hx, }
 
 end of_invertible_factorial
-#exit
+
 end factorial
 
 --#lint
