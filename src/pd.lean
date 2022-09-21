@@ -627,12 +627,12 @@ that was just defined
 /-- Lemma 3.6 of [BO] (Antoine) -/
 lemma span_is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   is_sub_pd_ideal hI (ideal.span S) ↔ 
-  ∀ (n : ℕ) (hn : 0 < n) (s ∈ S), hI.dpow n s ∈ ideal.span S := 
+  ∀ (n : ℕ) (hn : n ≠ 0) (s ∈ S), hI.dpow n s ∈ ideal.span S := 
 begin 
   split,
   { -- trivial direction
     intros hhI h hn s hs, 
-    apply hhI.dpow_mem_ideal h (ne_of_gt hn) s (ideal.subset_span hs), },
+    apply hhI.dpow_mem_ideal h hn s (ideal.subset_span hs), },
   { -- interesting direction,
     intro hhI,
     have hSI := ideal.span_le.mpr hS,
@@ -647,7 +647,7 @@ begin
       intros s hs,
       apply and.intro (hS hs), 
       intros n hn,
-      exact hhI n (zero_lt_iff.mpr hn) s hs, },
+      exact hhI n hn s hs, },
     { -- case of 0 
       apply and.intro (ideal.zero_mem _),
       intros n hn, rw hI.dpow_eval_zero hn, apply ideal.zero_mem _, },
@@ -678,7 +678,9 @@ end
 /- Questions 
 
 * decide if the hypothesis for (n : ℕ) in dp-lemmas should be `n ≠ 0` or `0 < n`
+ -- Decided !
 * should we use • instead of * in `dpow_smul` ?
+ -- We keep a * 
 -/
 
 /- 3.7 Lemma. Suppose R is a ring, В and С are R-algebras, and
