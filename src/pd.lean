@@ -95,7 +95,7 @@ structure is_divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ 
 (dpow_mem : ∀ {n} (hn : n ≠ 0) {x} (hx : x ∈ I), dpow n x ∈ I)
 (dpow_sum : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y)
   = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
-(dpow_smul : ∀ n {a} {x} (hx : x ∈ I), dpow n (a * x) = (a ^ n) * (dpow n x))
+(dpow_smul : ∀ n {a : A} {x} (hx : x ∈ I), dpow n (a * x) = (a ^ n) * (dpow n x))
 (dpow_mul : ∀ m n {x} (hx : x ∈ I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (n + m) x)
 (dpow_comp : ∀ m {n} (hn : n ≠ 0) {x} (hx : x ∈ I),
   dpow m (dpow n x) = (mchoose m n) * dpow (m * n) x)
@@ -114,6 +114,15 @@ def pd_ring.mk (A : Type*) [comm_ring A] (I : ideal A) (hI : divided_powers I):
     .. ‹ comm_ring A › }
  -/
 
+/- To help distinguish the extreme cases in a finset.range(n+1).sum -/
+lemma not_eq_or_aux {n m : ℕ} (hn : n ≠ 0) (hm : m ∈ finset.range(n + 1)) : m ≠ 0 ∨ n - m ≠ 0 :=
+begin
+  simp only [finset.mem_range, nat.lt_succ_iff] at hm,
+  by_contradiction h,
+  simp only [not_or_distrib, ne.def, not_not, tsub_eq_zero_iff_le, not_le, not_lt] at h,
+  apply hn, rw ← le_zero_iff, rw ← h.1, exact h.2, 
+end
+
 end divided_powers_definition
 
 namespace divided_powers
@@ -130,11 +139,6 @@ begin
   { rw [nat.factorial_succ, mul_comm (n + 1), nat.cast_mul, mul_assoc, pow_succ', ← ih, mul_assoc,
       ← (n + 1).choose_one_right, nat.succ_eq_add_one, ← hI.dpow_mul _ _ hx, hI.dpow_one hx,
       mul_comm (x : A)], }
-end
-
-example (n : ℕ) (hn : n ≠ 0) : 0 ^ n = 0 :=
-begin
-exact zero_pow' n hn,
 end
 
 lemma dpow_eval_zero {n : ℕ} (hn : n ≠ 0) : hI.dpow n 0 = 0 := 
@@ -380,8 +384,59 @@ end
 /-- Lemma 3.6 of [BO] (Antoine) -/
 lemma span_is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
   is_sub_pd_ideal hI (ideal.span S) ↔ 
-  ∀ (n : ℕ) (hn : 0 < n) (s : S), hI.dpow n s ∈ ideal.span S := sorry
+  ∀ (n : ℕ) (hn : 0 < n) (s ∈ S), hI.dpow n s ∈ ideal.span S := 
+begin 
+  split,
+  { -- trivial direction
+    intros hhI h hn s hs, 
+    apply hhI.dpow_mem_ideal h (ne_of_gt hn) s (ideal.subset_span hs), },
+  { -- interesting direction,
+    intro hhI,
+    have hSI := ideal.span_le.mpr hS,
+    apply is_sub_pd_ideal.mk (hSI),
+    suffices : ∀ (z : A) (hz : z ∈ ideal.span S),
+      z ∈ I ∧ ∀ (n : ℕ), n ≠ 0 → hI.dpow n z ∈ ideal.span S, 
+    { intros n hn z hz, 
+      exact (this z hz).2 n hn, },
+    intros z hz, 
+    apply submodule.span_induction hz, 
+    { -- case of elements of S 
+      intros s hs,
+      apply and.intro (hS hs), 
+      intros n hn,
+      exact hhI n (zero_lt_iff.mpr hn) s hs, },
+    { -- case of 0 
+      apply and.intro (ideal.zero_mem _),
+      intros n hn, rw hI.dpow_eval_zero hn, apply ideal.zero_mem _, },
+    { -- case of sum
+      rintros x y ⟨hxI, hx⟩ ⟨hyI, hy⟩,
+      apply and.intro (ideal.add_mem I hxI hyI),
+      intros n hn,
+      rw ideal.mem_span, intros J hSJ,
+      rw hI.dpow_sum n hxI hyI,
+      apply submodule.sum_mem,
+      intros m hm,
+      cases not_eq_or_aux hn hm with hm hm,
+      { apply ideal.mul_mem_right, 
+        apply ideal.span_le.mpr hSJ, 
+        exact hx m hm,  },
+      { apply ideal.mul_mem_left,
+        apply ideal.span_le.mpr hSJ,
+        exact hy (n - m) hm, }, },
+    { -- case : product,
+      rintros a x ⟨hxI, hx⟩,
+      apply and.intro (submodule.smul_mem I a hxI),
+      intros n hn,
+      simp only [algebra.id.smul_eq_mul],
+      rw hI.dpow_smul n hxI,
+      exact ideal.mul_mem_left (ideal.span S) (a ^ n) (hx n hn), }, },
+end
 
+/- Questions 
+
+* decide if the hypothesis for (n : ℕ) in dp-lemmas should be `n ≠ 0` or `0 < n`
+* should we use • instead of * in `dpow_smul` ?
+-/
 
 /- 3.7 Lemma. Suppose R is a ring, В and С are R-algebras, and
 I ⊆ В and J ⊆ С are augmentation ideals (i.e. there is a section of В → B/I, etc.) 
