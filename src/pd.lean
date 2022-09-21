@@ -744,10 +744,10 @@ end divided_powers
 /- Comparison with Berthelot, Coho. cristalline
 
 1.1 : done
-1.2.1 (*) : follows from 1.2.7
+1.2.1 (M) : follows from 1.2.7
 1.2.2 (*) : To be added
 1.2.4 : To be added if Cohen/Witt vectors rings exist
-1.2.7 (*) : almost done
+1.2.7 (M) : almost done
 1.3 (pd -morphism) : done
 1.3.1 : To be added (needs limits of rings)
 
@@ -755,14 +755,14 @@ end divided_powers
 1.5.: depends on 1.4  
 
 1.6 : sub-pd-ideal : done
-1.6.1 (*) : to be added
-1.6.2 (*) : to be added
-1.6.4 (*) : to be added
+1.6.1 (A) : to be added
+1.6.2 (A) : to be added
+1.6.4 (A) : to be added
 (should we add the remark on page 33)
-1.6.5 (*): to be added
+1.6.5 (A): to be added
 
 1.7 : tensor product, see Roby
 
-1.8 (*) to be added 
+1.8 (M) to be added 
 
 -/
