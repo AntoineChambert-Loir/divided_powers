@@ -234,7 +234,7 @@ end divided_powers_morphisms
 end divided_powers
 
 
-section factorial_inverse
+section factorial_inv
 variables {A : Type*} [comm_ring A] {I : ideal A}
 
 lemma factorial_is_unit {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A))
@@ -246,30 +246,76 @@ begin
   rw [← nat.cast_mul, hc],
 end
 
-noncomputable def factorial_unit {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A))
+/- noncomputable def factorial_unit {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A))
   {m : ℕ} (hmn : m < n) : Aˣ :=
-(factorial_is_unit hn_fac hmn).unit
+(factorial_is_unit hn_fac hmn).unit -/
 
-@[simp]
+noncomputable def factorial_inv {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A))
+  {m : ℕ} (hmn : m < n) : A :=
+(factorial_is_unit hn_fac hmn).unit.inv
+
+/- @[simp]
 lemma factorial_unit_coe {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
   (factorial_unit hn_fac hmn : A) = (m.factorial : A) :=
-rfl
+rfl -/
 
-@[simp]
-lemma factorial_inverse_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
+/- @[simp]
+lemma factorial_inv_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
   ((factorial_unit hn_fac hmn).inv : A) * (m.factorial : A) = 1 :=
-by simp only [units.inv_eq_coe_inv, units.inv_mul_eq_one, factorial_unit, is_unit.unit_spec]
+by simp only [units.inv_eq_coe_inv, units.inv_mul_eq_one, factorial_unit, is_unit.unit_spec] -/
 
 @[simp]
-lemma factorial_inverse_one {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hn1 : 1 < n) :
+lemma factorial_inv_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
+  (factorial_inv hn_fac hmn) * (m.factorial : A) = 1 :=
+by rw [factorial_inv, units.inv_eq_coe_inv, is_unit.coe_inv_mul]
+
+lemma eq_mul_factorial_inv_iff_mul_eq {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ}
+  (hmn : m < n) {a b : A} : a = b * (factorial_inv hn_fac hmn) ↔ a * (m.factorial : A) = b := 
+by rw [factorial_inv, units.inv_eq_coe_inv, units.eq_mul_inv_iff_mul_eq]; refl
+
+lemma factorial_inv_mul_eq_iff_eq_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ}
+  (hmn : m < n) {a b : A} :  (factorial_inv hn_fac hmn) * a = b ↔ a = (m.factorial : A) * b :=
+by rw [factorial_inv, units.inv_eq_coe_inv, units.inv_mul_eq_iff_eq_mul]; refl
+
+lemma factorial_inv_pow_mul_eq_iff_eq_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ}
+  (hmn : m < n) {a b : A} { k : ℕ} : 
+  (factorial_inv hn_fac hmn)^k * a = b ↔ a = (m.factorial : A)^k * b :=
+begin
+  rw [factorial_inv, units.inv_eq_coe_inv, ← units.coe_pow, inv_pow, units.inv_mul_eq_iff_eq_mul,
+    units.coe_pow],
+  refl,
+end
+
+/- @[simp]
+lemma factorial_inv_one {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hn1 : 1 < n) :
   (factorial_unit hn_fac hn1).inv = 1 :=
 begin
   rw [← mul_one (factorial_unit hn_fac hn1).inv],
-  convert factorial_inverse_mul hn_fac hn1,
+  convert factorial_inv_mul hn_fac hn1,
   rw [nat.factorial_one, nat.cast_one]
+end -/
+
+@[simp]
+lemma factorial_inv_zero' {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hn0 : n ≠ 0) :
+  factorial_inv hn_fac (nat.pos_of_ne_zero hn0) = 1 :=
+begin
+  rw [← mul_one (factorial_inv hn_fac (nat.pos_of_ne_zero hn0))],
+  convert factorial_inv_mul hn_fac (nat.pos_of_ne_zero hn0),
+  rw [nat.factorial_zero, nat.cast_one],
 end
 
-end factorial_inverse
+@[simp]
+lemma factorial_inv_one {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hn1 : 1 < n) :
+  factorial_inv hn_fac hn1 = 1 :=
+begin
+  rw [← mul_one (factorial_inv hn_fac hn1)],
+  convert factorial_inv_mul hn_fac hn1,
+  rw [nat.factorial_one, nat.cast_one],
+end
+
+-- lemma inv_eq_one : a⁻¹ = 1 ↔ a = 1 
+
+end factorial_inv
 
 namespace divided_powers
 
@@ -291,11 +337,11 @@ namespace of_invertible_factorial
 
 noncomputable def dpow (I : ideal A) {n : ℕ} (hn0 : n ≠ 0)
   (hn_fac : is_unit ((n-1).factorial : A)) : ℕ → A → A :=
-λ m x, if h : m < n ∧ x ∈ I then (factorial_unit hn_fac h.1).inv * x^m else 0
+λ m x, if h : m < n ∧ x ∈ I then (factorial_inv hn_fac h.1) * x^m else 0
 
 lemma dpow_if_pos (I : ideal A) {n : ℕ} (hn0 : n ≠ 0)
   (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hm : m < n) {x : A} (hx : x ∈ I) :
-  dpow I hn0 hn_fac m x = (factorial_unit hn_fac hm).inv * x^m :=
+  dpow I hn0 hn_fac m x = (factorial_inv hn_fac hm) * x^m :=
 by simp only [dpow]; rw dif_pos (and.intro hm hx)
 
 lemma dpow_of_nmem (I : ideal A) {n : ℕ} (hn0 : n ≠ 0)
@@ -331,11 +377,11 @@ begin
   by_cases hmn : m < n,
   { rw dpow_if_pos I hn0 hn_fac hmn (ideal.add_mem I hx hy),
     simp only [dpow],
-    simp only [units.inv_eq_coe_inv, units.inv_mul_eq_iff_eq_mul, factorial_unit_coe],
-    rw finset.mul_sum , 
+    /- simp only [units.inv_eq_coe_inv, units.inv_mul_eq_iff_eq_mul, factorial_unit_coe],
+    rw finset.mul_sum, 
     rw add_pow, 
     apply finset.sum_congr rfl,
-    intros p hp, 
+    intros p hp,  -/
     sorry, },
   { sorry }
 end
@@ -358,14 +404,20 @@ lemma dpow_mul {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n-1).factorial : A)
 begin
     simp only [dpow],
     split_ifs with h1 h2 h3 h4 h5 h6 h7 h8,
-    { have h_fac : (factorial_unit hn_fac h1.1).inv * (factorial_unit hn_fac h2.1).inv =
+    { /- have h_fac : (factorial_unit hn_fac h1.1).inv * (factorial_unit hn_fac h2.1).inv =
         ↑((k + m).choose m) * (factorial_unit hn_fac h3.1).inv,
         { simp only [units.inv_eq_coe_inv],
           rw [← units.coe_mul, units.eq_mul_inv_iff_mul_eq, ← mul_inv_rev,
             units.inv_mul_eq_iff_eq_mul, factorial_unit_coe, units.coe_mul, factorial_unit_coe,
             factorial_unit_coe],
           norm_cast,
-          rw [← nat.add_choose_mul_factorial_mul_factorial, mul_assoc, mul_comm] },
+          rw [← nat.add_choose_mul_factorial_mul_factorial, mul_assoc, mul_comm] }, -/
+      have h_fac : (factorial_inv hn_fac h1.1) * (factorial_inv hn_fac h2.1) =
+        ↑((k + m).choose m) * (factorial_inv hn_fac h3.1),
+      { rw [eq_mul_factorial_inv_iff_mul_eq, mul_assoc, factorial_inv_mul_eq_iff_eq_mul,
+          factorial_inv_mul_eq_iff_eq_mul],
+        norm_cast,
+        rw [← nat.add_choose_mul_factorial_mul_factorial, mul_assoc, mul_comm, mul_assoc], },
       rw [mul_assoc, ← mul_assoc (x^m), mul_comm (x^m), mul_assoc _ (x^m), ← pow_add,
         ← mul_assoc, ← mul_assoc, add_comm, h_fac], },
     { have hxmk : x ^ (k + m) = 0,
@@ -396,16 +448,13 @@ begin
     { by_cases hmn : m < n,
       { rw dif_pos,
         { by_cases hmk : m * k < n,
-          { have h_fac : (factorial_unit hn_fac hmn).inv * ((factorial_unit hn_fac h.1).inv) ^ m =
-              ↑(mchoose m k) * (factorial_unit hn_fac hmk).inv,
-            { simp only [units.inv_eq_coe_inv],
-          rw [← units.coe_pow, ← units.coe_mul, inv_pow,
-            units.eq_mul_inv_iff_mul_eq, ← mul_inv_rev, units.inv_mul_eq_iff_eq_mul, units.coe_mul,
-            units.coe_pow, factorial_unit_coe, factorial_unit_coe, factorial_unit_coe,
-            ← mchoose_lemma _ (nat.pos_of_ne_zero hk), nat.cast_mul, nat.cast_mul, nat.cast_pow,
-            mul_comm ↑m.factorial], },
+          { have h_fac' : (factorial_inv hn_fac hmn) * (factorial_inv hn_fac h.1) ^ m =
+              ↑(mchoose m k) * (factorial_inv hn_fac hmk),
+            { rw [eq_mul_factorial_inv_iff_mul_eq, mul_assoc, factorial_inv_mul_eq_iff_eq_mul,
+                factorial_inv_pow_mul_eq_iff_eq_mul, ← mchoose_lemma _ (nat.pos_of_ne_zero hk),
+                nat.cast_mul, nat.cast_mul, nat.cast_pow, mul_comm ↑m.factorial, mul_assoc] },
             rw [dif_pos (and.intro hmk hx), mul_pow, ← pow_mul, mul_comm k, ← mul_assoc,
-              ← mul_assoc, h_fac] },
+              ← mul_assoc, h_fac'] },
           { rw [dif_neg (not_and_of_not_left _ hmk), mul_pow, ← pow_mul],
             rw [mul_comm, not_lt] at hmk,
             rw [ideal.mem_pow_eq_zero n (k * m) hnI hmk hx, mul_zero, mul_zero, mul_zero] }},
@@ -440,21 +489,18 @@ noncomputable def divided_powers {n : ℕ} (hn0 : n ≠ 0)
   (hn_fac : is_unit ((n-1).factorial : A))
   (hnI : I^n = 0) : divided_powers I := 
 { dpow := dpow I hn0 hn_fac,
-  dpow_null := λ n x hx,
-  by simp only [dpow]; rw dif_neg (not_and_of_not_right _ hx),
+  dpow_null := λ n x hx, dpow_null hn0 hn_fac hx,
   dpow_zero := λ x hx,
   begin
     simp only [dpow],
-    rw [dif_pos (and.intro (nat.pos_of_ne_zero hn0) hx), pow_zero, mul_one, units.inv_eq_coe_inv,
-      units.coe_eq_one, inv_eq_one],
-    ext,
-    rw [factorial_unit_coe, nat.factorial_zero, nat.cast_one, units.coe_one],
+    rw [dif_pos (and.intro (nat.pos_of_ne_zero hn0) hx), pow_zero, mul_one],
+    exact factorial_inv_zero' hn_fac hn0,
   end,
   dpow_one  := λ x hx,
   begin
     simp only [dpow],
     split_ifs with h,
-    { rw [pow_one, factorial_inverse_one, one_mul] },
+    { rw [pow_one, factorial_inv_one, one_mul] },
     { simp only [hx, and_true, not_lt] at h,
       have hn1 : n = 1 := le_antisymm h (nat.succ_le_of_lt (nat.pos_of_ne_zero hn0)),
       rw [hn1, pow_one] at hnI,
