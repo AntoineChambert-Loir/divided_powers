@@ -625,6 +625,32 @@ begin
     { apply ideal.mul_mem_left (I • J), exact hy' _ hk', } } 
 end
 
+/-- If J is another ideal of A with divided powers, 
+then the divided powers of I and J coincide on I • J 
+(Berthelot, 1.6.1 (ii))-/
+lemma coincide_on_smul {J : ideal A} (hJ : divided_powers J) : 
+∀ {n} (a ∈ I • J), hI.dpow n a = hJ.dpow n a :=
+begin
+  intros n a ha,
+  revert  n,
+  apply submodule.smul_induction_on' ha,
+  { intros a ha b hb n, 
+    simp only [algebra.id.smul_eq_mul], 
+    rw hJ.dpow_smul n hb,
+    rw mul_comm a b, rw hI.dpow_smul n ha, 
+    rw ← hJ.factorial_mul_dpow_eq_pow n b hb,
+    rw ← hI.factorial_mul_dpow_eq_pow n a ha,
+    ring, },
+  { intros x hx y hy hx' hy' n, 
+    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy), 
+    rw hJ.dpow_add n (ideal.mul_le_left hx) (ideal.mul_le_left hy), 
+    apply finset.sum_congr rfl,
+    intros k hk,
+    rw hx', rw hy', },
+end
+
+
+
 /- Tagged as noncomputable because it makes use of function.extend, 
 but under is_sub_pd_ideal hI (J ⊓ I), dpow_quot_eq proves that no choices are involved -/
 /-- The definition of divided powers on A ⧸ J -/
@@ -763,11 +789,6 @@ begin
     intro hhI,
     have hSI := ideal.span_le.mpr hS,
     apply is_sub_pd_ideal.mk (hSI),
-    /- suffices : ∀ (z : A) (hz : z ∈ ideal.span S),
-      z ∈ I ∧ ∀ (n : ℕ), n ≠ 0 → hI.dpow n z ∈ ideal.span S, 
-    { intros n hn z hz, 
-      exact (this z hz).2 n hn, },
-    -/ 
     intros n hn z hz, revert n,
     refine submodule.span_induction' _ _ _ _ hz, 
     { -- case of elements of S 
