@@ -38,7 +38,6 @@ doi: https://doi.org/10.24033/asens.1148
 
 open_locale classical
 
-
 section induction
 
 namespace submodule
@@ -48,18 +47,8 @@ variables [comm_semiring R] [add_comm_monoid M] [module R M]
 variables {I J : ideal R} {N P Q : submodule R M}
 
 /- 
-lemma supr_induction' {ι : Sort*} (p : ι → submodule R M) {C : M → Prop} {x : M} (hx : x ∈ ⨆ i, p i)
-  (hp : ∀ i (x ∈ p i), C x)
-  (h0 : C 0)
-  (hadd : ∀ (x ∈ ⨆ i, p i) (y ∈ ⨆ i, p i), C x → C y → C (x + y)) : C x :=
-begin
-  rw [← mem_to_add_submonoid, supr_to_add_submonoid] at hx,
-  exact add_submonoid.supr_induction _ hx hp h0 hadd',
-end 
--/
-
 variables {x : M} {s : set M}
-lemma span_induction_new {p : M → Prop} (h : x ∈ span R s)
+lemma span_induction_aux {p : M → Prop} (h : x ∈ span R s)
   (Hs : ∀ x ∈ s, p x) (H0 : p 0)
   (H1 : ∀ (x ∈ span R s) (y ∈ span R s), p x → p y → p (x + y))
   (H2 : ∀ (a : R) (x ∈ span R s), p x → p (a • x)) : p x :=
@@ -72,7 +61,7 @@ begin
   (λ a x hx, ⟨submodule.smul_mem (span R s) a hx.1, H2 a x hx.1 hx.2⟩),
 end
 
-theorem smul_induction_on_new {p : M → Prop} {x} (H : x ∈ I • N)
+theorem smul_induction_on_aux {p : M → Prop} {x} (H : x ∈ I • N)
   (Hb : ∀ (r ∈ I) (n ∈ N), p (r • n))
   (H1 : ∀ (x ∈ I • N) (y ∈ I • N), p x → p y → p (x + y)) : p x :=
 begin
@@ -80,9 +69,21 @@ begin
   exact submodule.smul_induction_on H
   (λ a ha x hx, ⟨(submodule.smul_mem_smul ha hx), Hb a ha x hx⟩)
   (λ x y hx hy, ⟨(I • N).add_mem hx.1 hy.1, H1 x hx.1 y hy.1 hx.2 hy.2⟩),
-end 
+end  -/
 
--- TODO : add other 
+lemma smul_induction_on' {x : M} (hx : x ∈ I • N) 
+  {p : Π x, x ∈ I • N → Prop} 
+  (Hb : ∀ (r : R) (hr : r ∈ I) (n : M) (hn : n ∈ N), p (r • n) (submodule.smul_mem_smul hr hn))
+  (H1 : ∀ x hx y hy, p x hx → p y hy → p (x + y) (submodule.add_mem _ ‹_› ‹_›)) :
+  p x hx :=
+begin
+  refine exists.elim _ (λ (h : x ∈ I • N) (H : p x h), H),
+  exact submodule.smul_induction_on hx
+    (λ a ha x hx, ⟨_, Hb _ ha _ hx⟩)
+    (λ x y ⟨_, hx⟩ ⟨_, hy⟩,  ⟨_, H1 _ _ _ _ hx hy⟩),
+end
+
+-- TODO : add other if needed
 end submodule
 
 end induction
@@ -563,7 +564,7 @@ begin
   split,
   exact ideal.mul_le_right,
   intros n hn x hx, revert n,
-  apply submodule.smul_induction_on_new hx,
+  apply submodule.smul_induction_on' hx,
   { -- mul 
     intros a ha b hb n hn,
     rw [algebra.id.smul_eq_mul, mul_comm a b, hI.dpow_smul n ha, mul_comm], 
@@ -722,7 +723,7 @@ begin
       exact (this z hz).2 n hn, },
     -/ 
     intros n hn z hz, revert n,
-    apply submodule.span_induction_new hz, 
+    refine submodule.span_induction' _ _ _ _ hz, 
     { -- case of elements of S 
       intros s hs n hn, exact hhI n hn s hs, },
     { -- case of 0 
