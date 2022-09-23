@@ -247,23 +247,9 @@ begin
   rw [← nat.cast_mul, hc],
 end
 
-/- noncomputable def factorial_unit {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A))
-  {m : ℕ} (hmn : m < n) : Aˣ :=
-(factorial_is_unit hn_fac hmn).unit -/
-
 noncomputable def factorial_inv {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A))
   {m : ℕ} (hmn : m < n) : A :=
 (factorial_is_unit hn_fac hmn).unit.inv
-
-/- @[simp]
-lemma factorial_unit_coe {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
-  (factorial_unit hn_fac hmn : A) = (m.factorial : A) :=
-rfl -/
-
-/- @[simp]
-lemma factorial_inv_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
-  ((factorial_unit hn_fac hmn).inv : A) * (m.factorial : A) = 1 :=
-by simp only [units.inv_eq_coe_inv, units.inv_mul_eq_one, factorial_unit, is_unit.unit_spec] -/
 
 @[simp]
 lemma factorial_inv_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) :
@@ -287,15 +273,6 @@ begin
   refl,
 end
 
-/- @[simp]
-lemma factorial_inv_one {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hn1 : 1 < n) :
-  (factorial_unit hn_fac hn1).inv = 1 :=
-begin
-  rw [← mul_one (factorial_unit hn_fac hn1).inv],
-  convert factorial_inv_mul hn_fac hn1,
-  rw [nat.factorial_one, nat.cast_one]
-end -/
-
 @[simp]
 lemma factorial_inv_zero' {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hn0 : n ≠ 0) :
   factorial_inv hn_fac (nat.pos_of_ne_zero hn0) = 1 :=
@@ -313,8 +290,6 @@ begin
   convert factorial_inv_mul hn_fac hn1,
   rw [nat.factorial_one, nat.cast_one],
 end
-
--- lemma inv_eq_one : a⁻¹ = 1 ↔ a = 1 
 
 end factorial_inv
 
@@ -914,7 +889,7 @@ end divided_powers
 1.2.1 (M) : follows from 1.2.7
 1.2.2 (*) : To be added
 1.2.4 : To be added if Cohen/Witt vectors rings exist
-1.2.7 (M) : almost done
+1.2.7 (M) : done
 1.3 (pd -morphism) : done
 1.3.1 : To be added (needs limits of rings)
 
@@ -933,3 +908,5 @@ end divided_powers
 1.8 (M) to be added 
 
 -/
+
+#lint
