@@ -354,10 +354,30 @@ lemma dpow_of_ge (I : ideal A) {n : ℕ} (hn0 : n ≠ 0)
   dpow I hn0 hn_fac m x = 0 :=
 by simp only [dpow]; rw dif_neg (not_and_of_not_left _ hm)
 
-lemma dpow_null {n : ℕ} (hn0 : n ≠ 0)
-  (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} {x : A} (hx : x ∉ I) :
-  dpow I hn0 hn_fac m x = 0 := 
+lemma dpow_null {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} {x : A}
+  (hx : x ∉ I) : dpow I hn0 hn_fac m x = 0 := 
 by simp only [dpow]; rw [dif_neg (not_and_of_not_right _ hx)]
+
+lemma dpow_zero {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n-1).factorial : A)) {x : A}
+  (hx : x ∈ I) : dpow I hn0 hn_fac 0 x = 1 :=
+begin
+  simp only [dpow],
+  rw [dif_pos (and.intro (nat.pos_of_ne_zero hn0) hx), pow_zero, mul_one],
+  exact factorial_inv_zero' hn_fac hn0,
+end
+
+lemma dpow_one {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0) 
+  {x : A} (hx : x ∈ I) : dpow I hn0 hn_fac 1 x = x := 
+begin
+  simp only [dpow],
+  split_ifs with h1,
+  { rw [pow_one, factorial_inv_one, one_mul] },
+  { simp only [hx, and_true, not_lt] at h1,
+    have hn1 : n = 1 := le_antisymm h1 (nat.succ_le_of_lt (nat.pos_of_ne_zero hn0)),
+    rw [hn1, pow_one] at hnI,
+    rw [hnI, ideal.zero_eq_bot, ideal.mem_bot] at hx,
+    exact hx.symm,  },
+end
 
 lemma dpow_mem {n : ℕ} (hn0 : n ≠ 0)
   (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hn : m ≠ 0)
@@ -377,13 +397,43 @@ begin
   by_cases hmn : m < n,
   { rw dpow_if_pos I hn0 hn_fac hmn (ideal.add_mem I hx hy),
     simp only [dpow],
-    /- simp only [units.inv_eq_coe_inv, units.inv_mul_eq_iff_eq_mul, factorial_unit_coe],
-    rw finset.mul_sum, 
-    rw add_pow, 
+    rw [factorial_inv_mul_eq_iff_eq_mul, finset.mul_sum, add_pow],
     apply finset.sum_congr rfl,
-    intros p hp,  -/
-    sorry, },
-  { sorry }
+    intros k hk,
+    rw [finset.mem_range, nat.lt_succ_iff] at hk,
+    have hkxI : k < n ∧ x ∈ I := and.intro (lt_of_le_of_lt hk hmn) hx,
+    have hkyI : m - k < n ∧ y ∈ I := and.intro (lt_of_le_of_lt (nat.sub_le m k) hmn) hy,
+    have h_ch : (m.choose k : A) =
+      (m.factorial : A) * (factorial_inv hn_fac hkxI.1) * (factorial_inv hn_fac hkyI.1),
+    { have hadd : m = (m - k) + k := (tsub_add_cancel_iff_le.mpr hk).symm,
+      rw [eq_mul_factorial_inv_iff_mul_eq, eq_mul_factorial_inv_iff_mul_eq],
+      nth_rewrite 0 hadd,
+      nth_rewrite 2 hadd,
+      rw [← nat.cast_mul, ← nat.cast_mul, nat.add_choose_mul_factorial_mul_factorial], },
+    rw [dif_pos hkxI, dif_pos hkyI, h_ch, ← mul_assoc, ← mul_assoc, mul_comm
+      (factorial_inv hn_fac _) (y ^ (m - k)), mul_assoc _ (x^k), ← mul_assoc (x^k),
+      mul_comm (x ^ k * y ^ (m - k)) (factorial_inv hn_fac _)],
+      ring_nf, /- This is slow, we might want to do it by hand. -/ },
+  { rw [dpow_of_ge I hn0 hn_fac hmn, eq_comm],
+    apply finset.sum_eq_zero,
+    intros k hk,
+    simp only [dpow],
+    split_ifs with hkn hmkn,
+    { rw [mul_assoc, mul_comm (x^k), mul_assoc, ← mul_assoc],
+      apply mul_eq_zero_of_right,
+      rw [← ideal.mem_bot, ← ideal.zero_eq_bot, ← hnI],
+      have hIm : y ^ (m - k) * x ^ k ∈ I ^ m,
+      { have hadd : m = (m - k) + k,
+        { rw [eq_comm, tsub_add_cancel_iff_le],
+          exact nat.le_of_lt_succ (finset.mem_range.mp hk) },
+        nth_rewrite 1 hadd,
+        rw pow_add,
+        exact ideal.mul_mem_mul (ideal.pow_mem_pow hy _) (ideal.pow_mem_pow hx _) },
+      have h_sub : I^m ≤ I^n := ideal.pow_le_pow (not_lt.mp hmn),
+      convert set.mem_of_subset_of_mem h_sub hIm, },
+    { rw mul_zero },
+    { rw zero_mul },
+    { rw mul_zero }}
 end
 
 lemma ideal.mem_pow_eq_zero (n m : ℕ) (hnI : I^n = 0) (hmn : n ≤ m) {x : A} (hx : x ∈ I) :
@@ -397,6 +447,21 @@ begin
   rw [hc, pow_add, hxn, zero_mul]
 end
 
+lemma dpow_smul {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n-1).factorial : A)) (m : ℕ) {a x : A}
+  (hx : x ∈ I) : dpow I hn0 hn_fac m (a * x) = a ^ m * dpow I hn0 hn_fac m x :=
+begin
+  simp only [dpow],
+  split_ifs with hmax hmx hmx hmax,
+  { rw [mul_pow, ← mul_assoc, mul_comm _ (a^m), mul_assoc], },
+  { exfalso,
+    rw not_and at hmx,
+    exact hmx (hmax.1) hx, },
+  { exfalso,
+    rw [not_and] at hmax,
+    exact hmax (hmx.1) (ideal.mul_mem_left I _ hmx.2), },
+  { rw mul_zero, }
+end
+
 lemma dpow_mul {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0)
   (m k : ℕ) {x : A} (hx : x ∈ I) :
   dpow I hn0 hn_fac m x * dpow I hn0 hn_fac k x = 
@@ -404,15 +469,7 @@ lemma dpow_mul {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n-1).factorial : A)
 begin
     simp only [dpow],
     split_ifs with h1 h2 h3 h4 h5 h6 h7 h8,
-    { /- have h_fac : (factorial_unit hn_fac h1.1).inv * (factorial_unit hn_fac h2.1).inv =
-        ↑((k + m).choose m) * (factorial_unit hn_fac h3.1).inv,
-        { simp only [units.inv_eq_coe_inv],
-          rw [← units.coe_mul, units.eq_mul_inv_iff_mul_eq, ← mul_inv_rev,
-            units.inv_mul_eq_iff_eq_mul, factorial_unit_coe, units.coe_mul, factorial_unit_coe,
-            factorial_unit_coe],
-          norm_cast,
-          rw [← nat.add_choose_mul_factorial_mul_factorial, mul_assoc, mul_comm] }, -/
-      have h_fac : (factorial_inv hn_fac h1.1) * (factorial_inv hn_fac h2.1) =
+    { have h_fac : (factorial_inv hn_fac h1.1) * (factorial_inv hn_fac h2.1) =
         ↑((k + m).choose m) * (factorial_inv hn_fac h3.1),
       { rw [eq_mul_factorial_inv_iff_mul_eq, mul_assoc, factorial_inv_mul_eq_iff_eq_mul,
           factorial_inv_mul_eq_iff_eq_mul],
@@ -490,38 +547,11 @@ noncomputable def divided_powers {n : ℕ} (hn0 : n ≠ 0)
   (hnI : I^n = 0) : divided_powers I := 
 { dpow := dpow I hn0 hn_fac,
   dpow_null := λ n x hx, dpow_null hn0 hn_fac hx,
-  dpow_zero := λ x hx,
-  begin
-    simp only [dpow],
-    rw [dif_pos (and.intro (nat.pos_of_ne_zero hn0) hx), pow_zero, mul_one],
-    exact factorial_inv_zero' hn_fac hn0,
-  end,
-  dpow_one  := λ x hx,
-  begin
-    simp only [dpow],
-    split_ifs with h,
-    { rw [pow_one, factorial_inv_one, one_mul] },
-    { simp only [hx, and_true, not_lt] at h,
-      have hn1 : n = 1 := le_antisymm h (nat.succ_le_of_lt (nat.pos_of_ne_zero hn0)),
-      rw [hn1, pow_one] at hnI,
-      rw [hnI, ideal.zero_eq_bot, ideal.mem_bot] at hx,
-      exact hx.symm,  },
-  end,
+  dpow_zero := λ x hx, dpow_zero hn0 hn_fac hx,
+  dpow_one  := λ x hx, dpow_one hn0 hn_fac hnI hx,
   dpow_mem  := λ n hn x hx, dpow_mem hn0 hn_fac hn hx,
   dpow_add  := λ m x y hx hy, dpow_add hn0 hn_fac hnI m hx hy,
-  dpow_smul := λ m a x hx,
-  begin
-    simp only [dpow],
-    split_ifs with hmax hmx hmx hmax,
-    { rw [mul_pow, ← mul_assoc, mul_comm _ (a^m), mul_assoc], },
-    { exfalso,
-      rw not_and at hmx,
-      exact hmx (hmax.1) hx, },
-    { exfalso,
-      rw [not_and] at hmax,
-      exact hmax (hmx.1) (ideal.mul_mem_left I _ hmx.2), },
-    { rw mul_zero, }
-  end,
+  dpow_smul := λ m a x hx, dpow_smul hn0 hn_fac m hx,
   dpow_mul  := λ m k x hx, dpow_mul hn0 hn_fac hnI m k hx,
   dpow_comp := λ m k hk x hx, dpow_comp hn0 hn_fac hnI m hk hx, }
 
