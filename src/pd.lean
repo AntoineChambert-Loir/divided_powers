@@ -3,9 +3,12 @@
 import tactic
 import ring_theory.ideal.operations
 import ring_theory.ideal.quotient
+import ring_theory.ideal.operations
 import linear_algebra.quotient
 import ring_theory.tensor_product
 import ring_theory.ideal.operations
+
+
 
 /-! # Divided powers 
 
@@ -34,6 +37,55 @@ doi: https://doi.org/10.24033/asens.1148
 -/
 
 open_locale classical
+
+
+section induction
+
+namespace submodule
+universes u v
+variables {R : Type u} {M : Type v} {F : Type*} {G : Type*}
+variables [comm_semiring R] [add_comm_monoid M] [module R M]
+variables {I J : ideal R} {N P Q : submodule R M}
+
+/- 
+lemma supr_induction' {ι : Sort*} (p : ι → submodule R M) {C : M → Prop} {x : M} (hx : x ∈ ⨆ i, p i)
+  (hp : ∀ i (x ∈ p i), C x)
+  (h0 : C 0)
+  (hadd : ∀ (x ∈ ⨆ i, p i) (y ∈ ⨆ i, p i), C x → C y → C (x + y)) : C x :=
+begin
+  rw [← mem_to_add_submonoid, supr_to_add_submonoid] at hx,
+  exact add_submonoid.supr_induction _ hx hp h0 hadd',
+end 
+-/
+
+variables {x : M} {s : set M}
+lemma span_induction_new {p : M → Prop} (h : x ∈ span R s)
+  (Hs : ∀ x ∈ s, p x) (H0 : p 0)
+  (H1 : ∀ (x ∈ span R s) (y ∈ span R s), p x → p y → p (x + y))
+  (H2 : ∀ (a : R) (x ∈ span R s), p x → p (a • x)) : p x :=
+begin
+  suffices : x ∈ span R s ∧ p x, exact this.2,
+  exact span_induction h
+  (λ x hx, ⟨submodule.subset_span hx, Hs x hx⟩)
+  ⟨submodule.zero_mem (span R s), H0⟩
+  (λ x y hx hy, ⟨submodule.add_mem (span R s) hx.1 hy.1, H1 x hx.1 y hy.1 hx.2 hy.2⟩)
+  (λ a x hx, ⟨submodule.smul_mem (span R s) a hx.1, H2 a x hx.1 hx.2⟩),
+end
+
+theorem smul_induction_on_new {p : M → Prop} {x} (H : x ∈ I • N)
+  (Hb : ∀ (r ∈ I) (n ∈ N), p (r • n))
+  (H1 : ∀ (x ∈ I • N) (y ∈ I • N), p x → p y → p (x + y)) : p x :=
+begin
+  suffices : x ∈ I • N ∧ p x, exact this.2, 
+  exact submodule.smul_induction_on H
+  (λ a ha x hx, ⟨(submodule.smul_mem_smul ha hx), Hb a ha x hx⟩)
+  (λ x y hx hy, ⟨(I • N).add_mem hx.1 hy.1, H1 x hx.1 y hy.1 hx.2 hy.2⟩),
+end 
+
+-- TODO : add other 
+end submodule
+
+end induction
 
 section combinatorics
 
@@ -78,7 +130,7 @@ structure is_divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ 
 (dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
 (dpow_one : ∀ {x} (hx : x ∈ I), dpow 1 x = x)
 (dpow_mem : ∀ {n} (hn : n ≠ 0) {x} (hx : x ∈ I), dpow n x ∈ I)
-(dpow_sum : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y)
+(dpow_add : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y)
   = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
 (dpow_smul : ∀ n {a} {x} (hx : x ∈ I), dpow n (a * x) = (a ^ n) * (dpow n x))
 (dpow_mul : ∀ m n {x} (hx : x ∈ I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (n + m) x)
@@ -93,7 +145,7 @@ structure is_divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ 
 (dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
 (dpow_one : ∀ {x} (hx : x ∈ I), dpow 1 x = x)
 (dpow_mem : ∀ {n} (hn : n ≠ 0) {x} (hx : x ∈ I), dpow n x ∈ I)
-(dpow_sum : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y)
+(dpow_add : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y)
   = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
 (dpow_smul : ∀ n {a : A} {x} (hx : x ∈ I), dpow n (a * x) = (a ^ n) * (dpow n x))
 (dpow_mul : ∀ m n {x} (hx : x ∈ I), (dpow m x) * (dpow n x) = (nat.choose (n+m) m) * dpow (n + m) x)
@@ -105,6 +157,7 @@ instance {A : Type*} [comm_ring A] (I : ideal A) : has_coe_to_fun (divided_power
 structure pd_ring {A : Type*} extends comm_ring A := 
 (pd_ideal : ideal A)
 (divided_powers : divided_powers pd_ideal)
+
 
 /-  Does not work
 def pd_ring.mk (A : Type*) [comm_ring A] (I : ideal A) (hI : divided_powers I):
@@ -131,6 +184,10 @@ section divided_powers_examples
 
 variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 include hI
+
+/- Rewriting lemmas -/
+lemma dpow_smul' (n : ℕ) {a : A} {x : A} (hx : x ∈ I) : hI.dpow n (a • x) = (a ^ n) • (hI.dpow n x) :=
+by simp only [smul_eq_mul, hI.dpow_smul, hx]
 
 lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : A) (hx : x ∈ I) : (n.factorial : A) * (hI.dpow n x) = x^n :=
 begin
@@ -266,7 +323,7 @@ begin
   { exact ideal.zero_mem I },
 end
 
-lemma dpow_sum {n : ℕ} (hn0 : n ≠ 0)(hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0)
+lemma dpow_add {n : ℕ} (hn0 : n ≠ 0)(hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0)
   (m : ℕ) {x : A} (hx : x ∈ I) {y : A} (hy : y ∈ I) :
   dpow I hn0 hn_fac m (x + y) = (finset.range (m + 1)).sum (λ (k : ℕ), dpow I hn0 hn_fac k x * 
     dpow I hn0 hn_fac (m - k) y) := 
@@ -405,7 +462,7 @@ noncomputable def divided_powers {n : ℕ} (hn0 : n ≠ 0)
       exact hx.symm,  },
   end,
   dpow_mem  := λ n hn x hx, dpow_mem hn0 hn_fac hn hx,
-  dpow_sum  := λ m x y hx hy, dpow_sum hn0 hn_fac hnI m hx hy,
+  dpow_add  := λ m x y hx hy, dpow_add hn0 hn_fac hnI m hx hy,
   dpow_smul := λ m a x hx,
   begin
     simp only [dpow],
@@ -472,7 +529,7 @@ begin
     have hb' : a = b + (a - b), by rw [add_comm, sub_add_cancel],
     have hab' : a - b ∈ I := ideal.sub_mem I ha hb,  
     rw hb',
-    rw hI.dpow_sum n hb hab', 
+    rw hI.dpow_add n hb hab', 
     rw finset.range_succ, 
     rw finset.sum_insert (finset.not_mem_range_self),
     simp only [tsub_self, hI.dpow_zero hab', mul_one, add_sub_cancel'], 
@@ -498,6 +555,28 @@ begin
     { exact hI.dpow_mem hn ha.2, } },
 end
 
+
+/-- If J is an ideal of A, then J ⬝ I is a sub-pd-ideal of I.
+  (Berthelot, 1.6.1 (i)) -/
+lemma is_sub_pd_ideal_prod (J : ideal A) : is_sub_pd_ideal hI (I • J) :=
+begin
+  split,
+  exact ideal.mul_le_right,
+  intros n hn x hx, revert n,
+  apply submodule.smul_induction_on_new hx,
+  { -- mul 
+    intros a ha b hb n hn,
+    rw [algebra.id.smul_eq_mul, mul_comm a b, hI.dpow_smul n ha, mul_comm], 
+    apply submodule.mul_mem_mul (hI.dpow_mem hn ha) (J.pow_mem_of_mem hb n (zero_lt_iff.mpr hn)), },
+  { -- add 
+    intros x hx y hy hx' hy' n hn, 
+    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy),
+    apply submodule.sum_mem (I • J),
+    intros k hk, 
+    cases not_eq_or_aux hn hk with hk' hk',
+    { apply ideal.mul_mem_right _ (I • J), exact hx' k hk', },
+    { apply ideal.mul_mem_left (I • J), exact hy' _ hk', } } 
+end
 
 /- Tagged as noncomputable because it makes use of function.extend, 
 but under is_sub_pd_ideal hI (J ⊓ I), dpow_quot_eq proves that no choices are involved -/
@@ -568,7 +647,7 @@ begin
   apply set_like.coe_mem, 
   simp only [ha, not_false_iff, pi.zero_apply, dif_neg, submodule.zero_mem],
 end, 
-dpow_sum := λ n x y hx hy, 
+dpow_add := λ n x y hx hy, 
 begin
   rw ideal.mem_map_iff_of_surjective at hx, 
   swap, exact ideal.quotient.mk_surjective,
@@ -578,7 +657,7 @@ begin
   obtain ⟨b, hb, rfl⟩ := hy, 
   rw ← map_add, 
   rw dpow_quot_eq hI J hIJ n (I.add_mem ha hb),
-  rw hI.dpow_sum n ha hb, rw ring_hom.map_sum, 
+  rw hI.dpow_add n ha hb, rw ring_hom.map_sum, 
   rw finset.sum_congr rfl, 
   { intros k hk, 
     rw dpow_quot_eq hI J hIJ _ ha, 
@@ -637,41 +716,29 @@ begin
     intro hhI,
     have hSI := ideal.span_le.mpr hS,
     apply is_sub_pd_ideal.mk (hSI),
-    suffices : ∀ (z : A) (hz : z ∈ ideal.span S),
+    /- suffices : ∀ (z : A) (hz : z ∈ ideal.span S),
       z ∈ I ∧ ∀ (n : ℕ), n ≠ 0 → hI.dpow n z ∈ ideal.span S, 
     { intros n hn z hz, 
       exact (this z hz).2 n hn, },
-    intros z hz, 
-    apply submodule.span_induction hz, 
+    -/ 
+    intros n hn z hz, revert n,
+    apply submodule.span_induction_new hz, 
     { -- case of elements of S 
-      intros s hs,
-      apply and.intro (hS hs), 
-      intros n hn,
-      exact hhI n hn s hs, },
+      intros s hs n hn, exact hhI n hn s hs, },
     { -- case of 0 
-      apply and.intro (ideal.zero_mem _),
       intros n hn, rw hI.dpow_eval_zero hn, apply ideal.zero_mem _, },
     { -- case of sum
-      rintros x y ⟨hxI, hx⟩ ⟨hyI, hy⟩,
-      apply and.intro (ideal.add_mem I hxI hyI),
-      intros n hn,
-      rw ideal.mem_span, intros J hSJ,
-      rw hI.dpow_sum n hxI hyI,
-      apply submodule.sum_mem,
+      rintros x hxI y hyI hx hy n hn,
+      rw hI.dpow_add n (hSI hxI) (hSI hyI),
+      apply submodule.sum_mem (ideal.span S),
       intros m hm,
       cases not_eq_or_aux hn hm with hm hm,
-      { apply ideal.mul_mem_right, 
-        apply ideal.span_le.mpr hSJ, 
-        exact hx m hm,  },
-      { apply ideal.mul_mem_left,
-        apply ideal.span_le.mpr hSJ,
-        exact hy (n - m) hm, }, },
+      { refine ideal.mul_mem_right _ (ideal.span S) (hx m hm), },
+      { refine ideal.mul_mem_left (ideal.span S) _ (hy (n - m) hm), } },
     { -- case : product,
-      rintros a x ⟨hxI, hx⟩,
-      apply and.intro (submodule.smul_mem I a hxI),
-      intros n hn,
+      intros a x hxI hx n hn,
       simp only [algebra.id.smul_eq_mul],
-      rw hI.dpow_smul n hxI,
+      rw hI.dpow_smul n (hSI hxI),
       exact ideal.mul_mem_left (ideal.span S) (a ^ n) (hx n hn), }, },
 end
 
@@ -719,7 +786,7 @@ def divided_powers_tensor_product (R B C : Type*) [comm_ring R] [comm_ring B] [c
   dpow_zero := sorry,
   dpow_one  := sorry,
   dpow_mem  := sorry,
-  dpow_sum  := sorry,
+  dpow_add  := sorry,
   dpow_smul := sorry,
   dpow_mul  := sorry,
   dpow_comp := sorry }
@@ -757,7 +824,7 @@ end divided_powers
 1.5.: depends on 1.4  
 
 1.6 : sub-pd-ideal : done
-1.6.1 (A) : to be added
+1.6.1 (A) : to be added [Done !]
 1.6.2 (A) : to be added
 1.6.4 (A) : to be added
 (should we add the remark on page 33)
