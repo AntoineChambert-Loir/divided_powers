@@ -233,11 +233,24 @@ begin
     ring_nf, }
 end
 
+/- A combinatorial lemma in search of a proof -/
 lemma comb_lemma (m n s: ℕ) (hs : s ≤ m + n) : 
   (finset.filter (λ (x : ℕ × ℕ), x.fst + x.snd = s) ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
   (λ (x : ℕ × ℕ), (s.choose x.fst) * ((m + n - s).choose (m - x.fst)))
   = (m + n).choose m := sorry
+/- 
+Algebraic proof :
 
+(1+T)^(a+b) = ∑ (a + b choose z) T^z
+= (1+T)^a (1+T)^b = ∑ (a choose x) T^x (b choose y) T^y
+  = ∑ (a choose x) (b choose y) T^(x+y)
+Coefficient de T^(m) :
+ ∑ (a choose x) (b choose (m - x)) = (a+b  choose m)
+ Prendre a = s, b = m + n - s, a + b = m + n car s ≤ m + n. 
+
+ Combinatorial proof ? 
+
+-/
 end combinatorics
 
 section divided_powers_definition
