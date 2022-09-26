@@ -315,7 +315,7 @@ noncomputable def dpow (I : ideal A) {n : ℕ} (hn_fac : is_unit ((n-1).factoria
   ℕ → A → A :=
 λ m x, if h : m < n ∧ x ∈ I then (factorial_inv hn_fac h.1) * x^m else 0
 
-lemma dpow_if_pos (I : ideal A) {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ}
+lemma dpow_dif_pos (I : ideal A) {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ}
   (hm : m < n) {x : A} (hx : x ∈ I) : dpow I hn_fac m x = (factorial_inv hn_fac hm) * x^m :=
 by simp only [dpow]; rw dif_pos (and.intro hm hx)
 
@@ -361,30 +361,37 @@ begin
   { exact ideal.zero_mem I },
 end
 
+lemma dpow_add_dif_pos {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) {x : A}
+  (hx : x ∈ I) {y : A} (hy : y ∈ I) : dpow I hn_fac m (x + y) =
+  (finset.range (m + 1)).sum (λ (k : ℕ), dpow I hn_fac k x * dpow I hn_fac (m - k) y) :=
+begin
+  rw dpow_dif_pos I hn_fac hmn (ideal.add_mem I hx hy),
+  simp only [dpow],
+  rw [factorial_inv_mul_eq_iff_eq_mul, finset.mul_sum, add_pow],
+  apply finset.sum_congr rfl,
+  intros k hk,
+  rw [finset.mem_range, nat.lt_succ_iff] at hk,
+  have hkxI : k < n ∧ x ∈ I := and.intro (lt_of_le_of_lt hk hmn) hx,
+  have hkyI : m - k < n ∧ y ∈ I := and.intro (lt_of_le_of_lt (nat.sub_le m k) hmn) hy,
+  have h_ch : (m.choose k : A) =
+    (m.factorial : A) * (factorial_inv hn_fac hkxI.1) * (factorial_inv hn_fac hkyI.1),
+  { have hadd : m = (m - k) + k := (tsub_add_cancel_iff_le.mpr hk).symm,
+    rw [eq_mul_factorial_inv_iff_mul_eq, eq_mul_factorial_inv_iff_mul_eq],
+    nth_rewrite 0 hadd,
+    nth_rewrite 2 hadd,
+    rw [← nat.cast_mul, ← nat.cast_mul, nat.add_choose_mul_factorial_mul_factorial], },
+  rw [dif_pos hkxI, dif_pos hkyI, h_ch, ← mul_assoc, ← mul_assoc, mul_comm
+    (factorial_inv hn_fac _) (y ^ (m - k)), mul_assoc _ (x^k), ← mul_assoc (x^k),
+    mul_comm (x ^ k * y ^ (m - k)) (factorial_inv hn_fac _)],
+    ring_nf,
+end
+
 lemma dpow_add {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0) (m : ℕ) {x : A}
   (hx : x ∈ I) {y : A} (hy : y ∈ I) : dpow I hn_fac m (x + y) =
     (finset.range (m + 1)).sum (λ (k : ℕ), dpow I hn_fac k x * dpow I hn_fac (m - k) y) := 
 begin
   by_cases hmn : m < n,
-  { rw dpow_if_pos I hn_fac hmn (ideal.add_mem I hx hy),
-    simp only [dpow],
-    rw [factorial_inv_mul_eq_iff_eq_mul, finset.mul_sum, add_pow],
-    apply finset.sum_congr rfl,
-    intros k hk,
-    rw [finset.mem_range, nat.lt_succ_iff] at hk,
-    have hkxI : k < n ∧ x ∈ I := and.intro (lt_of_le_of_lt hk hmn) hx,
-    have hkyI : m - k < n ∧ y ∈ I := and.intro (lt_of_le_of_lt (nat.sub_le m k) hmn) hy,
-    have h_ch : (m.choose k : A) =
-      (m.factorial : A) * (factorial_inv hn_fac hkxI.1) * (factorial_inv hn_fac hkyI.1),
-    { have hadd : m = (m - k) + k := (tsub_add_cancel_iff_le.mpr hk).symm,
-      rw [eq_mul_factorial_inv_iff_mul_eq, eq_mul_factorial_inv_iff_mul_eq],
-      nth_rewrite 0 hadd,
-      nth_rewrite 2 hadd,
-      rw [← nat.cast_mul, ← nat.cast_mul, nat.add_choose_mul_factorial_mul_factorial], },
-    rw [dif_pos hkxI, dif_pos hkyI, h_ch, ← mul_assoc, ← mul_assoc, mul_comm
-      (factorial_inv hn_fac _) (y ^ (m - k)), mul_assoc _ (x^k), ← mul_assoc (x^k),
-      mul_comm (x ^ k * y ^ (m - k)) (factorial_inv hn_fac _)],
-      ring_nf, /- This is slow, we might want to do it by hand. -/ },
+  { exact dpow_add_dif_pos hn_fac hmn hx hy },
   { rw [dpow_of_ge I hn_fac hmn, eq_comm],
     apply finset.sum_eq_zero,
     intros k hk,
@@ -431,6 +438,33 @@ begin
     rw [not_and] at hmax,
     exact hmax (hmx.1) (ideal.mul_mem_left I _ hmx.2), },
   { rw mul_zero, }
+end
+
+lemma dpow_mul_dif_pos {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m k : ℕ} (hkm : k + m < n) 
+  {x : A} (hx : x ∈ I) :
+  dpow I hn_fac m x * dpow I hn_fac k x = ↑((k + m).choose m) * dpow I hn_fac (k + m) x := 
+begin
+  have hm : m < n := sorry,
+  have hk : k < n := sorry,
+  have h_fac : (factorial_inv hn_fac hm) * (factorial_inv hn_fac hk) =
+    ↑((k + m).choose m) * (factorial_inv hn_fac hkm),
+  { rw [eq_mul_factorial_inv_iff_mul_eq, mul_assoc, factorial_inv_mul_eq_iff_eq_mul,
+      factorial_inv_mul_eq_iff_eq_mul],
+    norm_cast,
+    rw [← nat.add_choose_mul_factorial_mul_factorial, mul_assoc, mul_comm, mul_assoc], },
+    rw [dpow_dif_pos _ _ hm hx, dpow_dif_pos _ _ hk hx, dpow_dif_pos _ _ hkm hx, mul_assoc,
+      ← mul_assoc (x^m), mul_comm (x^m), mul_assoc _ (x^m), ← pow_add, ← mul_assoc, ← mul_assoc,
+      add_comm, h_fac]
+end
+
+lemma dpow_mul' {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0) (m k : ℕ) {x : A}
+  (hx : x ∈ I) :
+  dpow I hn_fac m x * dpow I hn_fac k x = ↑((k + m).choose m) * dpow I hn_fac (k + m) x := 
+begin
+  --simp only [dpow],
+  by_cases hkm : k + m < n,
+  { exact dpow_mul_dif_pos hn_fac hkm hx, },
+  { sorry }
 end
 
 lemma dpow_mul {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) (hnI : I^n = 0) (m k : ℕ) {x : A}
@@ -527,6 +561,79 @@ noncomputable def divided_powers {n : ℕ} (hn0 : n ≠ 0) (hn_fac : is_unit ((n
 end of_invertible_factorial
 
 end factorial
+
+-- Instead of 1.2.1, I formalize example 2 from [BO], Section 3.
+namespace Q_algebra
+
+variables {R : Type*} [comm_ring R] [algebra ℚ R]
+
+lemma factorial.is_unit (n : ℕ) : is_unit (n.factorial : R) :=
+begin
+  have hn : (n.factorial : R) = algebra_map ℚ R n.factorial,
+  { rw [map_nat_cast] },
+  rw hn,
+  apply is_unit.map,
+  exact is_unit_iff_ne_zero.mpr (nat.cast_ne_zero.mpr (nat.factorial_ne_zero n)),
+end
+
+variable (I : ideal R) 
+
+noncomputable def dpow : ℕ → R → R :=
+λ n, of_invertible_factorial.dpow I (factorial.is_unit (n + 1 - 1)) n
+
+variable {I}
+lemma dpow_def (n : ℕ) {x : R} (hx : x ∈ I) : 
+  dpow I n x = (factorial_inv (factorial.is_unit (n + 1 - 1)) (n.lt_succ_self)) * x^n :=
+begin
+  simp only [dpow, of_invertible_factorial.dpow],
+  rw dif_pos (and.intro (n.lt_succ_self) hx),
+end
+
+lemma dpow_one {x : R} (hx : x ∈ I) : dpow I 1 x = x :=
+by rw [dpow_def 1 hx, pow_one, factorial_inv_one, one_mul]
+
+lemma dpow_add (n : ℕ) {x y : R} (hx : x ∈ I) (hy : y ∈ I) :
+  dpow I n (x + y) = (finset.range (n + 1)).sum (λ (k : ℕ), dpow I k x * dpow I (n - k) y) :=
+begin
+  simp only [dpow],
+  rw of_invertible_factorial.dpow_add_dif_pos (factorial.is_unit (n + 1 - 1)) (n.lt_succ_self)
+    hx hy,
+  apply finset.sum_congr rfl,
+  intros k hk,
+  rw [finset.mem_range] at hk,
+  rw [of_invertible_factorial.dpow_dif_pos _ _ hk hx,
+    of_invertible_factorial.dpow_dif_pos _ _ k.lt_succ_self hx,
+    of_invertible_factorial.dpow_dif_pos _ _ (n.sub_lt_succ k) hy,
+    of_invertible_factorial.dpow_dif_pos _ _ (n - k).lt_succ_self hy],
+  refl,
+end
+
+lemma dpow_mul (m n : ℕ) {x : R} (hx : x ∈ I) :
+  dpow I m x * dpow I n x = ↑((n + m).choose m) * dpow I (n + m) x :=
+begin
+  simp only [dpow],
+  rw [ ← of_invertible_factorial.dpow_mul_dif_pos (factorial.is_unit (n + m + 1 - 1)) 
+    (n + m).lt_succ_self hx, of_invertible_factorial.dpow_dif_pos _ _ m.lt_succ_self hx,
+    of_invertible_factorial.dpow_dif_pos _ _ n.lt_succ_self hx,
+    of_invertible_factorial.dpow_dif_pos _ _ (nat.lt_add_of_zero_lt_left _ _(m.succ_pos)) hx,
+    of_invertible_factorial.dpow_dif_pos _ _ _ hx],
+  refl,
+  { rw add_comm n;
+    exact (nat.lt_add_of_zero_lt_left _ _(n.succ_pos)) }
+end
+
+noncomputable def divided_powers : divided_powers I := 
+{ dpow      := dpow I,
+  dpow_null := λ n x hx, of_invertible_factorial.dpow_null (factorial.is_unit n) hx,
+  dpow_zero := λ x hx, of_invertible_factorial.dpow_zero one_ne_zero (factorial.is_unit 0) hx,
+  dpow_one  := λ x hx, dpow_one hx,
+  dpow_mem  := λ n hn x hx, of_invertible_factorial.dpow_mem (factorial.is_unit n) hn hx,
+  dpow_add  := λ n x y hx hy, dpow_add n hx hy,
+  dpow_smul := λ n a x hx, of_invertible_factorial.dpow_smul (factorial.is_unit n) n hx,
+  dpow_mul  := λ m k x hx, dpow_mul m k hx,
+  dpow_comp := sorry, } --λ m k hk x hx, dpow_comp hn0 hn_fac hnI m hk hx }
+
+end Q_algebra
 
 --#lint
 section sub_pd_ideals
