@@ -119,6 +119,87 @@ begin
   exact (classical.some_spec (exists_apply_eq_apply f a)),
 end
 
+/- TODO : There should be some general rewriting pattern 
+for sums indexed by finset.nat_tuple_antidiagonal 
+This one would first rewrite to 
+(finset.nat_tuple_antidiagonal 4 n).sum (λ x, f(x0, x1, x2, x3)) 
+and then one would apply the permutation (13)(24) -/
+/-- Rewrites a 4-fold sum from variables (12)(34) to (13)(24) -/
+lemma finset.sum_4_rw {α : Type*} [add_comm_monoid α] (f : ℕ × ℕ × ℕ × ℕ → α) (n : ℕ) : 
+  finset.sum (finset.range (n + 1)) (λ k, 
+    finset.sum (finset.range (k + 1)) (λ a, 
+      finset.sum (finset.range (n - k + 1)) (λ c, 
+        f(a, k-a,c, n - k - c)))) =
+  finset.sum (finset.range (n + 1)) (λ l, 
+    finset.sum (finset.range (l + 1)) (λ a, 
+      finset.sum (finset.range (n - l + 1)) (λ b, 
+        f(a, b, l - a, n - l - b)))) :=
+begin
+  rw finset.sum_sigma',
+  rw finset.sum_sigma',
+  rw finset.sum_sigma',
+  rw finset.sum_sigma',
+  let aux_i : (Σ (i : Σ (i : ℕ), ℕ), ℕ) → (Σ (i : Σ (i : ℕ), ℕ), ℕ) :=
+  λ ⟨⟨k, a⟩, c⟩, ⟨⟨a + c, a⟩, k - a⟩,
+  have aux_hi : ∀ (a : Σ (i : Σ (i : ℕ), ℕ), ℕ)
+    (ha : a ∈ ((finset.range (n + 1)).sigma 
+      (λ (x : ℕ), finset.range (x + 1))).sigma
+        (λ (a : Σ (i : ℕ), ℕ), finset.range (n - a.fst + 1))),
+    (λ (x : Σ (i : Σ (i : ℕ), ℕ), ℕ)
+     (hx : x ∈ ((finset.range (n + 1)).sigma 
+        (λ (a : ℕ), finset.range (a + 1))).sigma
+           (λ (a : Σ (i : ℕ), ℕ), finset.range (n - a.fst + 1))), aux_i x) a ha ∈
+    ((finset.range (n + 1)).sigma (λ (a : ℕ), finset.range (a + 1))).sigma
+      (λ (x : Σ (i : ℕ), ℕ), finset.range (n - x.fst + 1)),
+  { rintros ⟨⟨k, a⟩, c⟩ h,
+    simp only [finset.mem_sigma, finset.mem_range, nat.lt_succ_iff] at h,
+    simp_rw [aux_i, finset.mem_sigma, finset.mem_range, nat.lt_succ_iff], 
+    split, split,
+    { apply le_trans (add_le_add h.1.2 h.2) _,
+      rw add_comm, rw nat.sub_add_cancel h.1.1, },
+    { exact le_self_add, },
+    { rw add_comm a c, rw ← nat.sub_sub n c a, 
+      simp, rw nat.sub_add_cancel, 
+      rw nat.le_sub_iff_right,
+      rw nat.le_sub_iff_right at h, rw add_comm k c, exact h.2,
+      exact h.1.1,
+      apply le_trans h.2, exact nat.sub_le n k,
+      rw nat.le_sub_iff_right, 
+      rw nat.le_sub_iff_right at h,
+      apply nat.le_of_add_le_add_right, 
+      rw add_assoc a c _, rw add_comm n _,
+      exact add_le_add h.1.2 h.2,
+      exact h.1.1,
+      apply le_trans h.2 _, apply nat.sub_le, }, },
+  rw finset.sum_bij' (λ x hx, aux_i x) aux_hi _ (λ y hy, aux_i y) aux_hi _ _, 
+  { rintros ⟨⟨k, a⟩, c⟩ h, 
+    simp only [finset.mem_sigma, finset.mem_range, nat.lt_succ_iff] at h,
+    apply congr_arg, 
+    dsimp [aux_i],
+    simp only [prod.mk.inj_iff],
+    apply and.intro rfl, 
+    apply and.intro rfl,
+    split,
+    { rw add_comm a c, rw nat.add_sub_cancel, },
+    { simp only [nat.sub_sub],
+      apply congr_arg2 _ rfl,
+      rw [add_comm k c, add_comm a c, add_assoc],
+      apply congr_arg2 _ rfl,
+      rw add_comm, 
+      rw nat.sub_add_cancel h.1.2, }, },
+  { rintros ⟨⟨k, a⟩, c⟩ h,
+    simp only [finset.mem_sigma, finset.mem_range, nat.lt_succ_iff] at h,
+    simp_rw [aux_i],
+    simp only [add_tsub_cancel_left, sigma.mk.inj_iff, heq_iff_eq, eq_self_iff_true, and_true], 
+    { rw add_comm, rw nat.sub_add_cancel h.1.2, }, },
+  { rintros ⟨⟨k, a⟩, c⟩ h,
+    simp only [finset.mem_sigma, finset.mem_range, nat.lt_succ_iff] at h,
+    simp_rw [aux_i],
+    simp only [add_tsub_cancel_left, sigma.mk.inj_iff, heq_iff_eq, eq_self_iff_true, and_true], 
+    { rw add_comm, rw nat.sub_add_cancel h.1.2, }, },
+end
+
+
 section combinatorics
 
 /-- Number of possibilities of choosing m groups of n-element subsets out of mn elements -/
@@ -150,6 +231,11 @@ begin
     rw [← nat.add_choose_mul_factorial_mul_factorial, ← ih, ← hmn],
     ring_nf, }
 end
+
+lemma comb_lemma (m n s: ℕ) (hs : s ≤ m + n) : 
+  (finset.filter (λ (x : ℕ × ℕ), x.fst + x.snd = s) ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
+  (λ (x : ℕ × ℕ), (s.choose x.fst) * ((m + n - s).choose (m - x.fst)))
+  = (m + n).choose m := sorry
 
 end combinatorics
 
@@ -1058,13 +1144,39 @@ begin
   rintro ⟨a', ha', b', hb', rfl⟩, 
   rw add_add_add_comm a b a' b',
   rw dpow_ideal_add_eq hI hJ hIJ n (submodule.add_mem I ha ha') (submodule.add_mem J hb hb'),
-  rw ← finset.nat.sum_antidiagonal_eq_sum_range_succ
-    (λ k l, hI.dpow k (a + a') * hJ.dpow l (b + b')),
-  rw ← finset.nat.sum_antidiagonal_eq_sum_range_succ
-    (λ k l, hI.dpow_ideal_add hJ k (a + b) * hI.dpow_ideal_add hJ l (a' + b')),
-  
-    
-  sorry,
+
+  let f : ℕ × ℕ × ℕ × ℕ → A := λ ⟨i,j,k,l⟩, 
+    (hI.dpow i a) * (hI.dpow j a') * (hJ.dpow k b) * (hJ.dpow l b'), 
+  have hf1 : ∀ (k ∈ finset.range (n + 1)),
+    hI.dpow k (a + a') * hJ.dpow (n - k) (b + b') = 
+    (finset.range (k + 1)).sum (λ i, (finset.range (n - k + 1)).sum (λ l, 
+    hI.dpow i a * hI.dpow (k - i) a' * hJ.dpow l b * hJ.dpow (n - k - l) b')),
+  { intros k hk, 
+    rw hI.dpow_add k ha ha', rw hJ.dpow_add (n - k) hb hb', 
+    rw finset.sum_mul, 
+    apply finset.sum_congr rfl,
+    intros i hi,
+    rw finset.mul_sum,
+    apply finset.sum_congr rfl,
+    intros l hl,
+    ring, },
+  rw finset.sum_congr rfl hf1, 
+  have hf2 : ∀ (k ∈ finset.range (n + 1)),
+    hI.dpow_ideal_add hJ k (a + b) * hI.dpow_ideal_add hJ (n - k) (a' + b') = 
+    (finset.range (k + 1)).sum (λ i, (finset.range (n - k + 1)).sum (λ l, 
+    hI.dpow i a * hI.dpow l a' * hJ.dpow (k - i) b * hJ.dpow (n - k - l) b')),
+  { intros k hk,
+    rw dpow_ideal_add_eq hI hJ hIJ k ha hb,
+    rw dpow_ideal_add_eq hI hJ hIJ (n - k) ha' hb',
+    rw finset.sum_mul,
+    apply finset.sum_congr rfl,
+    intros i hi,
+    rw finset.mul_sum,
+    apply finset.sum_congr rfl,
+    intros j hj,
+    ring, },
+  rw finset.sum_congr rfl hf2, 
+  convert finset.sum_4_rw f n,
 end,
 dpow_smul := 
 begin
@@ -1087,7 +1199,84 @@ begin
   exact hb,
   exact ha,
 end,
-dpow_mul := sorry,
+dpow_mul := 
+begin
+  intros m n x,
+  rw [ideal.add_eq_sup, submodule.mem_sup], 
+  rintro ⟨a, ha, b, hb, rfl⟩, 
+  rw dpow_ideal_add_eq hI hJ hIJ m ha hb, 
+  rw dpow_ideal_add_eq hI hJ hIJ n ha hb, 
+  rw finset.sum_mul, simp_rw finset.mul_sum,
+  rw ← finset.sum_product',
+  have hf : ∀ (xy : ℕ × ℕ) (hxy : xy ∈ (finset.range (m+1)).product (finset.range (n + 1))),
+    hI.dpow xy.fst a * hJ.dpow (m - xy.fst) b * (hI.dpow xy.snd a * hJ.dpow (n -xy.snd) b)
+    = ((xy.snd + xy.fst).choose xy.fst) * hI.dpow (xy.snd + xy.fst) a 
+      *  (( n - xy.snd + (m - xy.fst)).choose (m - xy.fst)) * (hJ.dpow (n - xy.snd + (m - xy.fst)) b),
+     { intros xy hxy, 
+    have fI :=  hI.dpow_mul xy.fst xy.snd ha,
+    have fJ := hJ.dpow_mul (m - xy.fst) (n - xy.snd) hb,
+    rw mul_assoc,
+    rw ← mul_assoc (hJ.dpow (m - xy.fst) b) _ _,
+    rw mul_comm (hJ.dpow _ b) _,
+    rw mul_assoc,
+    rw hJ.dpow_mul _ _ hb,
+    rw ← mul_assoc,
+    rw hI.dpow_mul _ _ ha,
+    simp only [mul_assoc], },
+    rw finset.sum_congr rfl hf,
+    let s : ℕ × ℕ → ℕ := λ xy, xy.fst + xy.snd,
+    have hs : ∀ (xy ∈ (finset.range (m+1)).product (finset.range (n+1))),
+      s xy ∈ finset.range (m + n + 1),
+    { intros xy hxy,
+      dsimp [s],
+      simp only [finset.mem_product, finset.mem_range, nat.lt_succ_iff] at hxy ⊢,
+      apply nat.add_le_add hxy.1 hxy.2,},
+    rw ←  finset.sum_fiberwise_of_maps_to hs,
+    let g : ℕ → A := λ (y : ℕ), (finset.filter (λ (x : ℕ × ℕ), (λ (xy : ℕ × ℕ), s xy) x = y)
+   ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
+  (λ (x : ℕ × ℕ),
+     ↑((x.snd + x.fst).choose x.fst) * hI.dpow (x.snd + x.fst) a * ↑((n - x.snd + (m - x.fst)).choose (m - x.fst)) *
+       hJ.dpow (n - x.snd + (m - x.fst)) b),
+    have hg : ∀ (y : ℕ), g y =
+      (finset.filter (λ (x : ℕ × ℕ), (λ (xy : ℕ × ℕ), s xy) x = y)
+  ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
+      (λ (x : ℕ × ℕ), (y.choose x.fst) * ((n + m - y).choose (m - x.fst))) 
+        * (hI.dpow y a) * hJ.dpow (n + m - y) b,
+    { intro y,
+      dsimp [g, s],
+      rw finset.sum_mul, rw finset.sum_mul,
+      refine finset.sum_congr rfl _,
+      intros xy hxy,
+      simp only [finset.mem_filter, finset.mem_product, finset.mem_range, nat.lt_succ_iff] at hxy,
+      rw [add_comm xy.snd xy.fst, hxy.2],
+      suffices : n - xy.snd + (m - xy.fst) = n + m - y,
+      rw this, ring,
+      { apply symm,
+        rw nat.sub_eq_iff_eq_add , rw ← hxy.2,
+        rw ← add_assoc, 
+        rw add_assoc (n - xy.snd),
+        rw nat.sub_add_cancel hxy.1.1,
+        rw add_assoc,
+        rw add_comm m _,
+        rw ← add_assoc,
+        rw nat.sub_add_cancel hxy.1.2,
+        rw ← hxy.2, rw add_comm n m, exact nat.add_le_add hxy.1.1 hxy.1.2, },},
+    dsimp [g] at hg,
+    rw finset.sum_congr rfl (λ y h, hg y),
+  rw dpow_ideal_add_eq hI hJ hIJ (n + m) ha hb,
+  rw finset.mul_sum,
+  apply finset.sum_congr,
+  { rw add_comm m n, },
+  intros y hy,
+  simp only [mul_assoc],
+  apply congr_arg2, 
+  { dsimp [s], 
+    simp only [finset.mem_range, nat.lt_succ_iff] at hy,
+    rw add_comm n m at hy,
+    rw add_comm n m,
+    rw ← comb_lemma m n y hy, 
+    simp only [nat.cast_sum, nat.cast_mul], },
+end,
 dpow_comp := sorry }
 
 
