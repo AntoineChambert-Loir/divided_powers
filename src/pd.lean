@@ -119,7 +119,6 @@ begin
   exact (classical.some_spec (exists_apply_eq_apply f a)),
 end
 
-<<<<<<< HEAD
 /- TODO : There should be some general rewriting pattern 
 for sums indexed by finset.nat_tuple_antidiagonal 
 This one would first rewrite to 
@@ -200,9 +199,7 @@ begin
     { rw add_comm, rw nat.sub_add_cancel h.1.2, }, },
 end
 
-=======
 end auxiliary
->>>>>>> 6ca4f881aafcefff9791b675c54bb51394d77a82
 
 section combinatorics
 
@@ -1384,6 +1381,7 @@ begin
     rw add_comm n m,
     rw ← comb_lemma m n y hy, 
     simp only [nat.cast_sum, nat.cast_mul], },
+  refl,
 end,
 dpow_comp := sorry }
 
