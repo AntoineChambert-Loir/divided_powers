@@ -10,6 +10,7 @@ import ring_theory.ideal.operations
 
 import data.fin.tuple.nat_antidiagonal
 import ring_theory.power_series.basic
+import data.nat.choose.vandermonde
 
 /-! # Divided powers 
 
@@ -233,24 +234,15 @@ begin
     ring_nf, }
 end
 
-/- A combinatorial lemma in search of a proof -/
+/- A combinatorial lemma in search of a proof 
+Since my efforts are too messy, they are relegated to .choose_formulas -/
 lemma comb_lemma (m n s: ℕ) (hs : s ≤ m + n) : 
   (finset.filter (λ (x : ℕ × ℕ), x.fst + x.snd = s) ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
   (λ (x : ℕ × ℕ), (s.choose x.fst) * ((m + n - s).choose (m - x.fst)))
-  = (m + n).choose m := sorry
-/- 
-Algebraic proof :
+  = (m + n).choose m :=  sorry 
 
-(1+T)^(a+b) = ∑ (a + b choose z) T^z
-= (1+T)^a (1+T)^b = ∑ (a choose x) T^x (b choose y) T^y
-  = ∑ (a choose x) (b choose y) T^(x+y)
-Coefficient de T^(m) :
- ∑ (a choose x) (b choose (m - x)) = (a+b  choose m)
- Prendre a = s, b = m + n - s, a + b = m + n car s ≤ m + n. 
 
- Combinatorial proof ? 
 
--/
 end combinatorics
 
 section divided_powers_definition
@@ -1351,15 +1343,13 @@ begin
       apply nat.add_le_add hxy.1 hxy.2,},
     rw ←  finset.sum_fiberwise_of_maps_to hs,
     let g : ℕ → A := λ (y : ℕ), (finset.filter (λ (x : ℕ × ℕ), (λ (xy : ℕ × ℕ), s xy) x = y)
-   ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
-  (λ (x : ℕ × ℕ),
-     ↑((x.snd + x.fst).choose x.fst) * hI.dpow (x.snd + x.fst) a * ↑((n - x.snd + (m - x.fst)).choose (m - x.fst)) *
-       hJ.dpow (n - x.snd + (m - x.fst)) b),
-    have hg : ∀ (y : ℕ), g y =
-      (finset.filter (λ (x : ℕ × ℕ), (λ (xy : ℕ × ℕ), s xy) x = y)
-  ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
-      (λ (x : ℕ × ℕ), (y.choose x.fst) * ((n + m - y).choose (m - x.fst))) 
-        * (hI.dpow y a) * hJ.dpow (n + m - y) b,
+      ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
+        (λ (x : ℕ × ℕ),
+          ↑((x.snd + x.fst).choose x.fst) * hI.dpow (x.snd + x.fst) a 
+          * ↑((n - x.snd + (m - x.fst)).choose (m - x.fst)) * hJ.dpow (n - x.snd + (m - x.fst)) b),
+    have hg : ∀ (y : ℕ), g y = (finset.filter (λ (x : ℕ × ℕ), (λ (xy : ℕ × ℕ), s xy) x = y)
+      ((finset.range (m + 1)).product (finset.range (n + 1)))).sum (λ (x : ℕ × ℕ), 
+        (y.choose x.fst) * ((n + m - y).choose (m - x.fst))) * (hI.dpow y a) * hJ.dpow (n + m - y) b,
     { intro y,
       dsimp [g, s],
       rw finset.sum_mul, rw finset.sum_mul,
@@ -1381,20 +1371,21 @@ begin
         rw ← hxy.2, rw add_comm n m, exact nat.add_le_add hxy.1.1 hxy.1.2, },},
     dsimp [g] at hg,
     rw finset.sum_congr rfl (λ y h, hg y),
-  rw dpow_ideal_add_eq hI hJ hIJ (n + m) ha hb,
-  rw finset.mul_sum,
-  apply finset.sum_congr,
-  { rw add_comm m n, },
-  intros y hy,
-  simp only [mul_assoc],
-  apply congr_arg2, 
-  { dsimp [s], 
-    simp only [finset.mem_range, nat.lt_succ_iff] at hy,
-    rw add_comm n m at hy,
-    rw add_comm n m,
-    rw ← comb_lemma m n y hy, 
-    simp only [nat.cast_sum, nat.cast_mul], },
-  refl,
+    rw dpow_ideal_add_eq hI hJ hIJ (n + m) ha hb,
+    rw finset.mul_sum,
+    apply finset.sum_congr,
+    { rw add_comm m n, },
+    intros y hy,
+    simp only [mul_assoc],
+    apply congr_arg2 _ _ rfl, 
+    { dsimp [s], 
+      simp only [finset.mem_range, nat.lt_succ_iff] at hy,
+      rw add_comm n m at hy,
+      rw add_comm n m,
+      simp only [← nat.cast_sum, ← nat.cast_mul],
+      apply congr_arg,
+
+      refine comb_lemma _ _ _ hy, },
 end,
 dpow_comp := sorry }
 
