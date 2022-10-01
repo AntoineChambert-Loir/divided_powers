@@ -510,10 +510,6 @@ end
 
 namespace of_invertible_factorial
 
-/- noncomputable def dpow (I : ideal A) {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) :
-  ℕ → A → A :=
-λ m x, if h : m < n ∧ x ∈ I then (factorial_inv hn_fac h.1) * x^m else 0 -/
-
 noncomputable def dpow (I : ideal A) (n : ℕ) :
   ℕ → A → A :=
 λ m x, if h : m < n ∧ x ∈ I then ring.inverse (m.factorial : A) * x^m else 0
