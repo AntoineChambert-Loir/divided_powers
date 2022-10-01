@@ -163,7 +163,7 @@ begin
     { simp only [one_mul, hgf], rw hx.2, },
     { rw zero_mul, } },
 end
-
+-/
 lemma rewriting_4_fold_sums {α : Type*} [comm_semiring α] {m n u v : ℕ} 
   (h : m + n = u + v) (f : ℕ × ℕ → α) {g : (ℕ × ℕ) × ℕ × ℕ → α}
   (hgf : g = λ x, f(x.fst.fst, x.fst.snd) ) 
@@ -220,7 +220,6 @@ begin
     { simp only [one_mul, hgf], rw hx.2, },
     { rw zero_mul, } },
 end
--/
 
 lemma function.extend_apply_first {α β γ : Type*} (f : α → β) (g : α → γ) (e' : β → γ)
   (hf : ∀ (a b : α), f a = f b → g a = g b) (a : α) :
@@ -1412,8 +1411,6 @@ begin
   refine dpow_ideal_add_eq_aux hI hJ _ n ha hb ha' hb' H,
   { intros n a, exact hIJ n a, },
 end
-
-#exit
 
 lemma dpow_mul_aux {J : ideal A} (hJ : divided_powers J)
 (hIJ : ∀ (n : ℕ) (a : A), a ∈ I ⊓ J → hI.dpow n a = hJ.dpow n a)
