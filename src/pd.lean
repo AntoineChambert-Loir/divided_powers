@@ -110,7 +110,7 @@ begin
   rw nat.sub_add_cancel h',
 end
 
-
+/- 
 lemma rewriting_4_fold_sums {m n u v : ℕ} 
   (h : m + n = u + v) (f : ℕ × ℕ → ℕ) {g : (ℕ × ℕ) × ℕ × ℕ → ℕ}
   (hgf : g = λ x, f(x.fst.fst, x.fst.snd) ) 
@@ -163,8 +163,8 @@ begin
     { simp only [one_mul, hgf], rw hx.2, },
     { rw zero_mul, } },
 end
-
-lemma rewriting_4_fold_sums'' {α : Type*} [comm_semiring α] {m n u v : ℕ} 
+ -/
+lemma rewriting_4_fold_sums {α : Type*} [comm_semiring α] {m n u v : ℕ} 
   (h : m + n = u + v) (f : ℕ × ℕ → α) {g : (ℕ × ℕ) × ℕ × ℕ → α}
   (hgf : g = λ x, f(x.fst.fst, x.fst.snd) ) 
   (hf : ∀ (x : ℕ × ℕ), u < x.fst ∨ v < x.snd → f x = 0) :  
@@ -230,12 +230,13 @@ begin
   apply hf,
   exact (classical.some_spec (exists_apply_eq_apply f a)),
 end
-/- 
+ 
 /- TODO : There should be some general rewriting pattern 
 for sums indexed by finset.nat_tuple_antidiagonal 
 This one would first rewrite to 
 (finset.nat_tuple_antidiagonal 4 n).sum (λ x, f(x0, x1, x2, x3)) 
 and then one would apply the permutation (13)(24) -/
+
 /-- Rewrites a 4-fold sum from variables (12)(34) to (13)(24) -/
 lemma finset.sum_4_rw {α : Type*} [add_comm_monoid α] (f : ℕ × ℕ × ℕ × ℕ → α) (n : ℕ) : 
   finset.sum (finset.range (n + 1)) (λ k, 
@@ -309,7 +310,7 @@ begin
     simp_rw [aux_i],
     simp only [add_tsub_cancel_left, sigma.mk.inj_iff, heq_iff_eq, eq_self_iff_true, and_true], 
     { rw add_comm, rw nat.sub_add_cancel h.1.2, }, },
-end -/
+end 
 
 end auxiliary
 
@@ -344,15 +345,6 @@ begin
     rw [← nat.add_choose_mul_factorial_mul_factorial, ← ih, ← hmn],
     ring_nf, }
 end
-
-/- A combinatorial lemma in search of a proof 
-Since my efforts are too messy, they are relegated to .choose_formulas -/
-lemma comb_lemma (m n s: ℕ) (hs : s ≤ m + n) : 
-  (finset.filter (λ (x : ℕ × ℕ), x.fst + x.snd = s) ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
-  (λ (x : ℕ × ℕ), (s.choose x.fst) * ((m + n - s).choose (m - x.fst)))
-  = (m + n).choose m :=  sorry 
-
-
 
 end combinatorics
 
@@ -486,6 +478,7 @@ end divided_powers_morphisms
 
 end divided_powers
 
+/- TO BE DELETED 
 section factorial_inv'
 
 variables {A : Type*} [comm_ring A] {I : ideal A}
@@ -574,7 +567,7 @@ begin
 end
 
 end factorial_inv'
-
+-/
 
 section factorial_inv
 variables {A : Type*} [comm_ring A] {I : ideal A}
@@ -1251,6 +1244,8 @@ begin
       exact ideal.mul_mem_left (ideal.span S) (a ^ n) (hx n hn), }, },
 end
 
+section ideal_add
+
 noncomputable
 def dpow_ideal_add {J : ideal A} (hJ : divided_powers J) :
   ℕ → A → A := λ n,
@@ -1392,10 +1387,10 @@ begin
   { intros n a, exact hIJ n a, },
 end
 
-example {J : ideal A} (hJ : divided_powers J)
+lemma dpow_mul_aux {J : ideal A} (hJ : divided_powers J)
 (hIJ : ∀ (n : ℕ) (a : A), a ∈ I ⊓ J → hI.dpow n a = hJ.dpow n a)
 (m n : ℕ) {x : A} : x ∈ I + J →
-    hI.dpow_ideal_add hJ m x * hI.dpow_ideal_add hJ n x = ↑((n + m).choose m) * hI.dpow_ideal_add hJ (n + m) x :=
+    hI.dpow_ideal_add hJ m x * hI.dpow_ideal_add hJ n x = ↑((m + n).choose m) * hI.dpow_ideal_add hJ (m + n) x :=
 begin
   rw [ideal.add_eq_sup, submodule.mem_sup],
   rintro ⟨a, ha, b, hb, rfl⟩, 
@@ -1417,8 +1412,6 @@ begin
     rw mul_assoc, rw ← mul_assoc (hJ.dpow j b) _ _, rw mul_comm (hJ.dpow j b),
     rw mul_assoc, rw hJ.dpow_mul j l hb,
     rw ← mul_assoc, rw hI.dpow_mul i k ha,
-    rw add_comm k i,
-    rw add_comm l j,
     ring, },
 
     rw finset.sum_congr rfl (λ x hx, hf x),
@@ -1458,7 +1451,6 @@ begin
   rw hx.2.1, rw hx.2.2, },
   rw hs',
 
-  rw add_comm n m, 
   rw hI.dpow_ideal_add_eq hJ hIJ (m + n) ha hb, 
   rw ← finset.nat.sum_antidiagonal_eq_sum_range_succ
     (λ i j, hI.dpow i a * hJ.dpow j b),
@@ -1475,17 +1467,9 @@ begin
   simp only [← nat.cast_sum, ← nat.cast_mul],
   apply congr_arg,
 
-/-   
-  let q := λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst,
-  have hq : ∀ x ∈ finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v)
-    (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n), 
-  x.fst ∈ finset.nat.antidiagonal m,
-  { intro x, simp, intro h', simp [h'], },
-  rw ←  finset.sum_fiberwise_of_maps_to hq,
-   -/
   simp only [finset.nat.mem_antidiagonal] at h,
 
-  rw rewriting_4_fold_sums' h.symm (λ x, u.choose x.fst * v.choose x.snd) rfl _,
+  rw rewriting_4_fold_sums h.symm (λ x, u.choose x.fst * v.choose x.snd) rfl _,
   { rw ← nat.add_choose_eq, rw h, },
 
   { intros x h, 
@@ -1493,7 +1477,35 @@ begin
     { simp only [nat.choose_eq_zero_of_lt h, zero_mul, mul_zero], } },
 end
 
- noncomputable
+/- 
+lemma dpow_ideal_sum {ι : Type*} [decidable_eq ι] 
+  (dpow : ℕ → A → A) 
+  (dpow_add : ∀ (n : ℕ) (x ∈ I) (y ∈ I), dpow n (x + y) = 
+    finset.sum (finset.range (n + 1)) (λ k, dpow k x * dpow (n - k) y)) 
+  (x : ι → A) (s : finset ι) (hsx : ∀ i ∈ s, x i ∈ I)
+  (m : ℕ) : dpow m (finset.sum s x) = 
+  finset.sum (multiset_of_size s m) (λ c, s.prod (λ i, dpow (c i) (x i) )) :=
+sorry
+/- 
+(∑ x_i )^n = ∑_m ∏ x_i ^(m_i) * coeff multinomial (n / m)   sum m_i = n
+     coeff multinomial = n! / prod (mi!)
+ici
+
+
+-/ -/
+  
+lemma dpow_comp_aux {J : ideal A} (hJ : divided_powers J) 
+  (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) 
+  (m : ℕ) {n : ℕ} (hn : n ≠ 0) {x : A} (hx : x ∈ I + J) : 
+  hI.dpow_ideal_add hJ m (hI.dpow_ideal_add hJ n x) = ↑(mchoose m n) * hI.dpow_ideal_add hJ (m * n) x := 
+begin
+  rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
+  obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
+  rw dpow_ideal_add_eq hI hJ hIJ n ha hb, 
+  sorry,
+end
+
+noncomputable
 def divided_powers_ideal_add {J : ideal A} (hJ : divided_powers J) 
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) : divided_powers (I + J) := { 
 dpow := dpow_ideal_add hI hJ,
@@ -1607,88 +1619,10 @@ begin
   exact hb,
   exact ha,
 end,
-dpow_mul := 
-begin
-  intros m n x,
-  rw [ideal.add_eq_sup, submodule.mem_sup], 
-  rintro ⟨a, ha, b, hb, rfl⟩, 
-  rw dpow_ideal_add_eq hI hJ hIJ m ha hb, 
-  rw dpow_ideal_add_eq hI hJ hIJ n ha hb, 
-  rw finset.sum_mul, simp_rw finset.mul_sum,
-  rw ← finset.sum_product',
-  have hf : ∀ (xy : ℕ × ℕ) (hxy : xy ∈ (finset.range (m+1)).product (finset.range (n + 1))),
-    hI.dpow xy.fst a * hJ.dpow (m - xy.fst) b * (hI.dpow xy.snd a * hJ.dpow (n -xy.snd) b)
-    = ((xy.snd + xy.fst).choose xy.fst) * hI.dpow (xy.snd + xy.fst) a 
-      *  (( n - xy.snd + (m - xy.fst)).choose (m - xy.fst)) * (hJ.dpow (n - xy.snd + (m - xy.fst)) b),
-     { intros xy hxy, 
-    have fI :=  hI.dpow_mul xy.fst xy.snd ha,
-    have fJ := hJ.dpow_mul (m - xy.fst) (n - xy.snd) hb,
-    rw mul_assoc,
-    rw ← mul_assoc (hJ.dpow (m - xy.fst) b) _ _,
-    rw mul_comm (hJ.dpow _ b) _,
-    rw mul_assoc,
-    rw hJ.dpow_mul _ _ hb,
-    rw ← mul_assoc,
-    rw hI.dpow_mul _ _ ha,
-    simp only [mul_assoc], },
-    rw finset.sum_congr rfl hf,
-    let s : ℕ × ℕ → ℕ := λ xy, xy.fst + xy.snd,
-    have hs : ∀ (xy ∈ (finset.range (m+1)).product (finset.range (n+1))),
-      s xy ∈ finset.range (m + n + 1),
-    { intros xy hxy,
-      dsimp [s],
-      simp only [finset.mem_product, finset.mem_range, nat.lt_succ_iff] at hxy ⊢,
-      apply nat.add_le_add hxy.1 hxy.2,},
-    rw ←  finset.sum_fiberwise_of_maps_to hs,
-    let g : ℕ → A := λ (y : ℕ), (finset.filter (λ (x : ℕ × ℕ), (λ (xy : ℕ × ℕ), s xy) x = y)
-      ((finset.range (m + 1)).product (finset.range (n + 1)))).sum
-        (λ (x : ℕ × ℕ),
-          ↑((x.snd + x.fst).choose x.fst) * hI.dpow (x.snd + x.fst) a 
-          * ↑((n - x.snd + (m - x.fst)).choose (m - x.fst)) * hJ.dpow (n - x.snd + (m - x.fst)) b),
-    have hg : ∀ (y : ℕ), g y = (finset.filter (λ (x : ℕ × ℕ), (λ (xy : ℕ × ℕ), s xy) x = y)
-      ((finset.range (m + 1)).product (finset.range (n + 1)))).sum (λ (x : ℕ × ℕ), 
-        (y.choose x.fst) * ((n + m - y).choose (m - x.fst))) * (hI.dpow y a) * hJ.dpow (n + m - y) b,
-    { intro y,
-      dsimp [g, s],
-      rw finset.sum_mul, rw finset.sum_mul,
-      refine finset.sum_congr rfl _,
-      intros xy hxy,
-      simp only [finset.mem_filter, finset.mem_product, finset.mem_range, nat.lt_succ_iff] at hxy,
-      rw [add_comm xy.snd xy.fst, hxy.2],
-      suffices : n - xy.snd + (m - xy.fst) = n + m - y,
-      rw this, ring,
-      { apply symm,
-        rw nat.sub_eq_iff_eq_add , rw ← hxy.2,
-        rw ← add_assoc, 
-        rw add_assoc (n - xy.snd),
-        rw nat.sub_add_cancel hxy.1.1,
-        rw add_assoc,
-        rw add_comm m _,
-        rw ← add_assoc,
-        rw nat.sub_add_cancel hxy.1.2,
-        rw ← hxy.2, rw add_comm n m, exact nat.add_le_add hxy.1.1 hxy.1.2, },},
-    dsimp [g] at hg,
-    rw finset.sum_congr rfl (λ y h, hg y),
-    rw dpow_ideal_add_eq hI hJ hIJ (n + m) ha hb,
-    rw finset.mul_sum,
-    apply finset.sum_congr,
-    { rw add_comm m n, },
-    intros y hy,
-    simp only [mul_assoc],
-    apply congr_arg2 _ _ rfl, 
-    { dsimp [s], 
-      simp only [finset.mem_range, nat.lt_succ_iff] at hy,
-      rw add_comm n m at hy,
-      rw add_comm n m,
-      simp only [← nat.cast_sum, ← nat.cast_mul],
-      apply congr_arg,
+dpow_mul := dpow_mul_aux hI hJ hIJ, 
+dpow_comp := dpow_comp_aux hI hJ hIJ, }
 
-      refine comb_lemma _ _ _ hy, },
-end,
-dpow_comp := sorry }
-
-#check nat.add_choose_eq
-
+end ideal_add
 
 /- Questions 
 
