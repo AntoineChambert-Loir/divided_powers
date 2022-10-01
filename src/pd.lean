@@ -1502,6 +1502,26 @@ begin
   rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
   obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
   rw dpow_ideal_add_eq hI hJ hIJ n ha hb, 
+  /- si on développe, on obtient une somme indexée par
+  les c : fin (n+1) → ℕ  de somme m 
+  de  ∏   (hI.dpow k a)^(c k) (hJ.dpow (n-k) b)^(c k) 
+  sans coefficients multinomiaux !
+    par récurrence, en utilisant dpow_mul,
+    a^[k] a^[k'] = (k + k')!/k! k'! a^ [k + k']
+    a^[k] a^[k'] a^[k''] = (k+k'+k'')!/k!k'!k''!
+   ∏ (hI.dpow k a)^(c k) = multinomial (k ^ (c k)) hI.dpow (∑ k (c k)) a
+    tandis que Π (hJ.dpow (n-k) b)^(c k)
+     = multinomial ((n-k)^ (c k)) hJ.dpow (∑ (n-k) c k) b
+    la puissance est n∑ c k - ∑ k (c k) = n m - ∑ k (c k)
+    = N!/∏ k!^(c k) * (nm - N)!/∏ (n-k)!^(c k) * a^[N] * b^[nm -N]
+    
+    Lorsqu'on somme sur les c de somme m et de poids N,
+    il faudra trouver (mchoose m n)…
+    Il est probable que le plus facile est d'identifier
+    ce qui se passe pour Q[a,b] avec sa structure de puissances divisées canonique.
+
+
+  -/
   sorry,
 end
 
