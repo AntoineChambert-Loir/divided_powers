@@ -109,6 +109,16 @@ begin
   rw finset.nat.sum_antidiagonal_eq_sum_range_succ_mk, 
 end
 
+lemma eq_of_eq_on_ideal (hI : divided_powers I) (hI' : divided_powers I) 
+  (h_eq : ∀ (n : ℕ) {x : A} (hx : x ∈ I), hI.dpow n x = hI'.dpow n x ) :
+  hI = hI' :=
+begin
+  ext n x,
+  by_cases hx : x ∈ I,
+  { exact h_eq n hx },
+  { rw [hI.dpow_null hx, hI'.dpow_null hx] }
+end
+
 /- noncomputable
 def dpow_of_dpow_exp (I : ideal A) (ε : I → power_series A) : 
   ℕ → A → A := λ n,
@@ -499,7 +509,7 @@ end
 
 variable (I)
 
-@[ext] noncomputable def rat_algebra_divided_powers : divided_powers I := 
+noncomputable def rat_algebra_divided_powers : divided_powers I := 
 { dpow      := dpow I,
   dpow_null := λ n x hx, of_invertible_factorial.dpow_null hx,
   dpow_zero := λ x hx, of_invertible_factorial.dpow_zero one_ne_zero hx,
@@ -520,12 +530,11 @@ variable {I}
 lemma divided_powers_Q_algebra_unique (hI : divided_powers I) :
   hI = (rat_algebra_divided_powers I) :=
 begin
-  ext n x,
-  by_cases hx : x ∈ I,
-  { have hn : is_unit (n.factorial : R) := factorial.is_unit n,
+  apply eq_of_eq_on_ideal, 
+  intros n x hx,
+  have hn : is_unit (n.factorial : R) := factorial.is_unit n,
     rw [rat_algebra_divided_powers_dpow_apply, dpow_def n hx, eq_comm,
-      ring.inverse_mul_eq_iff_eq_mul _ _ hn, factorial_mul_dpow_eq_pow _ _ _ hx] },
-  { rw [hI.dpow_null hx, (rat_algebra_divided_powers I).dpow_null hx] }
+      ring.inverse_mul_eq_iff_eq_mul _ _ hn, factorial_mul_dpow_eq_pow _ _ _ hx]
 end
 
 end Q_algebra
@@ -1260,7 +1269,8 @@ lemma divided_powers_tensor_product_unique (R B C : Type*) [comm_ring R] [comm_r
   (ideal.quotient.mkₐ R J)).to_ring_hom.ker) :
   hK = (divided_powers_tensor_product R B C hI hJ hIs hJs) :=
 begin
-  ext n x,
+  apply eq_of_eq_on_ideal,
+  intros n x hx,
   sorry
 end
 
