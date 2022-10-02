@@ -497,7 +497,9 @@ begin
     rw [of_invertible_factorial.dpow_dif_pos _ hkm hx], },
 end
 
-noncomputable def divided_powers : divided_powers I := 
+variable (I)
+
+@[ext] noncomputable def rat_algebra_divided_powers : divided_powers I := 
 { dpow      := dpow I,
   dpow_null := λ n x hx, of_invertible_factorial.dpow_null hx,
   dpow_zero := λ x hx, of_invertible_factorial.dpow_zero one_ne_zero hx,
@@ -507,6 +509,24 @@ noncomputable def divided_powers : divided_powers I :=
   dpow_smul := λ n a x hx, of_invertible_factorial.dpow_smul n hx,
   dpow_mul  := λ m k x hx, dpow_mul m k hx,
   dpow_comp := λ m k hk x hx, dpow_comp m hk hx, }
+
+lemma rat_algebra_divided_powers_dpow_apply (n : ℕ) (x : R) : 
+  (rat_algebra_divided_powers I).dpow n x = dpow I n x :=
+rfl
+
+variable {I}
+
+-- There are no other divided power structures on a ℚ-algebra.
+lemma divided_powers_Q_algebra_unique (hI : divided_powers I) :
+  hI = (rat_algebra_divided_powers I) :=
+begin
+  ext n x,
+  by_cases hx : x ∈ I,
+  { have hn : is_unit (n.factorial : R) := factorial.is_unit n,
+    rw [rat_algebra_divided_powers_dpow_apply, dpow_def n hx, eq_comm,
+      ring.inverse_mul_eq_iff_eq_mul _ _ hn, factorial_mul_dpow_eq_pow _ _ _ hx] },
+  { rw [hI.dpow_null hx, (rat_algebra_divided_powers I).dpow_null hx] }
+end
 
 end Q_algebra
 
