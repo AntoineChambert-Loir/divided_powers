@@ -5,6 +5,7 @@ import data.finset.nat_antidiagonal -- for 4-fold sums
 import ring_theory.ideal.basic -- for 4-fold sums (might not be optimal)
 
 
+-- The "unused arguments" linter incorrectly flags this (?!)
 /- To help distinguish the extreme cases in a finset.range(n+1).sum -/
 lemma not_eq_or_aux {n m : ℕ} (hn : n ≠ 0) (hm : m ∈ finset.range(n + 1)) : m ≠ 0 ∨ n - m ≠ 0 :=
 begin
