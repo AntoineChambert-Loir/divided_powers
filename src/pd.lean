@@ -16,8 +16,8 @@ import data.nat.choose.vandermonde
 
 Let `A` be a commutative ring and `I` be an ideal of `A`. 
 A *divided power* structure on `I` is the datum of operations `div_pow : ℕ → I → A` 
-satisfying relations that model the 
-intuitive formula `div_pow n a = a ^ n / n.factorial` and collected by the structure `divided_powers`.
+satisfying relations that model the intuitive formula `div_pow n a = a ^ n / n.factorial` and
+collected by the structure `divided_powers`.
 To avoid coercions, we rather consider `div_pow : ℕ → A → A`, extended by 0.
 
 ## References 
@@ -32,8 +32,9 @@ Princeton University Press.
 Bulletin de la Société Mathématique de France, Tome 96, p. 97-113. 
 doi: https://doi.org/10.24033/bsmf.1661
 
-* N. Roby (1966), *Sur l'algèbre des puissances divisées d'un module et le module de ses différentielles*,
-Annales scientifiques de l'École Normale Supérieure, Série 3, Tome 83,no. 2, p. 75-89. 
+* N. Roby (1966), *Sur l'algèbre des puissances divisées d'un module et le module de ses 
+différentielles*, Annales scientifiques de l'École Normale Supérieure, Série 3, Tome 83,no. 2, 
+p. 75-89. 
 doi: https://doi.org/10.24033/asens.1148
 
 -/
@@ -118,7 +119,8 @@ lemma rewriting_4_fold_sums {m n u v : ℕ}
   (finset.nat.antidiagonal m).sum
     (λ (y : ℕ × ℕ),
        (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst) x = y)
-          (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v)
+          (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst.fst + x.snd.fst = 
+            u ∧ x.fst.snd + x.snd.snd = v)
              (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n))).sum g) =
   (finset.nat.antidiagonal m).sum (λ (ij : ℕ × ℕ), f ⟨ij.fst, ij.snd⟩) := 
 begin
@@ -137,7 +139,8 @@ begin
   { conv_rhs { rw ← one_mul (f ⟨i, j⟩), }, 
     apply congr_arg2 _ _ rfl,
     rw finset.sum_eq_single (⟨⟨i, j⟩, ⟨u-i, v-j⟩⟩ : (ℕ × ℕ) × ℕ ×ℕ),
-    simp only [nat.add_sub_of_le hij'.1, nat.add_sub_of_le hij'.2, eq_self_iff_true, and_self, if_true],
+    simp only [nat.add_sub_of_le hij'.1, nat.add_sub_of_le hij'.2, eq_self_iff_true, and_self,
+      if_true],
     { rintros ⟨⟨x,y⟩, ⟨z,t⟩⟩ hb hb',   rw if_neg, intro hb'',
       simp only [finset.mem_product, finset.nat.mem_antidiagonal] at hb,
       simp only [ne.def, prod.mk.inj_iff, not_and, and_imp] at hb',
@@ -173,8 +176,8 @@ lemma rewriting_4_fold_sums {α : Type*} [comm_semiring α] {m n u v : ℕ}
   = (finset.nat.antidiagonal m).sum f := 
 begin
   let q := λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst,
-  have hq : ∀ x ∈ finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v)
-    (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n), 
+  have hq : ∀ x ∈ finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst.fst + x.snd.fst = 
+    u ∧ x.fst.snd + x.snd.snd = v) (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n), 
   x.fst ∈ finset.nat.antidiagonal m,
   { intro x, simp, intro h', simp [h'], },
   rw ←  finset.sum_fiberwise_of_maps_to hq,
@@ -194,7 +197,8 @@ begin
   { conv_rhs { rw ← one_mul (f ⟨i, j⟩), }, 
     apply congr_arg2 _ _ rfl,
     rw finset.sum_eq_single (⟨⟨i, j⟩, ⟨u-i, v-j⟩⟩ : (ℕ × ℕ) × ℕ ×ℕ),
-    simp only [nat.add_sub_of_le hij'.1, nat.add_sub_of_le hij'.2, eq_self_iff_true, and_self, if_true],
+    simp only [nat.add_sub_of_le hij'.1, nat.add_sub_of_le hij'.2, eq_self_iff_true,
+      and_self, if_true],
     { rintros ⟨⟨x,y⟩, ⟨z,t⟩⟩ hb hb',   rw if_neg, intro hb'',
       simp only [finset.mem_product, finset.nat.mem_antidiagonal] at hb,
       simp only [ne.def, prod.mk.inj_iff, not_and, and_imp] at hb',
@@ -349,7 +353,8 @@ end combinatorics
 
 section divided_powers_definition
 
-/- No need for this, Mario says…
+/- MI: I think we can safely delete this.
+ No need for this, Mario says…
 
 structure is_divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ → A → A) : Prop :=
 (dpow_null : ∀ {n x} (hx : x ∉ I), dpow n x = 0)
@@ -359,7 +364,8 @@ structure is_divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ 
 (dpow_add : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y)
   = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
 (dpow_smul : ∀ n {a} {x} (hx : x ∈ I), dpow n (a * x) = (a ^ n) * (dpow n x))
-(dpow_mul : ∀ m n {x} (hx : x ∈ I), (dpow m x) * (dpow n x) = (nat.choose (m + n) m) * dpow (m + n) x)
+(dpow_mul : ∀ m n {x} (hx : x ∈ I), (dpow m x) * (dpow n x) = 
+  (nat.choose (m + n) m) * dpow (m + n) x)
 (dpow_comp : ∀ m {n} (hn : n ≠ 0) {x} (hx : x ∈ I),
   dpow m (dpow n x) = (mchoose m n) * dpow (m * n) x)
  -/
@@ -378,7 +384,9 @@ structure is_divided_powers {A : Type*} [comm_ring A] (I : ideal A) (dpow : ℕ 
 (dpow_comp : ∀ m {n} (hn : n ≠ 0) {x} (hx : x ∈ I),
   dpow m (dpow n x) = (mchoose m n) * dpow (m * n) x)
 
-instance {A : Type*} [comm_ring A] (I : ideal A) : has_coe_to_fun (divided_powers I) (λ _, ℕ → A → A) := ⟨λ hI, hI.dpow⟩
+instance {A : Type*} [comm_ring A] (I : ideal A) :
+  has_coe_to_fun (divided_powers I) (λ _, ℕ → A → A) :=
+⟨λ hI, hI.dpow⟩
 
 structure pd_ring {A : Type*} extends comm_ring A := 
 (pd_ideal : ideal A)
@@ -430,13 +438,16 @@ variable (hI : divided_powers I)
 include hI
 
 /- Rewriting lemmas -/
-lemma dpow_smul' (n : ℕ) {a : A} {x : A} (hx : x ∈ I) : hI.dpow n (a • x) = (a ^ n) • (hI.dpow n x) :=
+lemma dpow_smul' (n : ℕ) {a : A} {x : A} (hx : x ∈ I) :
+  hI.dpow n (a • x) = (a ^ n) • (hI.dpow n x) :=
 by simp only [smul_eq_mul, hI.dpow_smul, hx]
 
-lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : A) (hx : x ∈ I) : (n.factorial : A) * (hI.dpow n x) = x^n :=
+lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : A) (hx : x ∈ I) :
+  (n.factorial : A) * (hI.dpow n x) = x^n :=
 begin
   induction n with n ih,
-  { rw [nat.nat_zero_eq_zero, nat.factorial_zero, nat.cast_one, one_mul, pow_zero, hI.dpow_zero hx], },
+  { rw [nat.nat_zero_eq_zero, nat.factorial_zero, nat.cast_one, one_mul, pow_zero,
+      hI.dpow_zero hx], },
   { rw [nat.factorial_succ, mul_comm (n + 1), ← (n + 1).choose_one_right,
   ← nat.choose_symm_add, nat.cast_mul, nat.succ_eq_add_one, mul_assoc, 
   ← hI.dpow_mul n 1 hx, ← mul_assoc, ih, hI.dpow_one hx, pow_succ'], }
@@ -579,8 +590,8 @@ lemma ring.inverse_pow_mul_eq_iff_eq_mul {M₀ : Type u_1} [comm_monoid_with_zer
   (b c : M₀) (ha : is_unit a) {k : ℕ} : (ring.inverse a)^k * b = c ↔ b = a^k * c :=
 by rw [ring.inverse_pow, ring.inverse_mul_eq_iff_eq_mul _ _ (is_unit.pow _ ha)]
 
-lemma dpow_add_dif_pos {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n) {x : A}
-  (hx : x ∈ I) {y : A} (hy : y ∈ I) : dpow I n m (x + y) =
+lemma dpow_add_dif_pos {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : ℕ} (hmn : m < n)
+  {x y : A} (hx : x ∈ I) (hy : y ∈ I) : dpow I n m (x + y) =
   (finset.range (m + 1)).sum (λ (k : ℕ), dpow I n k x * dpow I n (m - k) y) :=
 begin
   rw dpow_dif_pos I hmn (ideal.add_mem I hx hy),
@@ -1003,7 +1014,8 @@ end
 -- We wish for a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
 /-- When `I ⊓ J` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I(A⧸J)` of the quotient -/
 noncomputable
-def divided_powers_quot (J  : ideal A) (hIJ : is_sub_pd_ideal hI (J ⊓ I)) : divided_powers (I.map (ideal.quotient.mk J)) := {
+def divided_powers_quot (J  : ideal A) (hIJ : is_sub_pd_ideal hI (J ⊓ I)) :
+  divided_powers (I.map (ideal.quotient.mk J)) := {
 dpow := dpow_quot hI J, 
 dpow_null := λ n x hx, 
 begin
@@ -1264,7 +1276,8 @@ end
 lemma dpow_ideal_add_eq {J : ideal A} (hJ : divided_powers J)
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a)
   (n) {a} (ha : a ∈ I) {b} (hb : b ∈ J) : 
-  dpow_ideal_add hI hJ n (a + b) = finset.sum (finset.range (n + 1)) (λ k, (hI.dpow k a) * (hJ.dpow (n - k) b))  :=
+  dpow_ideal_add hI hJ n (a + b) =
+    finset.sum (finset.range (n + 1)) (λ k, (hI.dpow k a) * (hJ.dpow (n - k) b))  :=
 begin
   simp only [dpow_ideal_add],
   convert function.extend_apply_first _ _ _ _ (⟨(⟨a, ha⟩ : I), (⟨b, hb⟩ : J)⟩ : I × J),
@@ -1277,7 +1290,8 @@ end
 lemma dpow_mul_aux {J : ideal A} (hJ : divided_powers J)
 (hIJ : ∀ (n : ℕ) (a : A), a ∈ I ⊓ J → hI.dpow n a = hJ.dpow n a)
 (m n : ℕ) {x : A} : x ∈ I + J →
-    hI.dpow_ideal_add hJ m x * hI.dpow_ideal_add hJ n x = ↑((m + n).choose m) * hI.dpow_ideal_add hJ (m + n) x :=
+    hI.dpow_ideal_add hJ m x * hI.dpow_ideal_add hJ n x =
+      ↑((m + n).choose m) * hI.dpow_ideal_add hJ (m + n) x :=
 begin
   rw [ideal.add_eq_sup, submodule.mem_sup],
   rintro ⟨a, ha, b, hb, rfl⟩, 
@@ -1318,8 +1332,8 @@ begin
        (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), (λ (x : (ℕ × ℕ) × ℕ × ℕ), s x) x = y)
           (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n)).sum
          (λ (x : (ℕ × ℕ) × ℕ × ℕ),
-            ↑((x.fst.fst + x.snd.fst).choose x.fst.fst) * ↑((x.fst.snd + x.snd.snd).choose x.fst.snd) *
-                hI.dpow (x.fst.fst + x.snd.fst) a *
+            ↑((x.fst.fst + x.snd.fst).choose x.fst.fst) * 
+            ↑((x.fst.snd + x.snd.snd).choose x.fst.snd) * hI.dpow (x.fst.fst + x.snd.fst) a *
               hJ.dpow (x.fst.snd + x.snd.snd) b)) 
   = (finset.nat.antidiagonal (m + n)).sum
     (λ (y : ℕ × ℕ),
@@ -1384,7 +1398,8 @@ ici
 lemma dpow_comp_aux {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) 
   (m : ℕ) {n : ℕ} (hn : n ≠ 0) {x : A} (hx : x ∈ I + J) : 
-  hI.dpow_ideal_add hJ m (hI.dpow_ideal_add hJ n x) = ↑(mchoose m n) * hI.dpow_ideal_add hJ (m * n) x := 
+  hI.dpow_ideal_add hJ m (hI.dpow_ideal_add hJ n x) =
+    ↑(mchoose m n) * hI.dpow_ideal_add hJ (m * n) x := 
 begin
   rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
   obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
