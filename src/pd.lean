@@ -1,16 +1,10 @@
 /- ACL and MIdFF, Lean 2022 meeting at Icerm -/
-
-import tactic
-import ring_theory.ideal.operations
 import ring_theory.ideal.quotient
-import ring_theory.ideal.operations
-import linear_algebra.quotient
 import ring_theory.tensor_product
-import ring_theory.ideal.operations
-
-import data.fin.tuple.nat_antidiagonal
 import ring_theory.power_series.basic
 import data.nat.choose.vandermonde
+
+import algebra_lemmas
 
 /-! # Divided powers 
 
@@ -43,51 +37,6 @@ open_locale classical
 
 section induction
 
-namespace submodule
-universes u v
-variables {R : Type u} {M : Type v} {F : Type*} {G : Type*}
-variables [comm_semiring R] [add_comm_monoid M] [module R M]
-variables {I J : ideal R} {N P Q : submodule R M}
-
-/- 
-variables {x : M} {s : set M}
-lemma span_induction_aux {p : M → Prop} (h : x ∈ span R s)
-  (Hs : ∀ x ∈ s, p x) (H0 : p 0)
-  (H1 : ∀ (x ∈ span R s) (y ∈ span R s), p x → p y → p (x + y))
-  (H2 : ∀ (a : R) (x ∈ span R s), p x → p (a • x)) : p x :=
-begin
-  suffices : x ∈ span R s ∧ p x, exact this.2,
-  exact span_induction h
-  (λ x hx, ⟨submodule.subset_span hx, Hs x hx⟩)
-  ⟨submodule.zero_mem (span R s), H0⟩
-  (λ x y hx hy, ⟨submodule.add_mem (span R s) hx.1 hy.1, H1 x hx.1 y hy.1 hx.2 hy.2⟩)
-  (λ a x hx, ⟨submodule.smul_mem (span R s) a hx.1, H2 a x hx.1 hx.2⟩),
-end
-
-theorem smul_induction_on_aux {p : M → Prop} {x} (H : x ∈ I • N)
-  (Hb : ∀ (r ∈ I) (n ∈ N), p (r • n))
-  (H1 : ∀ (x ∈ I • N) (y ∈ I • N), p x → p y → p (x + y)) : p x :=
-begin
-  suffices : x ∈ I • N ∧ p x, exact this.2, 
-  exact submodule.smul_induction_on H
-  (λ a ha x hx, ⟨(submodule.smul_mem_smul ha hx), Hb a ha x hx⟩)
-  (λ x y hx hy, ⟨(I • N).add_mem hx.1 hy.1, H1 x hx.1 y hy.1 hx.2 hy.2⟩),
-end  -/
-
-lemma smul_induction_on' {x : M} (hx : x ∈ I • N) 
-  {p : Π x, x ∈ I • N → Prop} 
-  (Hb : ∀ (r : R) (hr : r ∈ I) (n : M) (hn : n ∈ N), p (r • n) (submodule.smul_mem_smul hr hn))
-  (H1 : ∀ x hx y hy, p x hx → p y hy → p (x + y) (submodule.add_mem _ ‹_› ‹_›)) :
-  p x hx :=
-begin
-  refine exists.elim _ (λ (h : x ∈ I • N) (H : p x h), H),
-  exact submodule.smul_induction_on hx
-    (λ a ha x hx, ⟨_, Hb _ ha _ hx⟩)
-    (λ x y ⟨_, hx⟩ ⟨_, hy⟩,  ⟨_, H1 _ _ _ _ hx hy⟩),
-end
-
--- TODO : add other if needed
-end submodule
 
 end induction
 
