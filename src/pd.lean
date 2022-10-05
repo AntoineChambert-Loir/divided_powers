@@ -136,55 +136,34 @@ def divided_powers_of_dpow_exp (I : ideal A) (ε : I → power_series A)
   (hε_add : ∀ (a b : I), ε(a + b) = ε(a) * ε(b))
   (hε_zero : ε(0) = 1) -/
 
-variable (hI : divided_powers I)
-include hI
-
-/- Rewriting lemmas -/
-lemma dpow_smul' (n : ℕ) {a : A} {x : A} (hx : x ∈ I) :
-  hI.dpow n (a • x) = (a ^ n) • (hI.dpow n x) :=
-by simp only [smul_eq_mul, hI.dpow_smul, hx]
-
-lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : A) (hx : x ∈ I) :
-  (n.factorial : A) * (hI.dpow n x) = x^n :=
-begin
-  induction n with n ih,
-  { rw [nat.nat_zero_eq_zero, nat.factorial_zero, nat.cast_one, one_mul, pow_zero,
-      hI.dpow_zero hx], },
-  { rw [nat.factorial_succ, mul_comm (n + 1), ← (n + 1).choose_one_right,
-  ← nat.choose_symm_add, nat.cast_mul, nat.succ_eq_add_one, mul_assoc, 
-  ← hI.dpow_mul n 1 hx, ← mul_assoc, ih, hI.dpow_one hx, pow_succ'], }
-end
-
-lemma dpow_eval_zero {n : ℕ} (hn : n ≠ 0) : hI.dpow n 0 = 0 := 
-begin
-  rw [← mul_zero (0 : A), hI.dpow_smul, zero_pow' n hn, zero_mul, zero_mul],
-  exact ideal.zero_mem I,
-end
 
 open_locale big_operators
 
 open finset
--- TODO : we don't use the full dpow property (only dpow_zero and dpow_add), and it will be needed in a weaker situation 
+
 -- Also : can it be used to deduce dpow_comp from the rest?
-/-- A “multinomial” theorem for divided powers, 
-but without multinomial coefficients -/
-lemma sum_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A} 
-(hx : ∀ i ∈ s, x i ∈ I): ∀ (n : ℕ),
-hI.dpow n (s.sum x) = (finset.sym s n).sum 
-(λ k, s.prod (λ i, hI.dpow (multiset.count i k) (x i))) := 
+/-- A generic “multinomial” theorem for divided powers — but without multinomial coefficients — using only dpow_zero, dpow_add and dpow_eval_zero  -/
+lemma sum_dpow_aux  
+(dpow : ℕ → A → A)
+(dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
+(dpow_add : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y) = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
+(dpow_eval_zero : ∀ {n : ℕ} (hn : n ≠ 0), dpow n 0 = 0)
+{ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A}
+(hx : ∀ i ∈ s, x i ∈ I): ∀ (n : ℕ), dpow n (s.sum x) = (finset.sym s n).sum 
+(λ k, s.prod (λ i, dpow (multiset.count i k) (x i))) := 
 begin
   induction s using finset.induction with a s ha ih,
   { rw sum_empty,
     rintro (_ | n),
-    { rw [hI.dpow_zero (I.zero_mem), sum_unique_nonempty],
+    { rw [dpow_zero (I.zero_mem), sum_unique_nonempty],
       { convert (one_mul _).symm, simp only [prod_empty, mul_one], },
       { apply univ_nonempty } },
-    { rw [hI.dpow_eval_zero (nat.succ_ne_zero n), sym_empty, sum_empty], } },
+    { rw [dpow_eval_zero (nat.succ_ne_zero n), sym_empty, sum_empty], } },
   have hx' : ∀ i, i ∈ s → x i ∈ I := 
   λ i hi, hx i (finset.mem_insert_of_mem hi), 
   intro n,
   simp_rw [sum_insert ha, 
-    hI.dpow_add n (hx a (finset.mem_insert_self a s)) 
+    dpow_add n (hx a (finset.mem_insert_self a s)) 
       (I.sum_mem (λ i, hx' i)),
     sum_range, ih hx', mul_sum, sum_sigma'], 
 
@@ -217,6 +196,37 @@ begin
 end
 
 
+
+variable (hI : divided_powers I)
+include hI
+
+/- Rewriting lemmas -/
+lemma dpow_smul' (n : ℕ) {a : A} {x : A} (hx : x ∈ I) :
+  hI.dpow n (a • x) = (a ^ n) • (hI.dpow n x) :=
+by simp only [smul_eq_mul, hI.dpow_smul, hx]
+
+lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : A) (hx : x ∈ I) :
+  (n.factorial : A) * (hI.dpow n x) = x^n :=
+begin
+  induction n with n ih,
+  { rw [nat.nat_zero_eq_zero, nat.factorial_zero, nat.cast_one, one_mul, pow_zero,
+      hI.dpow_zero hx], },
+  { rw [nat.factorial_succ, mul_comm (n + 1), ← (n + 1).choose_one_right,
+  ← nat.choose_symm_add, nat.cast_mul, nat.succ_eq_add_one, mul_assoc, 
+  ← hI.dpow_mul n 1 hx, ← mul_assoc, ih, hI.dpow_one hx, pow_succ'], }
+end
+
+lemma dpow_eval_zero {n : ℕ} (hn : n ≠ 0) : hI.dpow n 0 = 0 := 
+begin
+  rw [← mul_zero (0 : A), hI.dpow_smul, zero_pow' n hn, zero_mul, zero_mul],
+  exact ideal.zero_mem I,
+end
+
+/-- A “multinomial” theorem for divided powers — without multinomial coefficients -/
+lemma sum_dpow  {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A}
+(hx : ∀ i ∈ s, x i ∈ I): ∀ (n : ℕ), hI.dpow n (s.sum x) = (finset.sym s n).sum 
+(λ k, s.prod (λ i, hI.dpow (multiset.count i k) (x i))) :=
+sum_dpow_aux hI.dpow (λ x hx, hI.dpow_zero hx)  (λ n x y hx hy, hI.dpow_add n hx hy) (λ n hn, hI.dpow_eval_zero hn) hx
 
 end divided_powers_examples
 
