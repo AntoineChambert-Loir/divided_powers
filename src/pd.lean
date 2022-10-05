@@ -164,8 +164,10 @@ end
 open_locale big_operators
 
 open finset
+-- TODO : we don't use the full dpow property (only dpow_zero and dpow_add), and it will be needed in a weaker situation 
+-- Also : can it be used to deduce dpow_comp from the rest?
 /-- A “multinomial” theorem for divided powers, 
-but without multinomial coefficients !-/
+but without multinomial coefficients -/
 lemma sum_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A} 
 (hx : ∀ i ∈ s, x i ∈ I): ∀ (n : ℕ),
 hI.dpow n (s.sum x) = (finset.sym s n).sum 
