@@ -1210,11 +1210,7 @@ begin
     ring, },
   rw finset.sum_congr rfl hf1, 
   have hf2 : ∀ (k ∈ finset.range (n + 1)),
-<<<<<<< HEAD
     hI.dpow hJ k (a + b) * hI.dpow hJ (n - k) (a' + b') = 
-=======
-    dpow hI hJ k (a + b) * dpow hI hJ (n - k) (a' + b') = 
->>>>>>> c521ab7b64f03982dc4ca5adc91f5dac14485da6
     (finset.range (k + 1)).sum (λ i, (finset.range (n - k + 1)).sum (λ l, 
     hI.dpow i a * hI.dpow l a' * hJ.dpow (k - i) b * hJ.dpow (n - k - l) b')),
   { intros k hk,
