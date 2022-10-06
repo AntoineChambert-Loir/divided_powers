@@ -1210,7 +1210,7 @@ begin
     ring, },
   rw finset.sum_congr rfl hf1, 
   have hf2 : ∀ (k ∈ finset.range (n + 1)),
-    hI.dpow hJ k (a + b) * hI.dpow hJ (n - k) (a' + b') = 
+    dpow hI hJ k (a + b) * dpow hI hJ (n - k) (a' + b') = 
     (finset.range (k + 1)).sum (λ i, (finset.range (n - k + 1)).sum (λ l, 
     hI.dpow i a * hI.dpow l a' * hJ.dpow (k - i) b * hJ.dpow (n - k - l) b')),
   { intros k hk,
@@ -1255,7 +1255,7 @@ begin
   rw dpow_eq hI hJ hIJ n ha hb, 
   rw sum_dpow_aux (dpow hI hJ) (dpow_zero hI hJ hIJ) (dpow_add hI hJ hIJ),
   have : ∀ (k : sym ℕ m) (i : ℕ) (hi : i ∈ finset.range (n+1)),
-    hI.dpow hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
+    dpow hI hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
     = hI.dpow (multiset.count i ↑k) (hI.dpow i a) * 
       hJ.dpow (multiset.count i ↑k) (hJ.dpow (n-i) b),
   { intros k i hi,
