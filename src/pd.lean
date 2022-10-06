@@ -1147,7 +1147,7 @@ rw dpow_eq,
 -- rw finset.sum_filter_of_ne n,
 rw finset.sum_eq_single n, simp only [nat.sub_self, add_zero, hJ.dpow_zero],
 
-sorry
+sorry, sorry, sorry, sorry, sorry, sorry,
 end
 
 
@@ -1166,15 +1166,15 @@ end
 lemma dpow_mul {J : ideal A} (hJ : divided_powers J)
 (hIJ : ∀ (n : ℕ) (a : A), a ∈ I ⊓ J → hI.dpow n a = hJ.dpow n a)
 (m n : ℕ) {x : A} : x ∈ I + J →
-    hI.dpow hJ m x * hI.dpow hJ n x =
-      ↑((m + n).choose m) * hI.dpow hJ (m + n) x :=
+    dpow hI hJ m x * dpow hI hJ n x =
+      ↑((m + n).choose m) * dpow hI hJ (m + n) x :=
 begin
   rw [ideal.add_eq_sup, submodule.mem_sup],
   rintro ⟨a, ha, b, hb, rfl⟩, 
-  rw ideal_add_dpow_eq hI hJ hIJ m ha hb, 
+  rw dpow_eq hI hJ hIJ m ha hb, 
   rw ← finset.nat.sum_antidiagonal_eq_sum_range_succ
     (λ i j, hI.dpow i a * hJ.dpow j b),
-  rw ideal_add_dpow_eq hI hJ hIJ n ha hb, 
+  rw dpow_eq hI hJ hIJ n ha hb, 
   rw ← finset.nat.sum_antidiagonal_eq_sum_range_succ
     (λ k l, hI.dpow k a * hJ.dpow l b),
   rw finset.sum_mul, simp_rw finset.mul_sum,
@@ -1228,7 +1228,7 @@ begin
   rw hx.2.1, rw hx.2.2, },
   rw hs',
 
-  rw hI.ideal_add_dpow_eq hJ hIJ (m + n) ha hb, 
+  rw dpow_eq hI hJ hIJ (m + n) ha hb, 
   rw ← finset.nat.sum_antidiagonal_eq_sum_range_succ
     (λ i j, hI.dpow i a * hJ.dpow j b),
   rw finset.mul_sum,
@@ -1254,15 +1254,15 @@ begin
     { simp only [nat.choose_eq_zero_of_lt h, zero_mul, mul_zero], } },
 end
 
-lemma ideal_add_dpow_mem {J : ideal A} (hJ : divided_powers J) 
+lemma dpow_mem {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
   ∀ {n : ℕ} (hn : n ≠ 0) {x : A} (hx : x ∈ I + J), 
-  ideal_add_dpow hI hJ n x ∈ I + J :=
+  dpow hI hJ n x ∈ I + J :=
 begin
   intros n hn x,
   rw [ideal.add_eq_sup, submodule.mem_sup], 
   rintro ⟨a, ha, b, hb, rfl⟩, 
-  rw ideal_add_dpow_eq hI hJ hIJ _ ha hb, 
+  rw dpow_eq hI hJ hIJ _ ha hb, 
   apply submodule.sum_mem (I ⊔ J),
   intros k hk,
   cases not_eq_or_aux hn hk with hk hk,
@@ -1272,10 +1272,10 @@ begin
     exact hJ.dpow_mem hk hb, }
 end
 
-lemma ideal_add_dpow_add {J : ideal A} (hJ : divided_powers J) 
+lemma dpow_add {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) : 
   ∀ (n : ℕ) {x y : A} (hx : x ∈ I + J) (hy : y ∈ I + J),
-ideal_add_dpow hI hJ n (x + y) = finset.sum (finset.range (n + 1)) (λ k, (ideal_add_dpow hI hJ k x) * (ideal_add_dpow hI hJ (n - k) y)) :=
+ dpow hI hJ n (x + y) = finset.sum (finset.range (n + 1)) (λ k, (dpow hI hJ k x) * (dpow hI hJ (n - k) y)) :=
 begin
   intros n x y,
   rw [ideal.add_eq_sup, submodule.mem_sup], 
@@ -1283,7 +1283,7 @@ begin
   rw [submodule.mem_sup],
   rintro ⟨a', ha', b', hb', rfl⟩, 
   rw add_add_add_comm a b a' b',
-  rw ideal_add_dpow_eq hI hJ hIJ n (submodule.add_mem I ha ha') (submodule.add_mem J hb hb'),
+  rw dpow_eq hI hJ hIJ n (submodule.add_mem I ha ha') (submodule.add_mem J hb hb'),
 
   let f : ℕ × ℕ × ℕ × ℕ → A := λ ⟨i,j,k,l⟩, 
     (hI.dpow i a) * (hI.dpow j a') * (hJ.dpow k b) * (hJ.dpow l b'), 
@@ -1302,12 +1302,12 @@ begin
     ring, },
   rw finset.sum_congr rfl hf1, 
   have hf2 : ∀ (k ∈ finset.range (n + 1)),
-    hI.ideal_add_dpow hJ k (a + b) * hI.ideal_add_dpow hJ (n - k) (a' + b') = 
+    dpow hI hJ k (a + b) * dpow hI hJ (n - k) (a' + b') = 
     (finset.range (k + 1)).sum (λ i, (finset.range (n - k + 1)).sum (λ l, 
     hI.dpow i a * hI.dpow l a' * hJ.dpow (k - i) b * hJ.dpow (n - k - l) b')),
   { intros k hk,
-    rw ideal_add_dpow_eq hI hJ hIJ k ha hb,
-    rw ideal_add_dpow_eq hI hJ hIJ (n - k) ha' hb',
+    rw dpow_eq hI hJ hIJ k ha hb,
+    rw dpow_eq hI hJ hIJ (n - k) ha' hb',
     rw finset.sum_mul,
     apply finset.sum_congr rfl,
     intros i hi,
@@ -1336,26 +1336,26 @@ ici
 
 -/ -/
 
-lemma ideal_add_dpow_comp {J : ideal A} (hJ : divided_powers J) 
+lemma dpow_comp {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) 
   (m : ℕ) {n : ℕ} (hn : n ≠ 0) {x : A} (hx : x ∈ I + J) : 
-  hI.ideal_add_dpow hJ m (hI.ideal_add_dpow hJ n x) =
-    ↑(mchoose m n) * hI.ideal_add_dpow hJ (m * n) x := 
+  dpow hI hJ m (dpow hI hJ n x) =
+    ↑(mchoose m n) * dpow hI hJ (m * n) x := 
 begin
   rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
   obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
-  rw ideal_add_dpow_eq hI hJ hIJ n ha hb, 
-  rw sum_dpow_aux (ideal_add_dpow hI hJ) 
-    (ideal_add_dpow_zero hI hJ hIJ)
-    (ideal_add_dpow_add hI hJ hIJ),
+  rw dpow_eq hI hJ hIJ n ha hb, 
+  rw sum_dpow_aux (dpow hI hJ) 
+    (dpow_zero hI hJ hIJ)
+    (dpow_add hI hJ hIJ),
   have : ∀ (k : sym ℕ m) (i : ℕ) (hi : i ∈ finset.range (n+1)),
-    hI.ideal_add_dpow hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
+    dpow hI hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
     = hI.dpow (multiset.count i ↑k) (hI.dpow i a) * 
       hJ.dpow (multiset.count i ↑k) (hJ.dpow (n-i) b),
   { intros k i hi,
     cases not_eq_or_aux hn hi with hi' hi',
     rw mul_comm, 
-
+    sorry, sorry, 
   
   },
   /- si on développe, on obtient une somme indexée par
@@ -1381,7 +1381,7 @@ begin
   sorry,
   { intros n hn,
     nth_rewrite 0 [← zero_add (0 : A)],
-    rw ideal_add_dpow_eq hI hJ hIJ,
+    rw dpow_eq hI hJ hIJ,
     apply finset.sum_eq_zero,
     intros k hk,
     cases not_eq_or_aux hn hk with hk hk,
@@ -1400,24 +1400,24 @@ end
 noncomputable
 def divided_powers_ideal_add {J : ideal A} (hJ : divided_powers J) 
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) : divided_powers (I + J) := { 
-dpow := ideal_add_dpow hI hJ,
+dpow := dpow hI hJ,
 dpow_null := 
 begin
   intros n x hx, 
-  simp only [ideal_add_dpow], 
+  simp only [dpow], 
   rw function.extend_apply', 
   rintro ⟨⟨⟨a, ha⟩, ⟨b, hb⟩⟩, h⟩, apply hx, 
   rw ← h,
 --  change a + b ∈ I + J,
   exact submodule.add_mem_sup ha hb,
 end,
-dpow_zero := ideal_add_dpow_zero hI hJ hIJ, 
+dpow_zero := dpow_zero hI hJ hIJ, 
 dpow_one := 
 begin
   intro x,
   rw [ideal.add_eq_sup, submodule.mem_sup], 
   rintro ⟨a, ha, b, hb, rfl⟩, 
-  rw ideal_add_dpow_eq hI hJ hIJ _ ha hb, 
+  rw dpow_eq hI hJ hIJ _ ha hb, 
   suffices : finset.range (1 + 1) = {0, 1}, rw this,
   simp only [finset.sum_insert, finset.mem_singleton, nat.zero_ne_one, not_false_iff, 
     tsub_zero, finset.sum_singleton, tsub_self],
@@ -1425,16 +1425,16 @@ begin
   ring,
   { rw [finset.range_succ, finset.range_one], ext k, simp, exact or.comm, },
 end,
-dpow_mem := λ n, ideal_add_dpow_mem hI hJ hIJ,
-dpow_add := ideal_add_dpow_add hI hJ hIJ,
+dpow_mem := λ n, dpow_mem hI hJ hIJ,
+dpow_add := dpow_add hI hJ hIJ,
 dpow_smul := 
 begin
   intros n c x,
   rw [ideal.add_eq_sup, submodule.mem_sup], 
   rintro ⟨a, ha, b, hb, rfl⟩, 
-  rw ideal_add_dpow_eq hI hJ hIJ n ha hb, 
+  rw dpow_eq hI hJ hIJ n ha hb, 
   rw mul_add, 
-  rw ideal_add_dpow_eq hI hJ hIJ n (ideal.mul_mem_left I c ha) (ideal.mul_mem_left J c hb),
+  rw dpow_eq hI hJ hIJ n (ideal.mul_mem_left I c ha) (ideal.mul_mem_left J c hb),
   rw finset.mul_sum, 
   apply finset.sum_congr rfl,
   intros k hk,
@@ -1448,8 +1448,8 @@ begin
   exact hb,
   exact ha,
 end,
-dpow_mul := ideal_add_dpow_mul hI hJ hIJ, 
-dpow_comp := ideal_add_dpow_comp hI hJ hIJ, }
+dpow_mul := dpow_mul hI hJ hIJ, 
+dpow_comp := dpow_comp hI hJ hIJ, }
 
 end ideal_add
 
