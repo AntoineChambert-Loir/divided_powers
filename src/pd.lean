@@ -1182,12 +1182,8 @@ end
 lemma dpow_add {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) : 
   ∀ (n : ℕ) {x y : A} (hx : x ∈ I + J) (hy : y ∈ I + J),
-<<<<<<< HEAD
 dpow hI hJ n (x + y) = finset.sum (finset.range (n + 1)) 
   (λ k, (dpow hI hJ k x) * (dpow hI hJ (n - k) y)) :=
-=======
- dpow hI hJ n (x + y) = finset.sum (finset.range (n + 1)) (λ k, (dpow hI hJ k x) * (dpow hI hJ (n - k) y)) :=
->>>>>>> c521ab7b64f03982dc4ca5adc91f5dac14485da6
 begin
   intros n x y,
   rw [ideal.add_eq_sup, submodule.mem_sup], 
@@ -1255,27 +1251,15 @@ ici
 lemma dpow_comp {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) 
   (m : ℕ) {n : ℕ} (hn : n ≠ 0) {x : A} (hx : x ∈ I + J) : 
-<<<<<<< HEAD
-  hI.dpow hJ m (hI.dpow hJ n x) = ↑(mchoose m n) * hI.dpow hJ (m * n) x := 
-=======
   dpow hI hJ m (dpow hI hJ n x) =
     ↑(mchoose m n) * dpow hI hJ (m * n) x := 
->>>>>>> c521ab7b64f03982dc4ca5adc91f5dac14485da6
 begin
   rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
   obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
   rw dpow_eq hI hJ hIJ n ha hb, 
-<<<<<<< HEAD
   rw sum_dpow_aux (dpow hI hJ) (dpow_zero hI hJ hIJ) (dpow_add hI hJ hIJ),
   have : ∀ (k : sym ℕ m) (i : ℕ) (hi : i ∈ finset.range (n+1)),
     hI.dpow hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
-=======
-  rw sum_dpow_aux (dpow hI hJ) 
-    (dpow_zero hI hJ hIJ)
-    (dpow_add hI hJ hIJ),
-  have : ∀ (k : sym ℕ m) (i : ℕ) (hi : i ∈ finset.range (n+1)),
-    dpow hI hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
->>>>>>> c521ab7b64f03982dc4ca5adc91f5dac14485da6
     = hI.dpow (multiset.count i ↑k) (hI.dpow i a) * 
       hJ.dpow (multiset.count i ↑k) (hJ.dpow (n-i) b),
   { intros k i hi,
@@ -1324,14 +1308,9 @@ begin
 end
 
 noncomputable
-<<<<<<< HEAD
 def divided_powers {J : ideal A} (hJ : divided_powers J) 
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
 divided_powers (I + J) := { 
-=======
-def divided_powers_ideal_add {J : ideal A} (hJ : divided_powers J) 
-  (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) : divided_powers (I + J) := { 
->>>>>>> c521ab7b64f03982dc4ca5adc91f5dac14485da6
 dpow := dpow hI hJ,
 dpow_null := 
 begin
