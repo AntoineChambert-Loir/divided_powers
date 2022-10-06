@@ -143,7 +143,7 @@ open finset
 
 -- Also : can it be used to deduce dpow_comp from the rest?
 /-- A generic “multinomial” theorem for divided powers — but without multinomial coefficients — using only dpow_zero, dpow_add and dpow_eval_zero  -/
-lemma sum_dpow_aux  
+lemma sum_dpow_aux 
 (dpow : ℕ → A → A)
 (dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
 (dpow_add : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y) = finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
@@ -991,13 +991,13 @@ end
 
 end sub_pd_ideals
 
-section ideal_add
+namespace ideal_add
 
 variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 include hI
 
 noncomputable
-def ideal_add_dpow {J : ideal A} (hJ : divided_powers J) :
+def dpow {J : ideal A} (hJ : divided_powers J) :
   ℕ → A → A := λ n,
 function.extend 
   (λ ⟨a, b⟩, (a : A) + (b : A) : I × J → A)
@@ -1005,7 +1005,7 @@ function.extend
     (λ k, (hI.dpow k (a : A)) * (hJ.dpow (n - k) (b : A))))
   (λ (a : A), 0)
  
-lemma ideal_add_dpow_eq_aux {J : ideal A} (hJ : divided_powers J)
+lemma dpow_eq_aux {J : ideal A} (hJ : divided_powers J)
   (hIJ : ∀ (n : ℕ) {a} (ha : a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a)
   (n : ℕ) {a} (ha : a ∈ I) {b} (hb : b ∈ J) {a'} (ha' : a' ∈ I) {b'} (hb' : b' ∈ J)
   (H : a + b = a' + b') : 
@@ -1124,26 +1124,26 @@ x1 = n - y2, x2 = y1
     { simp only [c], ring, },
 end
 
-lemma ideal_add_dpow_eq {J : ideal A} (hJ : divided_powers J)
+lemma dpow_eq {J : ideal A} (hJ : divided_powers J)
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a)
   (n) {a} (ha : a ∈ I) {b} (hb : b ∈ J) : 
-  ideal_add_dpow hI hJ n (a + b) =
+  dpow hI hJ n (a + b) =
     finset.sum (finset.range (n + 1)) (λ k, (hI.dpow k a) * (hJ.dpow (n - k) b))  :=
 begin
-  simp only [ideal_add_dpow],
+  simp only [dpow],
   convert function.extend_apply_first _ _ _ _ (⟨(⟨a, ha⟩ : I), (⟨b, hb⟩ : J)⟩ : I × J),
   rintros ⟨⟨a, ha⟩, ⟨b, hb⟩⟩ ⟨⟨a', ha'⟩, ⟨b', hb'⟩⟩, 
   intro H,
-  refine ideal_add_dpow_eq_aux hI hJ _ n ha hb ha' hb' H,
+  refine dpow_eq_aux hI hJ _ n ha hb ha' hb' H,
   { intros n a, exact hIJ n a, },
 end
 
-lemma ideal_add_dpow_eq_of_mem_left {J : ideal A} (hJ : divided_powers J)
+lemma dpow_eq_of_mem_left {J : ideal A} (hJ : divided_powers J)
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a)
-  (n : ℕ) {x : A} (hx : x ∈ I) : ideal_add_dpow hI hJ n x = hI.dpow n x := 
+  (n : ℕ) {x : A} (hx : x ∈ I) : dpow hI hJ n x = hI.dpow n x := 
 begin
 rw ← add_zero x, 
-rw ideal_add_dpow_eq, 
+rw dpow_eq, 
 -- rw finset.sum_filter_of_ne n,
 rw finset.sum_eq_single n, simp only [nat.sub_self, add_zero, hJ.dpow_zero],
 
@@ -1151,23 +1151,23 @@ sorry
 end
 
 
-lemma ideal_add_dpow_zero {J : ideal A} (hJ : divided_powers J) 
+lemma dpow_zero {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
-∀ (x : A) (hx : x ∈ I + J), ideal_add_dpow hI hJ 0 x = 1:=
+∀ (x : A) (hx : x ∈ I + J), dpow hI hJ 0 x = 1:=
 begin
   intro x,
   rw [ideal.add_eq_sup, submodule.mem_sup], 
   rintro ⟨a, ha, b, hb, rfl⟩, 
-  rw ideal_add_dpow_eq hI hJ hIJ (0 : ℕ) ha hb, 
+  rw dpow_eq hI hJ hIJ (0 : ℕ) ha hb, 
   simp only [finset.range_one, zero_tsub, finset.sum_singleton],
   rw [hI.dpow_zero ha, hJ.dpow_zero hb, mul_one],
 end
 
-lemma ideal_add_dpow_mul {J : ideal A} (hJ : divided_powers J)
+lemma dpow_mul {J : ideal A} (hJ : divided_powers J)
 (hIJ : ∀ (n : ℕ) (a : A), a ∈ I ⊓ J → hI.dpow n a = hJ.dpow n a)
 (m n : ℕ) {x : A} : x ∈ I + J →
-    hI.ideal_add_dpow hJ m x * hI.ideal_add_dpow hJ n x =
-      ↑((m + n).choose m) * hI.ideal_add_dpow hJ (m + n) x :=
+    hI.dpow hJ m x * hI.dpow hJ n x =
+      ↑((m + n).choose m) * hI.dpow hJ (m + n) x :=
 begin
   rw [ideal.add_eq_sup, submodule.mem_sup],
   rintro ⟨a, ha, b, hb, rfl⟩, 
@@ -1532,6 +1532,13 @@ end divided_powers
 
 1.7 : tensor product, see Roby
 
-1.8 (M) to be added 
+1.8 (M). Done! 
 
+
+PRs : 
+ (M) : ring_inverse, tsub_tsub
+ (A) : submodule_induction, function.extend_apply_first
+
+Delete obsolete versions
+ (A) : rewrite_4_sums
 -/

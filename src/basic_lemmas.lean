@@ -162,6 +162,19 @@ begin
     { rw zero_mul, } },
 end
 
+lemma rewriting_4_fold_sums' {m n u v : ℕ} 
+  (h : m + n = u + v) (f : ℕ × ℕ → ℕ) {g : (ℕ × ℕ) × ℕ × ℕ → ℕ}
+  (hgf : g = λ x, f(x.fst.fst, x.fst.snd) ) 
+  (hf : ∀ (x : ℕ × ℕ), u < x.fst ∨ v < x.snd → f x = 0) :
+  (finset.nat.antidiagonal m).sum
+    (λ (y : ℕ × ℕ),
+       (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst) x = y)
+          (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst.fst + x.snd.fst = 
+            u ∧ x.fst.snd + x.snd.snd = v)
+             (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n))).sum g) =
+  (finset.nat.antidiagonal m).sum (λ (ij : ℕ × ℕ), f ⟨ij.fst, ij.snd⟩) := 
+sorry -- rewriting_4_fold_sums h f hgf hf
+
 /- TODO : There should be some general rewriting pattern 
 for sums indexed by finset.nat_tuple_antidiagonal 
 This one would first rewrite to 
