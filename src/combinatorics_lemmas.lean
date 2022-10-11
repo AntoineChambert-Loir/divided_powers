@@ -1,5 +1,5 @@
 import data.nat.choose.vandermonde
-import multinomial 
+--import multinomial 
 
 section combinatorics
 

@@ -1,7 +1,7 @@
 /- Copyright ACL and MIdFF -/
 
 -- import algebra.ring
-import pd
+import divided_powers.basic
 
 class divided_power_ring (A : Type*) extends comm_ring A:= 
 (pd_ideal : ideal A)
