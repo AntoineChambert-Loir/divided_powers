@@ -4,6 +4,8 @@ import ring_theory.tensor_product
 import ring_theory.power_series.basic
 import data.finset.sym
 
+import data.set.basic
+
 import algebra_lemmas
 import basic_lemmas
 import combinatorics_lemmas
@@ -421,9 +423,9 @@ begin
     have h_fac : (ring.inverse (m.factorial : A)) * (ring.inverse k.factorial) ^ m =
       ↑(mchoose m k) * (ring.inverse (m*k).factorial),
     { rw [ring.eq_mul_inverse_iff_mul_eq _ _ (factorial_is_unit hn_fac hkm), mul_assoc,
-        ring.inverse_mul_eq_iff_eq_mul  _ _ (factorial_is_unit hn_fac hmn)],
-      rw ring.inverse_pow_mul_eq_iff_eq_mul _ _ (factorial_is_unit hn_fac hkn),
-      rw [← mchoose_lemma _ (nat.pos_of_ne_zero hk),
+        ring.inverse_mul_eq_iff_eq_mul  _ _ (factorial_is_unit hn_fac hmn), ring.inverse_pow, 
+        ring.inverse_mul_eq_iff_eq_mul _ _  (is_unit.pow _ (factorial_is_unit hn_fac hkn)), 
+        ← mchoose_lemma _ (nat.pos_of_ne_zero hk),
         nat.cast_mul, nat.cast_mul, nat.cast_pow, mul_comm ↑m.factorial, mul_assoc] },
     rw [ mul_pow, ← pow_mul, mul_comm k, ← mul_assoc, ← mul_assoc, h_fac] },
 end
@@ -519,41 +521,40 @@ end
 
 end Q_algebra
 
--- Maybe we should use a bundled structure `sub_pd_ideal`, instead of `is_sub_pd_ideal`.
-section sub_pd_ideals
+/-- If J is another ideal of A with divided powers, 
+then the divided powers of I and J coincide on I • J 
+(Berthelot, 1.6.1 (ii))-/
+lemma coincide_on_smul  {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) 
+  {J : ideal A} (hJ : divided_powers J) : 
+∀ {n} (a ∈ I • J), hI.dpow n a = hJ.dpow n a :=
+begin
+  intros n a ha,
+  revert  n,
+  apply submodule.smul_induction_on' ha,
+  { intros a ha b hb n, 
+    simp only [algebra.id.smul_eq_mul], 
+    rw hJ.dpow_smul n hb,
+    rw mul_comm a b, rw hI.dpow_smul n ha, 
+    rw ← hJ.factorial_mul_dpow_eq_pow n b hb,
+    rw ← hI.factorial_mul_dpow_eq_pow n a ha,
+    ring, },
+  { intros x hx y hy hx' hy' n, 
+    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy), 
+    rw hJ.dpow_add n (ideal.mul_le_left hx) (ideal.mul_le_left hy), 
+    apply finset.sum_congr rfl,
+    intros k hk,
+    rw hx', rw hy', },
+end
 
-variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
-include hI
+section is_sub_pd_ideal
 
 /-- The structure of a sub-pd-ideal of a pd-ideal -/
-structure is_sub_pd_ideal (J : ideal A) : Prop :=
+structure is_sub_pd_ideal {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
+  (J : ideal A) : Prop :=
 (is_sub_ideal : J ≤ I)
 (dpow_mem_ideal : ∀ (n : ℕ) (hn : n ≠ 0) (j ∈ J), hI.dpow n j ∈ J )
 
-lemma is_sub_pd_ideal_self : is_sub_pd_ideal hI I :=
-{ is_sub_ideal   := le_refl _,
-  dpow_mem_ideal := λ n hn x hx, hI.dpow_mem hn hx, }
-
-/- If there is a pd-structure on I(A/J) such that the quotient map is 
-   a pd-morphism, then J ⊓ I is a sub-pd-ideal of I -/
-lemma is_sub_pd_ideal_of (J : ideal A) (hJ : divided_powers (I.map (ideal.quotient.mk J)))
-  (φ : pd_morphism hI hJ) (hφ:  φ.to_ring_hom = ideal.quotient.mk J) : 
-  hI.is_sub_pd_ideal (J ⊓ I) := 
-begin
-  split,
-  exact semilattice_inf.inf_le_right J I, 
-  intros n hn a, 
-  simp only [ideal.mem_inf], 
-  rintros ⟨haJ, haI⟩,
-  split,
-  { rw [← ideal.quotient.eq_zero_iff_mem, ← hφ],
-    rw ← φ.dpow_comp n a,  
-    suffices : (φ.to_ring_hom) a = 0, rw this,
-    exact hJ.dpow_eval_zero hn,
-    rw [hφ, ideal.quotient.eq_zero_iff_mem], 
-    exact haJ, exact haI, }, 
-  exact hI.dpow_mem hn haI,
-end
+variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 
 /-- The ideal J ⊓ I is a sub-pd-ideal of I, 
     if and only if (on I) the divided powers have some compatiblity mod J 
@@ -595,51 +596,226 @@ begin
     { exact hI.dpow_mem hn ha.2, } },
 end
 
-/-- If J is an ideal of A, then J ⬝ I is a sub-pd-ideal of I.
-  (Berthelot, 1.6.1 (i)) -/
-lemma is_sub_pd_ideal_prod (J : ideal A) : is_sub_pd_ideal hI (I • J) :=
-begin
+/-- Lemma 3.6 of [BO] (Antoine) -/
+lemma span_is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
+  is_sub_pd_ideal hI (ideal.span S) ↔ 
+  ∀ (n : ℕ) (hn : n ≠ 0) (s ∈ S), hI.dpow n s ∈ ideal.span S := 
+begin 
   split,
-  exact ideal.mul_le_right,
-  intros n hn x hx, revert n,
-  apply submodule.smul_induction_on' hx,
-  { -- mul 
-    intros a ha b hb n hn,
-    rw [algebra.id.smul_eq_mul, mul_comm a b, hI.dpow_smul n ha, mul_comm], 
-    apply submodule.mul_mem_mul (hI.dpow_mem hn ha) (J.pow_mem_of_mem hb n (zero_lt_iff.mpr hn)), },
-  { -- add 
-    intros x hx y hy hx' hy' n hn, 
-    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy),
-    apply submodule.sum_mem (I • J),
-    intros k hk, 
-    cases not_eq_or_aux hn hk with hk' hk',
-    { apply ideal.mul_mem_right _ (I • J), exact hx' k hk', },
-    { apply ideal.mul_mem_left (I • J), exact hy' _ hk', } } 
+  { -- trivial direction
+    intros hhI h hn s hs, 
+    apply hhI.dpow_mem_ideal h hn s (ideal.subset_span hs), },
+  { -- interesting direction,
+    intro hhI,
+    have hSI := ideal.span_le.mpr hS,
+    apply is_sub_pd_ideal.mk (hSI),
+    intros n hn z hz, revert n,
+    refine submodule.span_induction' _ _ _ _ hz, 
+    { -- case of elements of S 
+      intros s hs n hn, exact hhI n hn s hs, },
+    { -- case of 0 
+      intros n hn, rw hI.dpow_eval_zero hn, apply ideal.zero_mem _, },
+    { -- case of sum
+      rintros x hxI y hyI hx hy n hn,
+      rw hI.dpow_add n (hSI hxI) (hSI hyI),
+      apply submodule.sum_mem (ideal.span S),
+      intros m hm,
+      cases not_eq_or_aux hn hm with hm hm,
+      { refine ideal.mul_mem_right _ (ideal.span S) (hx m hm), },
+      { refine ideal.mul_mem_left (ideal.span S) _ (hy (n - m) hm), } },
+    { -- case : product,
+      intros a x hxI hx n hn,
+      simp only [algebra.id.smul_eq_mul],
+      rw hI.dpow_smul n (hSI hxI),
+      exact ideal.mul_mem_left (ideal.span S) (a ^ n) (hx n hn), }, },
 end
 
-/-- If J is another ideal of A with divided powers, 
-then the divided powers of I and J coincide on I • J 
-(Berthelot, 1.6.1 (ii))-/
-lemma coincide_on_smul {J : ideal A} (hJ : divided_powers J) : 
-∀ {n} (a ∈ I • J), hI.dpow n a = hJ.dpow n a :=
+lemma generated_dpow_is_sub_ideal {S : set A} (hS : S ⊆ I) :
+  ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x } ≤ I :=
 begin
-  intros n a ha,
-  revert  n,
-  apply submodule.smul_induction_on' ha,
-  { intros a ha b hb n, 
-    simp only [algebra.id.smul_eq_mul], 
-    rw hJ.dpow_smul n hb,
-    rw mul_comm a b, rw hI.dpow_smul n ha, 
-    rw ← hJ.factorial_mul_dpow_eq_pow n b hb,
-    rw ← hI.factorial_mul_dpow_eq_pow n a ha,
-    ring, },
-  { intros x hx y hy hx' hy' n, 
-    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy), 
-    rw hJ.dpow_add n (ideal.mul_le_left hx) (ideal.mul_le_left hy), 
-    apply finset.sum_congr rfl,
-    intros k hk,
-    rw hx', rw hy', },
+  rw ideal.span_le,
+  rintros y ⟨n, hn, x, hx, hxy⟩,
+  rw hxy,
+  exact hI.dpow_mem hn (hS hx)
 end
+
+end is_sub_pd_ideal
+
+/-- A `sub-pd-ideal` of `I` is a sub-ideal `J` of `I` such that for all `n ∈ ℕ ≥ 0` and all
+  `j ∈ J`, `hI.dpow n j ∈ J`. -/
+@[ext] structure sub_pd_ideal {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) :=
+(carrier : ideal A)
+(is_sub_ideal : carrier ≤ I)
+(dpow_mem_ideal : ∀ (n : ℕ) (hn : n ≠ 0) (j ∈ carrier), hI.dpow n j ∈ carrier)
+
+namespace sub_pd_ideal
+
+variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
+include hI
+
+instance : set_like (sub_pd_ideal hI) A :=
+{ coe := λ s, s.carrier,
+  coe_injective' := λ p q h, by rw [set_like.coe_set_eq] at h; cases p; cases q; congr'  }
+
+@[simp]
+lemma mem_carrier {s : sub_pd_ideal hI} {x : A} : x ∈ s.carrier ↔ x ∈ s := iff.rfl
+
+/-- I is a sub-pd-ideal ot itself. -/
+def top : sub_pd_ideal hI :=
+{ carrier        := I,
+  is_sub_ideal   := le_refl _,
+  dpow_mem_ideal := λ n hn x hx, hI.dpow_mem hn hx }
+
+/-- If there is a pd-structure on I(A/J) such that the quotient map is 
+   a pd-morphism, then J ⊓ I is a sub-pd-ideal of I -/
+def inter_quot (J : ideal A) (hJ : divided_powers (I.map (ideal.quotient.mk J)))
+  (φ : pd_morphism hI hJ) (hφ:  φ.to_ring_hom = ideal.quotient.mk J) : 
+  sub_pd_ideal hI := 
+{ carrier        := J ⊓ I,
+  is_sub_ideal   := set.inter_subset_right J I, 
+  dpow_mem_ideal := λ n hn a ⟨haJ, haI⟩,
+  begin
+    refine ⟨_, hI.dpow_mem hn haI⟩,
+    rw [set_like.mem_coe,← ideal.quotient.eq_zero_iff_mem, ← hφ, ← φ.dpow_comp n a haI], 
+    suffices ha0 : (φ.to_ring_hom) a = 0,
+    { rw ha0,
+      exact hJ.dpow_eval_zero hn },
+    rw [hφ, ideal.quotient.eq_zero_iff_mem], 
+    exact haJ, 
+  end }
+
+/-- If J is an ideal of A, then J ⬝ I is a sub-pd-ideal of I. (Berthelot, 1.6.1 (i)) -/
+def prod (J : ideal A) : sub_pd_ideal hI  :=
+{ carrier        := I • J,
+  is_sub_ideal   := ideal.mul_le_right,
+  dpow_mem_ideal := λ n hn x hx,
+  begin
+    revert n,
+    apply submodule.smul_induction_on' hx,
+    { -- mul 
+      intros a ha b hb n hn,
+      rw [algebra.id.smul_eq_mul, mul_comm a b, hI.dpow_smul n ha, mul_comm], 
+      exact submodule.mul_mem_mul (hI.dpow_mem hn ha)
+        (J.pow_mem_of_mem hb n (zero_lt_iff.mpr hn)) },
+    { -- add 
+      intros x hx y hy hx' hy' n hn, 
+      rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy),
+      apply submodule.sum_mem (I • J),
+      intros k hk,
+      cases not_eq_or_aux hn hk with hk' hk',
+      { apply ideal.mul_mem_right _ (I • J), exact hx' k hk', },
+      { apply ideal.mul_mem_left (I • J), exact hy' _ hk', } }
+  end }
+
+/- TODO : 
+* prove uniqueness
+* add rfl lemma that gives analogue of dpow_quot_eq for the divided_powers 
+that was just defined 
+* maybe other… 
+-/
+
+--Section 1.8 of [B]
+/- The intersection of two sub-PD ideals is a sub-PD ideal. -/
+instance : has_inf (sub_pd_ideal hI) := ⟨λ J J',
+{ carrier := J.carrier ⊓ J'.carrier,
+  is_sub_ideal := λ x hx, J.is_sub_ideal hx.1,
+  dpow_mem_ideal :=  λ n hn x hx, ⟨J.dpow_mem_ideal n hn x hx.1, J'.dpow_mem_ideal n hn x hx.2⟩ }⟩
+
+instance : has_Inf (sub_pd_ideal hI) := ⟨λ S,
+{ carrier := ⨅ s ∈ (has_insert.insert (top hI) S), (s : hI.sub_pd_ideal).carrier, 
+  is_sub_ideal := λ x hx,
+  begin
+    simp only [ideal.mem_infi] at hx,
+    exact hx (top hI) (set.mem_insert (top hI) S),
+  end,
+  dpow_mem_ideal := λ n hn x hx,
+  begin
+    simp only [ideal.mem_infi] at hx ⊢,
+    intros s hs,
+    refine (s : hI.sub_pd_ideal).dpow_mem_ideal n hn x (hx s hs),
+  end }⟩
+
+lemma Inf_carrier_def (S : set (sub_pd_ideal hI)) :
+  (Inf S).carrier = ⨅ s ∈ (has_insert.insert (top hI) S), (s : hI.sub_pd_ideal).carrier := rfl
+
+/-- The sub-pd-ideal of I generated by a family of elements of A. -/
+def generated (S : set A) : sub_pd_ideal hI := 
+Inf { J : sub_pd_ideal hI | S ⊆ J.carrier }
+
+/-- The sub-pd-ideal of I generated by the family `hI.dpow n x`, where `n ∈ ℕ ≥ 0` and `x ∈ S`. -/
+def generated_dpow {S : set A} (hS : S ⊆ I) :
+  sub_pd_ideal hI := 
+{ carrier := ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x },
+  is_sub_ideal := generated_dpow_is_sub_ideal hI hS,
+  dpow_mem_ideal := λ n hn z hz, 
+  begin
+    have hSI := generated_dpow_is_sub_ideal hI hS,
+    revert n,
+    refine submodule.span_induction' _ _ _ _ hz,
+    { -- Elements of S
+      rintros y ⟨m, hm, x, hxS, hxy⟩ n hn,
+      rw [hxy, hI.dpow_comp n hm (hS hxS)],
+      exact ideal.mul_mem_left _ _ (ideal.subset_span ⟨n*m, mul_ne_zero hn hm, x, hxS, rfl⟩) },
+    { -- Zero
+      intros n hn,
+      rw hI.dpow_eval_zero hn, exact ideal.zero_mem _ },
+    { intros x hx y hy hx_pow hy_pow n hn,
+      rw hI.dpow_add n (hSI hx) (hSI hy),
+      apply submodule.sum_mem (ideal.span _),
+      intros m hm,
+      cases not_eq_or_aux hn hm with hm hm,
+      { exact ideal.mul_mem_right _ (ideal.span _) (hx_pow m hm) },
+      { exact ideal.mul_mem_left (ideal.span _) _ (hy_pow (n - m) hm) }},
+    { intros a x hx hx_pow n hn,
+      rw [smul_eq_mul, hI.dpow_smul n (hSI hx)],
+      exact ideal.mul_mem_left (ideal.span _) (a ^ n) (hx_pow n hn) }
+  end }
+
+lemma generated_dpow_carrier {S : set A} (hS : S ⊆ I) :
+  (generated_dpow hI hS).carrier = 
+  ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x } := rfl
+
+lemma le_generated_dpow {S : set A} (hS : S ⊆ I) :
+  S ⊆ (generated_dpow hI hS).carrier :=
+λ x hx, ideal.subset_span ⟨1, one_ne_zero, x, hx, by rw hI.dpow_one (hS hx)⟩
+
+lemma generated_dpow_le (S : set A) (J : sub_pd_ideal hI) 
+  (hSJ : S ⊆ J.carrier) :
+  ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x } ≤ J.carrier :=
+begin
+  rw ideal.span_le,
+  rintros y ⟨n, hn, x, hx, hxy⟩,
+  rw hxy,
+  exact J.dpow_mem_ideal n hn x (hSJ hx),
+end
+
+lemma generated_carrier_eq {S : set A} (hS : S ⊆ I) :
+  (generated hI S).carrier =
+    ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x } := 
+begin
+  simp only [generated, Inf_carrier_def],
+  apply le_antisymm,
+  { have h : generated_dpow hI hS ∈ insert (top hI) {J : hI.sub_pd_ideal | S ⊆ ↑(J.carrier)},
+  { apply set.mem_insert_of_mem,
+    simp only [set.mem_set_of_eq, generated_dpow_carrier],
+    exact le_generated_dpow hI hS },
+    refine Inf_le_of_le ⟨generated_dpow hI hS, _⟩ (le_refl _),
+    simp only [h, cinfi_pos],
+    refl },
+  { rw le_infi₂_iff,
+    rintros J hJ,
+    refine generated_dpow_le hI S J _,
+    cases set.mem_insert_iff.mp hJ with hJI hJS,
+    { rw hJI, exact hS },
+    { exact hJS }}
+end
+
+end sub_pd_ideal
+
+#lint
+section quot
+
+variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 
 /- Tagged as noncomputable because it makes use of function.extend, 
 but under is_sub_pd_ideal hI (J ⊓ I), dpow_quot_eq proves that no choices are involved -/
@@ -668,6 +844,8 @@ begin
   rw ← ideal.quotient.eq, 
   rw classical.some_spec ha', 
 end
+
+
 
 -- We wish for a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
 /-- When `I ⊓ J` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I(A⧸J)` of the quotient -/
@@ -760,143 +938,7 @@ begin
   simp only [map_mul, map_nat_cast],
 end }
 
-/- TODO : 
-* prove uniqueness
-* add rfl lemma that gives analogue of dpow_quot_eq for the divided_powers 
-that was just defined 
-* maybe other… 
--/
-
-/-- Lemma 3.6 of [BO] (Antoine) -/
-lemma span_is_sub_pd_ideal_iff (S : set A) (hS : S ⊆ I) :
-  is_sub_pd_ideal hI (ideal.span S) ↔ 
-  ∀ (n : ℕ) (hn : n ≠ 0) (s ∈ S), hI.dpow n s ∈ ideal.span S := 
-begin 
-  split,
-  { -- trivial direction
-    intros hhI h hn s hs, 
-    apply hhI.dpow_mem_ideal h hn s (ideal.subset_span hs), },
-  { -- interesting direction,
-    intro hhI,
-    have hSI := ideal.span_le.mpr hS,
-    apply is_sub_pd_ideal.mk (hSI),
-    intros n hn z hz, revert n,
-    refine submodule.span_induction' _ _ _ _ hz, 
-    { -- case of elements of S 
-      intros s hs n hn, exact hhI n hn s hs, },
-    { -- case of 0 
-      intros n hn, rw hI.dpow_eval_zero hn, apply ideal.zero_mem _, },
-    { -- case of sum
-      rintros x hxI y hyI hx hy n hn,
-      rw hI.dpow_add n (hSI hxI) (hSI hyI),
-      apply submodule.sum_mem (ideal.span S),
-      intros m hm,
-      cases not_eq_or_aux hn hm with hm hm,
-      { refine ideal.mul_mem_right _ (ideal.span S) (hx m hm), },
-      { refine ideal.mul_mem_left (ideal.span S) _ (hy (n - m) hm), } },
-    { -- case : product,
-      intros a x hxI hx n hn,
-      simp only [algebra.id.smul_eq_mul],
-      rw hI.dpow_smul n (hSI hxI),
-      exact ideal.mul_mem_left (ideal.span S) (a ^ n) (hx n hn), }, },
-end
-
---Section 1.8 of [B]
-/- The intersection of two sub-PD ideals is a sub-PD ideal. -/
-lemma is_sub_pd_ideal_inf {J J' : ideal A} (hJ : is_sub_pd_ideal hI J) 
-  (hJ' : is_sub_pd_ideal hI J') : is_sub_pd_ideal hI (J ⊓ J') := 
-{ is_sub_ideal := λ x hx, hJ.is_sub_ideal hx.1,
-  dpow_mem_ideal :=  λ n hn x hx, ⟨hJ.dpow_mem_ideal n hn x hx.1, hJ'.dpow_mem_ideal n hn x hx.2⟩ }
-
-/- The intersection of a family of sub-PD ideals is a sub-PD ideal. -/
-lemma is_sub_pd_ideal_Inf {S : set (ideal A)} [hS_ne : nonempty S]
-  (hS : Π (s : S), is_sub_pd_ideal hI s) :
-  is_sub_pd_ideal hI (has_Inf.Inf S) :=
-{ is_sub_ideal := λ x hx,
-    (hS (nonempty.some hS_ne)).is_sub_ideal ((ideal.mem_Inf.mp hx) (nonempty.some hS_ne).2),
-  dpow_mem_ideal := λ n hn x hx,
-  begin
-    rw ideal.mem_Inf at hx ⊢,
-    intros s hs,
-    exact (hS ⟨s, hs⟩).dpow_mem_ideal n hn x (hx hs),
-  end }
-
-def generated_sub_pd_ideal {S : set A} [nonempty S] (hS : S ⊆ I) : ideal A := 
-has_Inf.Inf { J : ideal A | (is_sub_pd_ideal hI J) ∧ S ⊆ J }
-
-lemma generated_sub_pd_ideal_is_sub_pd_ideal {S : set A} [nonempty S] (hS : S ⊆ I) : 
-  is_sub_pd_ideal hI (generated_sub_pd_ideal hI hS) :=
-begin
-  haveI hS_ne : nonempty {J : ideal A | hI.is_sub_pd_ideal J ∧ ∀ (x : A), x ∈ S → x ∈ J},
-  { use [I, ⟨is_sub_pd_ideal_self hI, hS⟩] },
-  apply is_sub_pd_ideal_Inf,
-  exact λ ⟨s, hs⟩, hs.left,
-end
-
-lemma generated_dpow_is_sub_ideal {S : set A} [nonempty S]  (hS : S ⊆ I) :
-  ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x } ≤ I :=
-begin
-  rw ideal.span_le,
-  rintros y ⟨n, hn, x, hx, hxy⟩,
-  rw hxy,
-  exact hI.dpow_mem hn (hS hx)
-end
-
-lemma generated_dpow_is_sub_pd_ideal {S : set A} [nonempty S]  (hS : S ⊆ I) :
-  is_sub_pd_ideal hI (
-    ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x }) := 
-{ is_sub_ideal := generated_dpow_is_sub_ideal hI hS,
-  dpow_mem_ideal := λ n hn z hz, 
-  begin
-    have hSI := generated_dpow_is_sub_ideal hI hS,
-    revert n,
-    refine submodule.span_induction' _ _ _ _ hz,
-    { -- Elements of S
-      rintros y ⟨m, hm, x, hxS, hxy⟩ n hn,
-      rw [hxy, hI.dpow_comp n hm (hS hxS)],
-      exact ideal.mul_mem_left _ _ (ideal.subset_span ⟨n*m, mul_ne_zero hn hm, x, hxS, rfl⟩) },
-    { -- Zero
-      intros n hn,
-      rw hI.dpow_eval_zero hn, exact ideal.zero_mem _ },
-    { intros x hx y hy hx_pow hy_pow n hn,
-      rw hI.dpow_add n (hSI hx) (hSI hy),
-      apply submodule.sum_mem (ideal.span _),
-      intros m hm,
-      cases not_eq_or_aux hn hm with hm hm,
-      { exact ideal.mul_mem_right _ (ideal.span _) (hx_pow m hm) },
-      { exact ideal.mul_mem_left (ideal.span _) _ (hy_pow (n - m) hm) }},
-    { intros a x hx hx_pow n hn,
-      rw [smul_eq_mul, hI.dpow_smul n (hSI hx)],
-      exact ideal.mul_mem_left (ideal.span _) (a ^ n) (hx_pow n hn) }
-  end }
-
-lemma generated_dpow_le {S : set A} [nonempty S] (hS : S ⊆ I) {J : ideal A}
- (hJI : is_sub_pd_ideal hI J) (hSJ : S ⊆ J):
-  ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x } ≤ J :=
-begin
-  rw ideal.span_le,
-  rintros y ⟨n, hn, x, hx, hxy⟩,
-  rw hxy,
-  exact hJI.dpow_mem_ideal n hn x (hSJ hx),
-end
-
-lemma generated_sub_pd_ideal_eq {S : set A} [nonempty S] (hS : S ⊆ I) :
-  (generated_sub_pd_ideal hI hS) =
-    ideal.span { y : A | ∃ (n : ℕ) (hn : n ≠ 0) (x : A) (hx : x ∈ S), y = hI.dpow n x } := 
-begin
-  simp only [generated_sub_pd_ideal],
-  apply le_antisymm,
-  { refine Inf_le_of_le ⟨generated_dpow_is_sub_pd_ideal hI hS, _⟩ (le_refl _),
-    apply set.subset.trans _ ideal.subset_span,
-    intros x hx,
-    use [1, one_ne_zero, x, hx],
-    rw hI.dpow_one (hS hx) },
-  { rw le_Inf_iff,
-    rintros J ⟨hJI, hSJ⟩,
-    exact generated_dpow_le hI hS hJI hSJ }
-end
-
-end sub_pd_ideals
+end quot
 
 namespace ideal_add
 
