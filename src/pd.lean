@@ -9,7 +9,7 @@ import data.set.basic
 import algebra_lemmas
 import basic_lemmas
 import combinatorics_lemmas
-import temp_sym
+-- import temp_sym
 
 /-! # Divided powers 
 
@@ -38,7 +38,7 @@ doi: https://doi.org/10.24033/asens.1148
 
 -/
 
-open_locale classical
+-- open_locale classical
 
 
 section divided_powers_definition
@@ -97,6 +97,8 @@ def pd_ring.mk (A : Type*) [comm_ring A] (I : ideal A) (hI : divided_powers I):
 
 
 end divided_powers_definition
+
+open_locale classical
 
 namespace divided_powers
 
@@ -175,7 +177,7 @@ begin
     (λ m hm, _) 
     (λ m _, m.2.fill a m.1)
     _ 
-    (λ m _, sym.fill_filter_ne ι n a m) 
+    (λ m _, m.fill_filter_ne a) 
     -- explicit arguments above rather than m.fill_filter_ne a
     -- adjust once multinomial has been incorporated to mathlib
     (λ m hm, _)).symm,
@@ -194,10 +196,8 @@ begin
     intro hi', apply ha, rw hi', exact hi, },
     
   { exact λ m hm, sym_fill_mem a (mem_sigma.1 hm).2 },
-  { exact sym.filter_ne_fill ι _ a m (mt (mem_sym_iff.1 (mem_sigma.1 hm).2 a) ha) },
+  { exact sym.filter_ne_fill a m (mt (mem_sym_iff.1 (mem_sigma.1 hm).2 a) ha) },
 end
-
-
 
 variable (hI : divided_powers I)
 include hI
@@ -225,10 +225,34 @@ begin
 end
 
 /-- A “multinomial” theorem for divided powers — without multinomial coefficients -/
-lemma sum_dpow  {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A}
+lemma sum_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A}
 (hx : ∀ i ∈ s, x i ∈ I): ∀ (n : ℕ), hI.dpow n (s.sum x) = (finset.sym s n).sum 
 (λ k, s.prod (λ i, hI.dpow (multiset.count i k) (x i))) :=
 sum_dpow_aux hI.dpow (λ x hx, hI.dpow_zero hx)  (λ n x y hx hy, hI.dpow_add n hx hy) (λ n hn, hI.dpow_eval_zero hn) hx
+
+lemma prod_dpow_self {ι : Type*} [decidable_eq ι] {s : finset ι} {n : ι → ℕ}
+  (a : A) (ha : a ∈ I) :
+  s.prod (λ i, hI.dpow (n i) a) = 
+  nat.multinomial s n * hI.dpow (s.sum n) a :=
+begin
+  induction s using finset.induction with i s hi ih,
+  { rw [finset.prod_empty, finset.sum_empty, 
+    hI.dpow_zero ha, nat.multinomial_nil, 
+    nat.cast_one, mul_one],
+    },
+  { rw finset.prod_insert hi, 
+    rw ih,
+    rw ← mul_assoc, rw mul_comm (hI.dpow _ a),
+    rw mul_assoc,
+    rw hI.dpow_mul _ _ ha,
+    rw ← finset.sum_insert hi,
+    rw ← mul_assoc, apply congr_arg2 _ _ rfl,
+    rw mul_comm,
+    rw nat.multinomial_insert s n hi, 
+    simp only [nat.cast_mul],
+    rw finset.sum_insert hi, },
+end
+
 
 end divided_powers_examples
 
@@ -276,6 +300,8 @@ begin
 end
 
 namespace of_invertible_factorial
+
+open_locale classical
 
 noncomputable def dpow (I : ideal A) :
   ℕ → A → A :=
@@ -423,9 +449,15 @@ begin
     have h_fac : (ring.inverse (m.factorial : A)) * (ring.inverse k.factorial) ^ m =
       ↑(mchoose m k) * (ring.inverse (m*k).factorial),
     { rw [ring.eq_mul_inverse_iff_mul_eq _ _ (factorial_is_unit hn_fac hkm), mul_assoc,
+<<<<<<< HEAD
         ring.inverse_mul_eq_iff_eq_mul  _ _ (factorial_is_unit hn_fac hmn), ring.inverse_pow, 
         ring.inverse_mul_eq_iff_eq_mul _ _  (is_unit.pow _ (factorial_is_unit hn_fac hkn)), 
         ← mchoose_lemma _ (nat.pos_of_ne_zero hk),
+=======
+        ring.inverse_mul_eq_iff_eq_mul  _ _ (factorial_is_unit hn_fac hmn)],
+      rw ring.inverse_pow_mul_eq_iff_eq_mul _ _ (factorial_is_unit hn_fac hkn),
+      rw [← mchoose_lemma _ hk,
+>>>>>>> 17d4087d55f7864ca572b46bbf6a04124b1c31dc
         nat.cast_mul, nat.cast_mul, nat.cast_pow, mul_comm ↑m.factorial, mul_assoc] },
     rw [ mul_pow, ← pow_mul, mul_comm k, ← mul_assoc, ← mul_assoc, h_fac] },
 end
@@ -942,6 +974,69 @@ end quot
 
 namespace ideal_add
 
+/-- Some complicated numerical coefficients for the proof of ideal_add.dpow_comp -/
+private
+def cnik := λ (n i : ℕ) (k : multiset ℕ),
+    ite (i = 0) 
+        (mchoose (multiset.count i k) n)
+        (ite (i = n) 
+          (mchoose (multiset.count i k) n) 
+          ((multiset.count i k).factorial * (mchoose (multiset.count i k) i) * (mchoose (multiset.count i k) (n - i))))
+
+lemma range_sym_prop {m n : ℕ} {k : sym ℕ m} (hk :
+  k ∈ (finset.range (n + 1)).sym m) :
+  finset.sum (finset.range (n + 1)) (λ i,
+    multiset.count i ↑k) = m := 
+begin
+  simp only [finset.mem_sym_iff'] at hk,
+  simp_rw ← k.prop, 
+  rw ← multiset.to_finset_sum_count_eq ↑k, 
+  apply symm,
+  apply finset.sum_subset_zero_on_sdiff, 
+  { intros i hi,  
+    rw [multiset.mem_to_finset, sym.mem_coe] at  hi, 
+    exact hk i hi, }, 
+  { intros x hx, 
+    rw [finset.mem_sdiff, multiset.mem_to_finset, sym.mem_coe] at hx,
+    simp only [multiset.count_eq_zero, sym.mem_coe],
+    exact hx.2, },
+  { intros x hk, refl, },
+end
+
+lemma range_sym_weighted_sum_le {m n : ℕ} (k : sym ℕ m) (hk : k ∈ (finset.range (n+1)).sym m) :
+  (finset.range (n+1)).sum  (λ i, multiset.count i ↑k * i) ≤ m * n :=
+begin
+  suffices : ∀ (i : ℕ) (hi : i ∈ finset.range (n + 1)), 
+  (multiset.count i ↑k * i ≤ multiset.count i ↑k * n),
+    apply le_trans (finset.sum_le_sum this),
+    rw ← finset.sum_mul,
+    rw range_sym_prop hk, 
+  -- suffices 
+  intros i hi,
+  apply nat.mul_le_mul_of_nonneg_left,
+  exact nat.lt_succ_iff.mp (finset.mem_range.mp hi),
+end
+
+
+lemma sum_range_sym_mul_compl {m n : ℕ} {k : sym ℕ m} (hk : k ∈ (finset.range (n + 1)).sym m) :
+    finset.sum (finset.range (n+1)) (λ i, ((multiset.count i k) * (n - i)))
+    = m * n - finset.sum (finset.range (n+1)) (λ i, ((multiset.count i k) * i)) :=
+  begin
+    suffices : (finset.range (n+1)).sum (λ i, multiset.count i ↑k * (n-i))
+      + (finset.range (n+1)).sum (λi, multiset.count i ↑k * i) = m * n,
+    rw ← this,  rw nat.add_sub_cancel,
+    
+    rw ← finset.sum_add_distrib,
+    simp_rw ← mul_add,  
+    have : ∀ (x : ℕ) (hx : x ∈ finset.range (n + 1)), 
+      multiset.count x ↑k * (n -x + x) = multiset.count x ↑k * n,
+    { intros x hx,
+      rw nat.sub_add_cancel (nat.lt_succ_iff.mp (finset.mem_range.mp hx)), },
+    rw finset.sum_congr rfl this,
+    rw ← finset.sum_mul,
+    rw range_sym_prop hk, 
+end
+
 variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 include hI
 
@@ -1091,14 +1186,35 @@ lemma dpow_eq_of_mem_left {J : ideal A} (hJ : divided_powers J)
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a)
   (n : ℕ) {x : A} (hx : x ∈ I) : dpow hI hJ n x = hI.dpow n x := 
 begin
-rw ← add_zero x, 
-rw dpow_eq, 
--- rw finset.sum_filter_of_ne n,
-rw finset.sum_eq_single n, simp only [nat.sub_self, add_zero, hJ.dpow_zero],
-
-sorry, sorry, sorry, sorry, sorry, sorry,
+  rw ← add_zero x, 
+  rw dpow_eq, 
+  { rw finset.sum_eq_single n, 
+    { simp only [nat.sub_self, add_zero, hJ.dpow_zero],
+      rw [hJ.dpow_zero (J.zero_mem), mul_one], },
+    { intros b hb hb', 
+      rw [hJ.dpow_eval_zero, mul_zero], 
+      intro h, apply hb', 
+      rw [finset.mem_range, nat.lt_succ_iff] at hb, 
+      rw [← nat.sub_add_cancel hb, h, zero_add], }, 
+    { intro hn, exfalso, apply hn, rw finset.mem_range, 
+      exact lt_add_one n, } },
+  exact hIJ, exact hx, exact J.zero_mem,
 end
 
+lemma dpow_eq_of_mem_right {J : ideal A} (hJ : divided_powers J)
+  (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a)
+  (n : ℕ) {x : A} (hx : x ∈ J) : dpow hI hJ n x = hJ.dpow n x := 
+begin
+  rw ← zero_add x, 
+  rw dpow_eq, 
+  { rw finset.sum_eq_single 0, 
+    { simp only [nat.sub_zero, zero_add, hI.dpow_zero (I.zero_mem), one_mul], },
+    { intros b hb hb', 
+      rw [hI.dpow_eval_zero, zero_mul], exact hb', }, 
+    { intro hn, exfalso, apply hn, rw finset.mem_range, 
+      exact ne_zero.pos (n + 1), } },
+  exact hIJ, exact I.zero_mem, exact hx,
+end
 
 lemma dpow_zero {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
@@ -1221,10 +1337,36 @@ begin
     exact hJ.dpow_mem hk hb, }
 end
 
+lemma dpow_smul {J : ideal A} (hJ : divided_powers J) 
+  (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
+∀ (n : ℕ) {c x : A} (hx : x ∈ I + J), 
+  dpow hI hJ n (c * x) = (c ^ n) * dpow hI hJ n x :=
+begin
+  intros n c x,
+  rw [ideal.add_eq_sup, submodule.mem_sup], 
+  rintro ⟨a, ha, b, hb, rfl⟩, 
+  rw dpow_eq hI hJ hIJ n ha hb, 
+  rw mul_add, 
+  rw dpow_eq hI hJ hIJ n (ideal.mul_mem_left I c ha) (ideal.mul_mem_left J c hb),
+  rw finset.mul_sum, 
+  apply finset.sum_congr rfl,
+  intros k hk,
+  simp only [finset.mem_range, nat.lt_succ_iff] at hk,
+  rw hI.dpow_smul, rw hJ.dpow_smul, 
+  simp only [← mul_assoc], 
+  apply congr_arg2 (*) _ rfl,
+  rw [mul_comm, ← mul_assoc], 
+  apply congr_arg2 (*) _ rfl,
+  rw [← pow_add, nat.sub_add_cancel hk], 
+  exact hb,
+  exact ha,
+end
+
 lemma dpow_add {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) : 
   ∀ (n : ℕ) {x y : A} (hx : x ∈ I + J) (hy : y ∈ I + J),
- dpow hI hJ n (x + y) = finset.sum (finset.range (n + 1)) (λ k, (dpow hI hJ k x) * (dpow hI hJ (n - k) y)) :=
+dpow hI hJ n (x + y) = finset.sum (finset.range (n + 1)) 
+  (λ k, (dpow hI hJ k x) * (dpow hI hJ (n - k) y)) :=
 begin
   intros n x y,
   rw [ideal.add_eq_sup, submodule.mem_sup], 
@@ -1268,45 +1410,9 @@ begin
   convert finset.sum_4_rw f n,
 end
 
-/- 
-lemma dpow_ideal_sum {ι : Type*} [decidable_eq ι] 
-  (dpow : ℕ → A → A) 
-  (dpow_add : ∀ (n : ℕ) (x ∈ I) (y ∈ I), dpow n (x + y) = 
-    finset.sum (finset.range (n + 1)) (λ k, dpow k x * dpow (n - k) y)) 
-  (x : ι → A) (s : finset ι) (hsx : ∀ i ∈ s, x i ∈ I)
-  (m : ℕ) : dpow m (finset.sum s x) = 
-  finset.sum (multiset_of_size s m) (λ c, s.prod (λ i, dpow (c i) (x i) )) :=
-sorry
-/- 
-(∑ x_i )^n = ∑_m ∏ x_i ^(m_i) * coeff multinomial (n / m)   sum m_i = n
-     coeff multinomial = n! / prod (mi!)
-ici
 
 
--/ -/
 
-lemma dpow_comp {J : ideal A} (hJ : divided_powers J) 
-  (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) 
-  (m : ℕ) {n : ℕ} (hn : n ≠ 0) {x : A} (hx : x ∈ I + J) : 
-  dpow hI hJ m (dpow hI hJ n x) =
-    ↑(mchoose m n) * dpow hI hJ (m * n) x := 
-begin
-  rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
-  obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
-  rw dpow_eq hI hJ hIJ n ha hb, 
-  rw sum_dpow_aux (dpow hI hJ) 
-    (dpow_zero hI hJ hIJ)
-    (dpow_add hI hJ hIJ),
-  have : ∀ (k : sym ℕ m) (i : ℕ) (hi : i ∈ finset.range (n+1)),
-    dpow hI hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
-    = hI.dpow (multiset.count i ↑k) (hI.dpow i a) * 
-      hJ.dpow (multiset.count i ↑k) (hJ.dpow (n-i) b),
-  { intros k i hi,
-    cases not_eq_or_aux hn hi with hi' hi',
-    rw mul_comm, 
-    sorry, sorry, 
-  
-  },
   /- si on développe, on obtient une somme indexée par
   les c : fin (n+1) → ℕ  de somme m 
   de  ∏   (hI.dpow k a)^(c k) (hJ.dpow (n-k) b)^(c k) 
@@ -1327,28 +1433,287 @@ begin
 
 
   -/
-  sorry,
-  { intros n hn,
-    nth_rewrite 0 [← zero_add (0 : A)],
-    rw dpow_eq hI hJ hIJ,
-    apply finset.sum_eq_zero,
+
+lemma dpow_comp_aux
+{J : ideal A} (hJ : divided_powers J) 
+  (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) 
+  (m : ℕ) {n : ℕ} (hn : n ≠ 0) 
+{a : A} (ha : a ∈ I) {b : A} (hb : b ∈ J) :
+dpow hI hJ m (dpow hI hJ n (a + b)) = 
+finset.sum (finset.range (m * n + 1))
+(λ (p : ℕ),
+(finset.filter (λ (l : sym ℕ m), 
+  (finset.range (n + 1)).sum (λ i, multiset.count i ↑l * i) = p) ((finset.range (n + 1)).sym m)).sum
+  (λ (x : sym ℕ m),
+    (finset.range (n + 1)).prod (λ (i : ℕ), (cnik n i ↑x))
+    * (nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑x * i))
+    * (nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑x * (n - i)))) * hI.dpow p a * hJ.dpow (m * n - p) b) 
+:= 
+begin
+  rw dpow_eq hI hJ hIJ n ha hb, 
+  rw sum_dpow_aux (dpow hI hJ) (dpow_zero hI hJ hIJ) (dpow_add hI hJ hIJ),
+  
+  /- i ≠0, n : 
+   (a^[i]*b^[n-i])^[c i] 
+    = a^[i]^ (c i) * (b^[n-i])^[c i]
+    = (c i)! a^[i])^[c i] * b^[n-i]^[c i]
+    = (c i)! * mchoose (i, c i) * mchoose (n-i, c i) 
+    * a^[i * c i] * b^[(n-i) * c i]
+  i = 0 : 
+    (a^[0] * b^[n])^[c i]
+     = b^[n]^[c i] = mchoose (c i) n * b ^[n * c i]
+  i = n : 
+    (a^[n] * b^[0]) ^[c i]
+     = a^[n]^[c i] = mchoose (c i) n * a^[n * c i]
+  -/
+
+  have L1 : ∀ (k : sym ℕ m) (i : ℕ) (hi : i ∈ finset.range (n+1)),
+    dpow hI hJ (multiset.count i ↑k) ((hI.dpow i a) * hJ.dpow (n-i) b)
+    = (cnik n i ↑k) * hI.dpow ((multiset.count i ↑k) * i) a 
+    * hJ.dpow ((multiset.count i ↑k) * (n - i)) b,
+  { intros k i hi,
+    simp only [cnik],
+    by_cases hi2 : i = n,
+    { rw hi2, rw nat.sub_self, 
+      rw if_neg hn, rw if_pos rfl,
+      simp only [mchoose_zero',mul_one, nat.cast_one, mul_zero, hJ.dpow_zero hb], 
+      rw dpow_eq_of_mem_left hI hJ hIJ _ (hI.dpow_mem hn ha),
+      rw hI.dpow_comp _ hn ha, },
+    have hi2' : n - i ≠ 0,
+    { intro h, apply hi2, 
+      rw [finset.mem_range, nat.lt_succ_iff] at hi, 
+      rw [← nat.sub_add_cancel hi, h, zero_add], } ,
+    by_cases hi1 : i = 0,
+    { rw hi1, rw mchoose_zero', rw hI.dpow_zero ha, rw nat.sub_zero, rw one_mul, 
+      rw if_pos rfl,
+      rw dpow_eq_of_mem_right hI hJ hIJ _ (hJ.dpow_mem hn hb),
+      rw hJ.dpow_comp _ hn hb,
+      rw mul_zero,
+      rw hI.dpow_zero ha, 
+      simp only [nat.cast_one, one_mul, mul_one], },
+    -- i ≠ 0  and i ≠ n  
+    { rw if_neg hi1, rw if_neg hi2, 
+      rw [mul_comm, dpow_smul hI hJ hIJ, mul_comm], 
+      rw dpow_eq_of_mem_left hI hJ hIJ _ (hI.dpow_mem hi1 ha), 
+      rw ← hJ.factorial_mul_dpow_eq_pow (multiset.count i k),
+      rw hI.dpow_comp _ hi1 ha, 
+      rw hJ.dpow_comp _ hi2' hb, 
+      simp only [← mul_assoc], apply congr_arg2 _ _ rfl,
+      simp only [mul_assoc], rw mul_comm (hI.dpow _ a), 
+      simp only [←  mul_assoc],
+      apply congr_arg2 _ _ rfl,
+      rw mul_comm ↑(mchoose _ i),
+      simp only [nat.cast_mul],
+      exact hJ.dpow_mem hi2' hb, 
+      apply submodule.mem_sup_left, exact hI.dpow_mem hi1 ha, }, },
+  
+
+  let φ : sym ℕ m → ℕ  := λ k, (finset.range (n + 1)).sum (λ i, multiset.count i ↑k * i), 
+  suffices hφ : ∀ (k : sym ℕ m), k ∈ (finset.range (n + 1)).sym m → 
+    φ k ∈ finset.range (m * n + 1),
+  
+  rw ← finset.sum_fiberwise_of_maps_to hφ _,
+
+  suffices L4 : ∀(p : ℕ) (hp : p ∈ finset.range (m * n + 1)),
+  (finset.filter (λ (x : sym ℕ m), (λ (k : sym ℕ m), φ k) x = p) ((finset.range (n + 1)).sym m)).sum
+    (λ (x : sym ℕ m),
+    (finset.range (n + 1)).prod (λ (i : ℕ), dpow hI hJ (multiset.count i ↑x) (hI.dpow i a * hJ.dpow (n - i) b)))
+  = (finset.filter (λ (x : sym ℕ m), (λ (k : sym ℕ m), φ k) x = p) ((finset.range (n + 1)).sym m)).sum
+  (λ (k : sym ℕ m),
+  (finset.range (n + 1)).prod (λ (i : ℕ), ↑(cnik n i ↑k)) *
+      ↑(nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑k * i)) *
+            ↑(nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑k * (n - i))) *
+          hI.dpow p a *
+        hJ.dpow (m * n - p) b),
+
+  rw finset.sum_congr rfl L4, 
+  simp_rw finset.sum_mul, 
+
+  { -- L4
+    intros p hp, 
+    apply finset.sum_congr rfl,
     intros k hk,
-    cases not_eq_or_aux hn hk with hk hk,
-    { rw hI.dpow_eval_zero hk, apply zero_mul, },
-    { rw hJ.dpow_eval_zero hk, apply mul_zero, },
-    exact I.zero_mem, exact J.zero_mem, },
+    rw finset.mem_filter at hk,
+    rw finset.prod_congr rfl (L1 k),
+    rw finset.prod_mul_distrib, 
+    rw finset.prod_mul_distrib,
+    rw hI.prod_dpow_self _ ha, 
+    rw hJ.prod_dpow_self _ hb,
+    simp only [mul_assoc], apply congr_arg2 _ rfl,
+    apply congr_arg2 _ rfl,
+    rw sum_range_sym_mul_compl hk.1, 
+    simp only [← mul_assoc], 
+    simp only [← hk.2, φ],  apply congr_arg2 _ _ rfl,
+    rw mul_comm, 
+
+    apply_instance, apply_instance, },
+  { -- hφ
+    intros k hk,
+    simp only [φ, finset.mem_range, nat.lt_succ_iff],
+    exact range_sym_weighted_sum_le k hk, },
+  { intros n hn, 
+    rw dpow_eq_of_mem_left hI hJ hIJ n (I.zero_mem), 
+    exact dpow_eval_zero hI hn, },
   { intros i hi, 
     cases not_eq_or_aux hn hi with hi' hi',
     { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
       exact hI.dpow_mem hi' ha, },
     { apply submodule.mem_sup_right, apply ideal.mul_mem_left,
       exact hJ.dpow_mem hi' hb, } },
-
 end
 
+omit hI
+
+open polynomial
+
+lemma polynomial.inv_C_eq_C_inv {R : Type*} [comm_ring R] (a : R) :
+  ring.inverse (C a) = C (ring.inverse a) :=
+begin
+  simp only [ring.inverse],
+  by_cases ha : is_unit a,
+  { simp only [dif_pos ha], 
+    have hCa : is_unit (C a), 
+    { rw ← is_unit.unit_spec ha, 
+      exact ring_hom.is_unit_map C ha, },
+    rw [dif_pos hCa], 
+    apply is_unit.mul_right_cancel hCa, 
+    rw ← map_mul, 
+    simp only [is_unit.coe_inv_mul, map_one], },
+  { simp only [ring.inverse, dif_neg ha, map_zero],
+    rw dif_neg, 
+    intro hCa,  apply ha, 
+    rw is_unit_iff_exists_inv at hCa ⊢,
+    obtain ⟨b, hb⟩ := hCa, 
+    use b.coeff 0,
+    convert congr_arg2 coeff hb rfl,
+    rw polynomial.coeff_C_mul ,   
+    simp only [coeff_one_zero],},
+end
+
+lemma dpow_comp_coeffs {m n p : ℕ} (hn : n ≠ 0) (hp : p ≤ m * n): 
+mchoose m n =
+  (finset.filter (λ (l : sym ℕ m),
+  (finset.range (n + 1)).sum (λ (i : ℕ), multiset.count i ↑l * i) = p)
+      ((finset.range (n + 1)).sym m)).sum (λ (x : sym ℕ m),
+        (finset.range (n + 1)).prod (λ (i : ℕ), (cnik n i ↑x)) 
+        * ((nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑x * i))
+        * (nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑x * (n - i))))) := 
+begin
+  rw ← nat.mul_left_inj (nat.choose_pos hp),
+
+  have : function.injective (coe : ℕ → ℚ) := nat.cast_injective,
+  apply this, 
+  simp only [nat.cast_mul, nat.cast_sum, nat.cast_prod, nat.cast_eq_zero], 
+  
+  conv_lhs { rw ← polynomial.coeff_X_add_one_pow ℚ (m * n) p, },
+  let A := polynomial ℚ,
+--   let X : A :=  1 1,
+  let I : ideal A := ⊤,
+  let hI : divided_powers I := Q_algebra.rat_algebra_divided_powers ⊤,
+  let hII : ∀ (n : ℕ) (a : A), a ∈ I ⊓ I → hI.dpow n a = hI.dpow n a := λ n a ha, rfl, 
+  let h1 : (1 : A) ∈ I := submodule.mem_top, 
+  let hX : X ∈ I := submodule.mem_top,
+
+  suffices hdpow : ∀ (k : ℕ) (a : A) (ha : a ∈ I), 
+  hI.dpow k a =  C (1/↑(k.factorial)) * a ^ k,
+  rw ← hI.factorial_mul_dpow_eq_pow (m * n) (X + 1) (submodule.mem_top), 
+  rw ← polynomial.coeff_C_mul,
+  rw [← mul_assoc, mul_comm (C ↑(mchoose m n)), mul_assoc ],
+  simp only [C_eq_nat_cast], 
+  rw ← hI.dpow_comp m hn (submodule.mem_top), 
+  rw [← dpow_eq_of_mem_left hI hI hII n (submodule.mem_top),
+    ← dpow_eq_of_mem_left hI hI hII m (submodule.mem_top)],
+  rw dpow_comp_aux hI hI hII m hn hX h1,
+  rw [← C_eq_nat_cast ],
+  simp only [finset.mul_sum],
+  -- simp only [← C_eq_nat_cast, ← ring_hom.map_sum, ← ring_hom.map_prod],
+  -- simp only [← ring_hom.map_sum, ← ring_hom.map_prod],
+  simp only [finset.sum_mul, finset.mul_sum],
+  simp only [finset_sum_coeff],
+
+  rw finset.sum_eq_single p,
+
+  { simp only [hdpow _ _ (submodule.mem_top), one_pow, mul_one, one_mul],
+    simp_rw [polynomial.coeff_C_mul], 
+    simp only [←C_eq_nat_cast, ← ring_hom.map_prod],
+    simp_rw [mul_assoc, polynomial.coeff_C_mul, polynomial.coeff_mul_C], 
+    simp only [coeff_X_pow_self p],
+    apply finset.sum_congr rfl,
+    intros x hx, 
+    rw mul_comm,
+    simp only [mul_assoc],
+    apply congr_arg2 (*) rfl,
+    apply congr_arg2 (*) rfl,
+    apply congr_arg2 (*) rfl,
+    rw ← nat.choose_mul_factorial_mul_factorial hp, 
+    simp only [one_div, nat.cast_mul, one_mul],
+    rw mul_comm, simp only [mul_assoc], rw mul_comm ↑(m * n - p).factorial,
+    rw mul_comm, simp only [mul_assoc],
+    convert mul_one _,
+    rw ←mul_assoc,
+
+    convert mul_one _,
+    { rw mul_inv_cancel,
+      simp only [ne.def, nat.cast_eq_zero], 
+      exact nat.factorial_ne_zero _, },
+    { rw mul_inv_cancel,
+      simp only [ne.def, nat.cast_eq_zero], 
+      exact nat.factorial_ne_zero _, }, },
+
+  { intros k hk hk',
+    rw finset.sum_eq_zero,
+    intros x hx,
+    simp only [hdpow _ _ (submodule.mem_top), one_pow, mul_one, one_mul],
+    simp_rw [polynomial.coeff_C_mul], 
+    simp only [←C_eq_nat_cast, ← ring_hom.map_prod],
+    simp_rw [mul_assoc, polynomial.coeff_C_mul, polynomial.coeff_mul_C], 
+    simp only [polynomial.coeff_X_pow , if_neg (ne.symm hk')],
+    simp only [mul_zero, zero_mul], },
+  
+  { intro hp, 
+    convert finset.sum_empty, 
+    rw finset.eq_empty_iff_forall_not_mem , 
+    intros x hx,
+    simp only [finset.mem_filter] at hx, 
+    apply hp, 
+    rw [finset.mem_range, nat.lt_succ_iff],
+    rw ← hx.2, 
+    exact range_sym_weighted_sum_le x hx.1, },
+
+  { intros k a ha, 
+    simp only [Q_algebra.rat_algebra_divided_powers_dpow_apply, Q_algebra.dpow, of_invertible_factorial.dpow, dif_pos ha, one_div], 
+    simp only [← C_eq_nat_cast],
+    rw polynomial.inv_C_eq_C_inv, 
+    simp only [ring.inverse_eq_inv'], },
+end
+
+include hI
+lemma dpow_comp {J : ideal A} (hJ : divided_powers J) 
+  (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) 
+  (m : ℕ) {n : ℕ} (hn : n ≠ 0) {x : A} (hx : x ∈ I + J) : 
+  dpow hI hJ m (dpow hI hJ n x) =
+    ↑(mchoose m n) * dpow hI hJ (m * n) x :=
+begin
+  rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
+  obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
+  rw dpow_comp_aux hI hJ hIJ m hn ha hb, 
+  rw dpow_add hI hJ hIJ _ (submodule.mem_sup_left ha) (submodule.mem_sup_right hb),
+  rw finset.mul_sum, 
+  apply finset.sum_congr rfl,
+  intros p hp,
+  rw dpow_eq_of_mem_left hI hJ hIJ _ ha, 
+  rw dpow_eq_of_mem_right hI hJ hIJ _ hb,
+  simp only [mul_assoc], apply congr_arg2 (*) _ rfl,
+  -- it remains to check coefficients
+  rw dpow_comp_coeffs hn (nat.lt_succ_iff.mp (finset.mem_range.mp hp)), 
+  simp only [nat.cast_sum, nat.cast_mul, nat.cast_prod], 
+end
+
+
 noncomputable
-def divided_powers_ideal_add {J : ideal A} (hJ : divided_powers J) 
-  (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) : divided_powers (I + J) := { 
+def divided_powers {J : ideal A} (hJ : divided_powers J) 
+  (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
+divided_powers (I + J) := { 
 dpow := dpow hI hJ,
 dpow_null := 
 begin
@@ -1376,27 +1741,7 @@ begin
 end,
 dpow_mem := λ n, dpow_mem hI hJ hIJ,
 dpow_add := dpow_add hI hJ hIJ,
-dpow_smul := 
-begin
-  intros n c x,
-  rw [ideal.add_eq_sup, submodule.mem_sup], 
-  rintro ⟨a, ha, b, hb, rfl⟩, 
-  rw dpow_eq hI hJ hIJ n ha hb, 
-  rw mul_add, 
-  rw dpow_eq hI hJ hIJ n (ideal.mul_mem_left I c ha) (ideal.mul_mem_left J c hb),
-  rw finset.mul_sum, 
-  apply finset.sum_congr rfl,
-  intros k hk,
-  simp only [finset.mem_range, nat.lt_succ_iff] at hk,
-  rw hI.dpow_smul, rw hJ.dpow_smul, 
-  simp only [← mul_assoc], 
-  apply congr_arg2 (*) _ rfl,
-  rw [mul_comm, ← mul_assoc], 
-  apply congr_arg2 (*) _ rfl,
-  rw [← pow_add, nat.sub_add_cancel hk], 
-  exact hb,
-  exact ha,
-end,
+dpow_smul := dpow_smul hI hJ hIJ,
 dpow_mul := dpow_mul hI hJ hIJ, 
 dpow_comp := dpow_comp hI hJ hIJ, }
 
