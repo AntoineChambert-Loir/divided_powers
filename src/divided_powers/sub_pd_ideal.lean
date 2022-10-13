@@ -18,40 +18,22 @@ variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
     if and only if (on I) the divided powers have some compatiblity mod J 
     (The necessity was proved as a sanity check.) -/
 lemma is_sub_pd_ideal_inf_iff (J : ideal A) :
-  (is_sub_pd_ideal hI (J ⊓ I)) ↔
-  (∀ (n : ℕ) (a b : A) (ha : a ∈ I) (hb : b ∈ I) 
-    (hab : (a - b) ∈ J), hI.dpow n a - hI.dpow n b ∈ J) := 
+  (is_sub_pd_ideal hI (J ⊓ I)) ↔ (∀ (n : ℕ) (a b : A) (ha : a ∈ I) (hb : b ∈ I) (hab : (a - b) ∈ J),
+    hI.dpow n a - hI.dpow n b ∈ J) := 
 begin
-  split,
-  { intro hIJ,
-    intros n a b ha hb hab,
-    have hb' : a = b + (a - b), by rw [add_comm, sub_add_cancel],
-    have hab' : a - b ∈ I := ideal.sub_mem I ha hb,  
-    rw hb',
-    rw hI.dpow_add n hb hab', 
-    rw finset.range_succ, 
-    rw finset.sum_insert (finset.not_mem_range_self),
-    simp only [tsub_self, hI.dpow_zero hab', mul_one, add_sub_cancel'], 
-    apply ideal.sum_mem ,
+  refine ⟨λ hIJ n a b ha hb hab, _, λ hIJ, _⟩,
+  { have hab' : a - b ∈ I := I.sub_mem ha hb,  
+    rw [← add_sub_cancel'_right b a, hI.dpow_add n hb hab', finset.range_succ, 
+      finset.sum_insert (finset.not_mem_range_self), tsub_self, hI.dpow_zero hab', mul_one,
+      add_sub_cancel'], 
+    apply ideal.sum_mem,
     intros i hi, 
-    simp only [finset.mem_range] at hi,
-    apply J.smul_mem,
     apply semilattice_inf.inf_le_left J I,
-    let hzz := hIJ.dpow_mem_ideal (n - i),
-    apply hIJ.dpow_mem_ideal (n - i) _ _ _, 
-    { apply ne_of_gt, exact (nat.sub_pos_of_lt hi), }, 
-    rw ideal.mem_inf, exact ⟨hab, hab'⟩ },
-  { intro hIJ, 
-    split,
-    apply semilattice_inf.inf_le_right J I,
-    intros n hn a ha, 
-    rw ideal.mem_inf at ha, 
-    simp only [ideal.mem_inf], 
-    split,
-    { rw [← sub_zero (hI.dpow n a), ← hI.dpow_eval_zero hn], 
-      apply hIJ n a 0 ha.2 (I.zero_mem), 
-      rw sub_zero, exact ha.1, },
-    { exact hI.dpow_mem hn ha.2, } },
+    exact (J ⊓ I).smul_mem _ (hIJ.dpow_mem_ideal (n - i) 
+      (ne_of_gt (nat.sub_pos_of_lt (finset.mem_range.mp hi))) _ ⟨hab, hab'⟩) },
+  { refine ⟨semilattice_inf.inf_le_right J I, λ n hn a ha,  ⟨_, hI.dpow_mem hn ha.right⟩⟩,
+    rw [← sub_zero (hI.dpow n a), ← hI.dpow_eval_zero hn], 
+    exact hIJ n a 0 ha.right (I.zero_mem) (J.sub_mem ha.left J.zero_mem) },
 end
 
 /-- Lemma 3.6 of [BO] (Antoine) -/
