@@ -170,7 +170,7 @@ begin
     rintro (_ | n),
     { rw [dpow_zero (I.zero_mem), sum_unique_nonempty, prod_empty],
       exact univ_nonempty },
-    { rw [dpow_eval_zero (nat.succ_ne_zero n), sym_empty, sum_empty], } },
+    { rw [dpow_eval_zero (nat.succ_ne_zero n), sym_empty, sum_empty], }},
   { have hx' : ∀ i, i ∈ s → x i ∈ I := 
     λ i hi, hx i (finset.mem_insert_of_mem hi), 
     intro n,
