@@ -465,9 +465,15 @@ end divided_powers
 
 
 PRs : 
- (M) : ring_inverse, tsub_tsub
- (A) : submodule_induction, function.extend_apply_first
+ (M) : ring_inverse, tsub_tsub - DONE
+ (A) : submodule_induction, function.extend_apply_first - DONE
 
 Delete obsolete versions
  (A) : rewrite_4_sums
+
+(A) Simplify, remove not_eq_or_aux (see REMOVE or MOVE)
+  Prove uniqueness of pd-structure when possible
+    (ideal_add, dpow_quot)
+(M) Complete the lattice structure
+
 -/

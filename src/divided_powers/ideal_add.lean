@@ -9,6 +9,7 @@ namespace divided_powers
 
 variables {A : Type*} [comm_ring A] {I : ideal A}
 
+-- MOVE TO basic
 
 -- Also : can it be used to deduce dpow_comp from the rest?
 /-- A generic “multinomial” theorem for divided powers — but without multinomial coefficients 
@@ -68,6 +69,8 @@ end
 
 variable (hI : divided_powers I)
 
+
+-- MOVE TO basic
 /-- A “multinomial” theorem for divided powers — without multinomial coefficients -/
 lemma sum_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A}
 (hx : ∀ i ∈ s, x i ∈ I): ∀ (n : ℕ), hI.dpow n (s.sum x) = (finset.sym s n).sum 
@@ -75,6 +78,8 @@ lemma sum_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A}
 sum_dpow_aux hI.dpow (λ x hx, hI.dpow_zero hx) 
   (λ n x y hx hy, hI.dpow_add n hx hy) (λ n hn, hI.dpow_eval_zero hn) hx
 
+
+-- MOVE TO basic
 lemma prod_dpow_self {ι : Type*} [decidable_eq ι] {s : finset ι} {n : ι → ℕ}
   (a : A) (ha : a ∈ I) :
   s.prod (λ i, hI.dpow (n i) a) = 
@@ -110,6 +115,7 @@ def cnik := λ (n i : ℕ) (k : multiset ℕ),
           (mchoose (multiset.count i k) n) 
           ((multiset.count i k).factorial * (mchoose (multiset.count i k) i) * (mchoose (multiset.count i k) (n - i))))
 
+-- MOVE TO basic_lemmas
 lemma range_sym_prop {m n : ℕ} {k : sym ℕ m} (hk :
   k ∈ (finset.range (n + 1)).sym m) :
   finset.sum (finset.range (n + 1)) (λ i,
@@ -130,6 +136,7 @@ begin
   { intros x hk, refl, },
 end
 
+-- MOVE TO basic_lemmas
 lemma range_sym_weighted_sum_le {m n : ℕ} (k : sym ℕ m) (hk : k ∈ (finset.range (n+1)).sym m) :
   (finset.range (n+1)).sum  (λ i, multiset.count i ↑k * i) ≤ m * n :=
 begin
@@ -144,7 +151,7 @@ begin
   exact nat.lt_succ_iff.mp (finset.mem_range.mp hi),
 end
 
-
+-- MOVE TO basic_lemmas
 lemma sum_range_sym_mul_compl {m n : ℕ} {k : sym ℕ m} (hk : k ∈ (finset.range (n + 1)).sym m) :
     finset.sum (finset.range (n+1)) (λ i, ((multiset.count i k) * (n - i)))
     = m * n - finset.sum (finset.range (n+1)) (λ i, ((multiset.count i k) * i)) :=
@@ -164,6 +171,7 @@ lemma sum_range_sym_mul_compl {m n : ℕ} {k : sym ℕ m} (hk : k ∈ (finset.ra
     rw range_sym_prop hk, 
 end
 
+/-- Divided power function on a sup of two ideals -/
 noncomputable
 def dpow {J : ideal A} (hJ : divided_powers J) :
   ℕ → A → A := λ n,
@@ -173,6 +181,7 @@ function.extend
     (λ k, (hI.dpow k (a : A)) * (hJ.dpow (n - k) (b : A))))
   (λ (a : A), 0)
  
+/-- Independence on choices for `dpow` -/
 lemma dpow_eq_aux {J : ideal A} (hJ : divided_powers J)
   (hIJ : ∀ (n : ℕ) {a} (ha : a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a)
   (n : ℕ) {a} (ha : a ∈ I) {b} (hb : b ∈ J) {a'} (ha' : a' ∈ I) {b'} (hb' : b' ∈ J)
@@ -454,6 +463,7 @@ begin
   rw dpow_eq hI hJ hIJ _ ha hb, 
   apply submodule.sum_mem (I ⊔ J),
   intros k hk,
+  -- REMOVE not_eq_or_aux 
   cases not_eq_or_aux hn hk with hk hk,
   { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
     exact hI.dpow_mem hk ha,  },
@@ -679,11 +689,18 @@ begin
     rw dpow_eq_of_mem_left hI hJ hIJ n (I.zero_mem), 
     exact dpow_eval_zero hI hn, },
   { intros i hi, 
-    cases not_eq_or_aux hn hi with hi' hi',
+    by_cases hi' : i = 0,
+    { rw [hi', nat.sub_zero],
+      apply submodule.mem_sup_right, apply ideal.mul_mem_left,
+      exact hJ.dpow_mem hn hb, },
+    { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
+      exact hI.dpow_mem hi' ha, },
+/-     cases not_eq_or_aux hn hi with hi' hi',
     { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
       exact hI.dpow_mem hi' ha, },
     { apply submodule.mem_sup_right, apply ideal.mul_mem_left,
-      exact hJ.dpow_mem hi' hb, } },
+      exact hJ.dpow_mem hi' hb, } -/
+      },
 end
 
 open polynomial
@@ -833,6 +850,7 @@ begin
   simp only [nat.cast_sum, nat.cast_mul, nat.cast_prod], 
 end
 
+-- MOVE dpow_null and dpow_one outside of the definition 
 noncomputable
 def divided_powers {J : ideal A} (hJ : divided_powers J) 
   (hIJ : ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
