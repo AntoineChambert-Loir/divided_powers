@@ -4,6 +4,8 @@ import algebra.order.sub  -- for tsub_tsub_tsub_cancel_left
 import data.finset.nat_antidiagonal -- for 4-fold sums
 import ring_theory.ideal.basic -- for 4-fold sums (might not be optimal)
 
+import temp_sym -- for range_sym lemmas
+
 
 -- The "unused arguments" linter incorrectly flags this (?!)
 /- To help distinguish the extreme cases in a finset.range(n+1).sum -/
@@ -257,3 +259,56 @@ begin
 end 
 
 end four_fold_sums
+
+lemma range_sym_prop {m n : ℕ} {k : sym ℕ m} (hk :
+  k ∈ (finset.range (n + 1)).sym m) :
+  finset.sum (finset.range (n + 1)) (λ i,
+    multiset.count i ↑k) = m := 
+begin
+  simp only [finset.mem_sym_iff'] at hk,
+  simp_rw ← k.prop, 
+  rw ← multiset.to_finset_sum_count_eq ↑k, 
+  apply symm,
+  apply finset.sum_subset_zero_on_sdiff, 
+  { intros i hi,  
+    rw [multiset.mem_to_finset, sym.mem_coe] at  hi, 
+    exact hk i hi, }, 
+  { intros x hx, 
+    rw [finset.mem_sdiff, multiset.mem_to_finset, sym.mem_coe] at hx,
+    simp only [multiset.count_eq_zero, sym.mem_coe],
+    exact hx.2, },
+  { intros x hk, refl, },
+end
+
+lemma range_sym_weighted_sum_le {m n : ℕ} (k : sym ℕ m) (hk : k ∈ (finset.range (n+1)).sym m) :
+  (finset.range (n+1)).sum  (λ i, multiset.count i ↑k * i) ≤ m * n :=
+begin
+  suffices : ∀ (i : ℕ) (hi : i ∈ finset.range (n + 1)), 
+  (multiset.count i ↑k * i ≤ multiset.count i ↑k * n),
+    apply le_trans (finset.sum_le_sum this),
+    rw ← finset.sum_mul,
+    rw range_sym_prop hk, 
+  -- suffices 
+  intros i hi,
+  apply nat.mul_le_mul_of_nonneg_left,
+  exact nat.lt_succ_iff.mp (finset.mem_range.mp hi),
+end
+
+lemma sum_range_sym_mul_compl {m n : ℕ} {k : sym ℕ m} (hk : k ∈ (finset.range (n + 1)).sym m) :
+    finset.sum (finset.range (n+1)) (λ i, ((multiset.count i k) * (n - i)))
+    = m * n - finset.sum (finset.range (n+1)) (λ i, ((multiset.count i k) * i)) :=
+  begin
+    suffices : (finset.range (n+1)).sum (λ i, multiset.count i ↑k * (n-i))
+      + (finset.range (n+1)).sum (λi, multiset.count i ↑k * i) = m * n,
+    rw ← this,  rw nat.add_sub_cancel,
+    
+    rw ← finset.sum_add_distrib,
+    simp_rw ← mul_add,  
+    have : ∀ (x : ℕ) (hx : x ∈ finset.range (n + 1)), 
+      multiset.count x ↑k * (n -x + x) = multiset.count x ↑k * n,
+    { intros x hx,
+      rw nat.sub_add_cancel (nat.lt_succ_iff.mp (finset.mem_range.mp hx)), },
+    rw finset.sum_congr rfl this,
+    rw ← finset.sum_mul,
+    rw range_sym_prop hk, 
+end
