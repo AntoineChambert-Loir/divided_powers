@@ -60,7 +60,7 @@ open_locale classical
 
 namespace divided_powers
 
-section divided_powers_examples
+section basic_lemmas
 
 variables {A : Type*} [comm_ring A] {I : ideal A}
 
@@ -99,12 +99,7 @@ def divided_powers_of_dpow_exp (I : ideal A) (ε : I → power_series A)
   (hε_zero : ε(0) = 1) -/
 
 
-open_locale big_operators
-
-open finset
-
 variable (hI : divided_powers I)
-include hI
 
 /- Rewriting lemmas -/
 lemma dpow_smul' (n : ℕ) {a : A} {x : A} (hx : x ∈ I) :
@@ -128,7 +123,41 @@ begin
   exact ideal.zero_mem I,
 end
 
-end divided_powers_examples
+/-- Proposition 1.2.7 of [B74], part (i). -/
+lemma nilpotent_of_pd_ideal_mem (hI : divided_powers I) {n : ℕ} (hn : n ≠ 0)
+  (hnI : ∀ {y : A}(hy : y ∈ I), n • y = 0) {x : A} (hx : x ∈ I) : x^n = 0 := 
+begin
+  have h_fac: (n.factorial : A) * hI.dpow n x = n • ((n-1).factorial : A) * hI.dpow n x,
+  { rw [nsmul_eq_mul, ← nat.cast_mul, nat.mul_factorial_pred (nat.pos_of_ne_zero hn)] },
+  rw [← factorial_mul_dpow_eq_pow hI _ _ hx, h_fac, smul_mul_assoc],
+  exact hnI (I.mul_mem_left ((n - 1).factorial : A) (hI.dpow_mem hn hx))
+end
+
+/-- If J is another ideal of A with divided powers, 
+then the divided powers of I and J coincide on I • J 
+(Berthelot, 1.6.1 (ii))-/
+lemma coincide_on_smul {J : ideal A} (hJ : divided_powers J) : 
+∀ {n} (a ∈ I • J), hI.dpow n a = hJ.dpow n a :=
+begin
+  intros n a ha,
+  revert  n,
+  apply submodule.smul_induction_on' ha,
+  { intros a ha b hb n, 
+    simp only [algebra.id.smul_eq_mul], 
+    rw hJ.dpow_smul n hb,
+    rw mul_comm a b, rw hI.dpow_smul n ha, 
+    rw ← hJ.factorial_mul_dpow_eq_pow n b hb,
+    rw ← hI.factorial_mul_dpow_eq_pow n a ha,
+    ring, },
+  { intros x hx y hy hx' hy' n, 
+    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy), 
+    rw hJ.dpow_add n (ideal.mul_le_left hx) (ideal.mul_le_left hy), 
+    apply finset.sum_congr rfl,
+    intros k hk,
+    rw hx', rw hy', },
+end
+
+end basic_lemmas
 
 section divided_powers_morphisms
 
@@ -153,46 +182,6 @@ structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
 /- TODO : identity, composition… -/
 
 end divided_powers_morphisms
-
-variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
-/-- Proposition 1.2.7 of [B74], part (i). -/
-lemma nilpotent_of_pd_ideal_mem (hI : divided_powers I) {n : ℕ} (hn : n ≠ 0)
-  (hnI : ∀ {y : A}(hy : y ∈ I), n • y = 0) {x : A} (hx : x ∈ I) : x^n = 0 := 
-begin
-  have h_fac: (n.factorial : A) * hI.dpow n x = n • ((n-1).factorial : A) * hI.dpow n x,
-  { rw [nsmul_eq_mul, ← nat.cast_mul, nat.mul_factorial_pred (nat.pos_of_ne_zero hn)] },
-  rw [← factorial_mul_dpow_eq_pow hI _ _ hx, h_fac, smul_mul_assoc],
-  exact hnI (I.mul_mem_left ((n - 1).factorial : A) (hI.dpow_mem hn hx))
-end
-
-
-
-
-/-- If J is another ideal of A with divided powers, 
-then the divided powers of I and J coincide on I • J 
-(Berthelot, 1.6.1 (ii))-/
-lemma coincide_on_smul  {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) 
-  {J : ideal A} (hJ : divided_powers J) : 
-∀ {n} (a ∈ I • J), hI.dpow n a = hJ.dpow n a :=
-begin
-  intros n a ha,
-  revert  n,
-  apply submodule.smul_induction_on' ha,
-  { intros a ha b hb n, 
-    simp only [algebra.id.smul_eq_mul], 
-    rw hJ.dpow_smul n hb,
-    rw mul_comm a b, rw hI.dpow_smul n ha, 
-    rw ← hJ.factorial_mul_dpow_eq_pow n b hb,
-    rw ← hI.factorial_mul_dpow_eq_pow n a ha,
-    ring, },
-  { intros x hx y hy hx' hy' n, 
-    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy), 
-    rw hJ.dpow_add n (ideal.mul_le_left hx) (ideal.mul_le_left hy), 
-    apply finset.sum_congr rfl,
-    intros k hk,
-    rw hx', rw hy', },
-end
-
 
 end divided_powers
 
