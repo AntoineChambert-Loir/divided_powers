@@ -72,13 +72,11 @@ begin
   simp only [dpow_exp],
   ext,
   simp only [power_series.coeff_mk, power_series.coeff_mul],
-  rw hI.dpow_add n ha hb,
-  rw finset.nat.sum_antidiagonal_eq_sum_range_succ_mk, 
+  rw [hI.dpow_add n ha hb, finset.nat.sum_antidiagonal_eq_sum_range_succ_mk], 
 end
 
 lemma eq_of_eq_on_ideal (hI : divided_powers I) (hI' : divided_powers I) 
-  (h_eq : ∀ (n : ℕ) {x : A} (hx : x ∈ I), hI.dpow n x = hI'.dpow n x ) :
-  hI = hI' :=
+  (h_eq : ∀ (n : ℕ) {x : A} (hx : x ∈ I), hI.dpow n x = hI'.dpow n x ) : hI = hI' :=
 begin
   ext n x,
   by_cases hx : x ∈ I,
@@ -93,6 +91,10 @@ def dpow_of_dpow_exp (I : ideal A) (ε : I → power_series A) :
     (λ (a : I), a.val) 
     (λ a, power_series.coeff A n (ε a))
     (λ (a :A) , (0 : A))
+
+-- Golfed version of definition
+noncomputable def dpow_of_dpow_exp (I : ideal A) (ε : I → power_series A) : ℕ → A → A := 
+λ n, function.extend (λ (a : I), (a : A)) (λ (a : I), power_series.coeff A n (ε a)) 0
 
 def divided_powers_of_dpow_exp (I : ideal A) (ε : I → power_series A)
   (hε_add : ∀ (a b : I), ε(a + b) = ε(a) * ε(b))
@@ -118,10 +120,7 @@ begin
 end
 
 lemma dpow_eval_zero {n : ℕ} (hn : n ≠ 0) : hI.dpow n 0 = 0 := 
-begin
-  rw [← mul_zero (0 : A), hI.dpow_smul, zero_pow' n hn, zero_mul, zero_mul],
-  exact ideal.zero_mem I,
-end
+by rw [← mul_zero (0 : A), hI.dpow_smul n I.zero_mem, zero_pow' n hn, zero_mul, zero_mul]
 
 /-- Proposition 1.2.7 of [B74], part (i). -/
 lemma nilpotent_of_pd_ideal_mem (hI : divided_powers I) {n : ℕ} (hn : n ≠ 0)
@@ -136,25 +135,21 @@ end
 /-- If J is another ideal of A with divided powers, 
 then the divided powers of I and J coincide on I • J 
 (Berthelot, 1.6.1 (ii))-/
-lemma coincide_on_smul {J : ideal A} (hJ : divided_powers J) : 
-∀ {n} (a ∈ I • J), hI.dpow n a = hJ.dpow n a :=
+lemma coincide_on_smul {J : ideal A} (hJ : divided_powers J) {n : ℕ} {a : A} (ha : a ∈ I • J) : 
+  hI.dpow n a = hJ.dpow n a :=
 begin
-  intros n a ha,
-  revert  n,
+  revert n,
   apply submodule.smul_induction_on' ha,
   { intros a ha b hb n, 
-    simp only [algebra.id.smul_eq_mul], 
-    rw hJ.dpow_smul n hb,
-    rw mul_comm a b, rw hI.dpow_smul n ha, 
-    rw ← hJ.factorial_mul_dpow_eq_pow n b hb,
-    rw ← hI.factorial_mul_dpow_eq_pow n a ha,
+    rw [algebra.id.smul_eq_mul, hJ.dpow_smul n hb, mul_comm a b, hI.dpow_smul n ha, 
+      ← hJ.factorial_mul_dpow_eq_pow n b hb, ← hI.factorial_mul_dpow_eq_pow n a ha],
     ring, },
   { intros x hx y hy hx' hy' n, 
-    rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy), 
-    rw hJ.dpow_add n (ideal.mul_le_left hx) (ideal.mul_le_left hy), 
+    rw [hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy), 
+      hJ.dpow_add n (ideal.mul_le_left hx) (ideal.mul_le_left hy)], 
     apply finset.sum_congr rfl,
     intros k hk,
-    rw hx', rw hy', },
+    rw [hx', hy'], },
 end
 
 end basic_lemmas
