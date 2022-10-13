@@ -447,7 +447,7 @@ end divided_powers
 1.2.4 : To be added if Cohen/Witt vectors rings exist
 1.2.7 (M) : done
 1.3 (pd -morphism) : done
-1.3.1 : To be added (needs limits of rings)
+1.3.1 : To be added (needs colimits of rings)
 
 1.4 : To be added, but difficult
 1.5.: depends on 1.4  
