@@ -64,9 +64,7 @@ end
 
 lemma factorial.is_unit [algebra ℚ A] (n : ℕ) : is_unit (n.factorial : A) :=
 begin
-  have hn : (n.factorial : A) = algebra_map ℚ A n.factorial,
-  { rw [map_nat_cast] },
-  rw hn,
+  rw [← map_nat_cast (algebra_map ℚ A)],
   apply is_unit.map,
   exact is_unit_iff_ne_zero.mpr (nat.cast_ne_zero.mpr (nat.factorial_ne_zero n)),
 end
@@ -103,3 +101,12 @@ begin
   obtain ⟨c, hc⟩ := nat.exists_eq_add_of_le hmn,
   rw [hc, pow_add, hxn, zero_mul]
 end
+
+/- variables {R : Type*} [comm_ring R] 
+
+lemma factorial.is_unit [algebra ℚ R] (n : ℕ) : is_unit (n.factorial : R) :=
+begin
+  rw [← map_nat_cast (algebra_map ℚ R)],
+  apply is_unit.map,
+  exact is_unit_iff_ne_zero.mpr (nat.cast_ne_zero.mpr (nat.factorial_ne_zero n)),
+end -/

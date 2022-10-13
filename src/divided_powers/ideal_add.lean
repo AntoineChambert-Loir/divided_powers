@@ -1,5 +1,5 @@
 import data.nat.choose.multinomial
-import divided_powers.basic
+import divided_powers.rat_algebra
 import basic_lemmas
 import temp_sym
 
@@ -463,13 +463,13 @@ begin
   rw dpow_eq hI hJ hIJ _ ha hb, 
   apply submodule.sum_mem (I ⊔ J),
   intros k hk,
-  -- REMOVE not_eq_or_aux 
-  cases not_eq_or_aux hn hk with hk hk,
+  by_cases hk0 : k = 0,
+  { rw hk0, --rw tsub_zero,
+    apply submodule.mem_sup_right, apply ideal.mul_mem_left,
+    exact hJ.dpow_mem hn hb, },
   { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
-    exact hI.dpow_mem hk ha,  },
-  { apply submodule.mem_sup_right, apply ideal.mul_mem_left,
-    exact hJ.dpow_mem hk hb, }
-end
+    exact hI.dpow_mem hk0 ha, }
+  end
 
 lemma dpow_smul {J : ideal A} (hJ : divided_powers J) 
   (hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a) :
@@ -689,18 +689,11 @@ begin
     rw dpow_eq_of_mem_left hI hJ hIJ n (I.zero_mem), 
     exact dpow_eval_zero hI hn, },
   { intros i hi, 
-    by_cases hi' : i = 0,
-    { rw [hi', nat.sub_zero],
-      apply submodule.mem_sup_right, apply ideal.mul_mem_left,
-      exact hJ.dpow_mem hn hb, },
-    { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
-      exact hI.dpow_mem hi' ha, },
-/-     cases not_eq_or_aux hn hi with hi' hi',
+    cases not_eq_or_aux hn hi with hi' hi',
     { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
       exact hI.dpow_mem hi' ha, },
     { apply submodule.mem_sup_right, apply ideal.mul_mem_left,
-      exact hJ.dpow_mem hi' hb, } -/
-      },
+      exact hJ.dpow_mem hi' hb, } },
 end
 
 open polynomial
@@ -750,7 +743,7 @@ begin
   let A := polynomial ℚ,
 --   let X : A :=  1 1,
   let I : ideal A := ⊤,
-  let hI : divided_powers I := Q_algebra.rat_algebra_divided_powers ⊤,
+  let hI : divided_powers I := rat_algebra.divided_powers ⊤,
   let hII : ∀ (n : ℕ) (a : A), a ∈ I ⊓ I → hI.dpow n a = hI.dpow n a := λ n a ha, rfl, 
   let h1 : (1 : A) ∈ I := submodule.mem_top, 
   let hX : X ∈ I := submodule.mem_top,
@@ -822,7 +815,8 @@ begin
     exact range_sym_weighted_sum_le x hx.1, },
 
   { intros k a ha, 
-    simp only [Q_algebra.rat_algebra_divided_powers_dpow_apply, Q_algebra.dpow, of_invertible_factorial.dpow, dif_pos ha, one_div], 
+    simp only [rat_algebra.divided_powers_dpow_apply, rat_algebra.dpow, 
+      of_invertible_factorial.dpow, dif_pos ha, one_div], 
     simp only [← C_eq_nat_cast],
     rw polynomial.inv_C_eq_C_inv, 
     simp only [ring.inverse_eq_inv'], },
