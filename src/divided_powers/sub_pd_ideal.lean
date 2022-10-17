@@ -60,9 +60,10 @@ begin
       rw hI.dpow_add n (hSI hxI) (hSI hyI),
       apply submodule.sum_mem (ideal.span S),
       intros m hm,
-      cases not_eq_or_aux hn hm with hm hm,
-      { refine ideal.mul_mem_right _ (ideal.span S) (hx m hm), },
-      { refine ideal.mul_mem_left (ideal.span S) _ (hy (n - m) hm), } },
+      by_cases hm0 : m = 0,
+      { rw hm0,
+        refine ideal.mul_mem_left (ideal.span S) _ (hy n hn), },
+      { refine ideal.mul_mem_right _ (ideal.span S) (hx m hm0), } },
     { -- case : product,
       intros a x hxI hx n hn,
       simp only [algebra.id.smul_eq_mul],
@@ -149,9 +150,9 @@ def prod (J : ideal A) : sub_pd_ideal hI  :=
       rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy),
       apply submodule.sum_mem (I • J),
       intros k hk,
-      cases not_eq_or_aux hn hk with hk' hk',
-      { apply ideal.mul_mem_right _ (I • J), exact hx' k hk', },
-      { apply ideal.mul_mem_left (I • J), exact hy' _ hk', } }
+      by_cases hk0 : k = 0,
+      { rw hk0, apply ideal.mul_mem_left (I • J), exact hy' _ hn, },
+      { apply ideal.mul_mem_right _ (I • J), exact hx' k hk0, }, }
   end }
 
 /- TODO : 
@@ -210,9 +211,9 @@ def generated_dpow {S : set A} (hS : S ⊆ I) :
       rw hI.dpow_add n (hSI hx) (hSI hy),
       apply submodule.sum_mem (ideal.span _),
       intros m hm,
-      cases not_eq_or_aux hn hm with hm hm,
-      { exact ideal.mul_mem_right _ (ideal.span _) (hx_pow m hm) },
-      { exact ideal.mul_mem_left (ideal.span _) _ (hy_pow (n - m) hm) }},
+      by_cases hm0 : m = 0,
+      { rw hm0, exact ideal.mul_mem_left (ideal.span _) _ (hy_pow n hn), },
+      { exact ideal.mul_mem_right _ (ideal.span _) (hx_pow m hm0), }, },
     { intros a x hx hx_pow n hn,
       rw [smul_eq_mul, hI.dpow_smul n (hSI hx)],
       exact ideal.mul_mem_left (ideal.span _) (a ^ n) (hx_pow n hn) }

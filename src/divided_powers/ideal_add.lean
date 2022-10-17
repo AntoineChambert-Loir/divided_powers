@@ -537,11 +537,12 @@ begin
     rw dpow_eq_of_mem_left hI hJ hIJ n (I.zero_mem), 
     exact dpow_eval_zero hI hn, },
   { intros i hi, 
-    cases not_eq_or_aux hn hi with hi' hi',
+    by_cases hi0 : i = 0,
+    { rw hi0,
+      apply submodule.mem_sup_right, apply ideal.mul_mem_left,
+      exact hJ.dpow_mem hn hb, },
     { apply submodule.mem_sup_left, apply ideal.mul_mem_right, 
-      exact hI.dpow_mem hi' ha, },
-    { apply submodule.mem_sup_right, apply ideal.mul_mem_left,
-      exact hJ.dpow_mem hi' hb, } },
+      exact hI.dpow_mem hi0 ha, }, },
 end
 
 open polynomial

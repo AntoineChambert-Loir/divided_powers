@@ -7,15 +7,16 @@ import ring_theory.ideal.basic -- for 4-fold sums (might not be optimal)
 import temp_sym -- for range_sym lemmas
 
 
+/- -- Not used anymore
 -- The "unused arguments" linter incorrectly flags this (?!)
-/- To help distinguish the extreme cases in a finset.range(n+1).sum -/
+-- To help distinguish the extreme cases in a finset.range(n+1).sum
 lemma not_eq_or_aux {n m : ℕ} (hn : n ≠ 0) (hm : m ∈ finset.range(n + 1)) : m ≠ 0 ∨ n - m ≠ 0 :=
 begin
   simp only [finset.mem_range, nat.lt_succ_iff] at hm,
   by_contradiction h,
   simp only [not_or_distrib, ne.def, not_not, tsub_eq_zero_iff_le, not_le, not_lt] at h,
   apply hn, rw ← le_zero_iff, rw ← h.1, exact h.2, 
-end
+end -/
 
 lemma tsub_tsub_tsub_cancel_left {α : Type*} [add_comm_semigroup α] [partial_order α]
   [has_exists_add_of_le α] [covariant_class α α has_add.add has_le.le] [has_sub α] 
