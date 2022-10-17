@@ -284,9 +284,10 @@ PRs :
  (A) : submodule_induction, function.extend_apply_first - DONE
 
 Delete obsolete versions
- (A) : rewrite_4_sums
+ (A) : rewrite_4_sums -- Done, I think, but how could we simplify these lemmas?
 
-(A) Simplify, remove not_eq_or_aux (see REMOVE or MOVE)
+(A) Simplify, 
+  remove not_eq_or_aux (see REMOVE or MOVE) -- DONE
   Prove uniqueness of pd-structure when possible
     (ideal_add, dpow_quot)
 (M) Complete the lattice structure

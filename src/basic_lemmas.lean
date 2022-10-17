@@ -51,61 +51,13 @@ end classical
 
 section four_fold_sums
 
-/- 
-lemma rewriting_4_fold_sums {m n u v : ℕ} 
-  (h : m + n = u + v) (f : ℕ × ℕ → ℕ) {g : (ℕ × ℕ) × ℕ × ℕ → ℕ}
-  (hgf : g = λ x, f(x.fst.fst, x.fst.snd) ) 
-  (hf : ∀ (x : ℕ × ℕ), u < x.fst ∨ v < x.snd → f x = 0) :
-  (finset.nat.antidiagonal m).sum
-    (λ (y : ℕ × ℕ),
-       (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst) x = y)
-          (finset.filter (λ (x : (ℕ × ℕ) × ℕ × ℕ), x.fst.fst + x.snd.fst = 
-            u ∧ x.fst.snd + x.snd.snd = v)
-             (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n))).sum g) =
-  (finset.nat.antidiagonal m).sum (λ (ij : ℕ × ℕ), f ⟨ij.fst, ij.snd⟩) := 
-begin
-  apply finset.sum_congr rfl,
-  rintros ⟨i,j⟩ hij, simp only [finset.nat.mem_antidiagonal] at hij,
-  rw finset.sum_filter, rw finset.sum_filter,
-  simp_rw ← ite_and,
-  suffices hf' : ∀ (x : (ℕ × ℕ) × ℕ × ℕ),
-  ite ((x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v) ∧ x.fst = (i, j))
-    (g x) 0 =
-  ite ((x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v) ∧ x.fst = (i, j))
-    1 0 * (f⟨i, j⟩),
-  rw finset.sum_congr rfl (λ x hx, hf' x),
-  rw ← finset.sum_mul, 
-  by_cases hij' : i ≤ u ∧ j ≤ v, 
-  { conv_rhs { rw ← one_mul (f ⟨i, j⟩), }, 
-    apply congr_arg2 _ _ rfl,
-    rw finset.sum_eq_single (⟨⟨i, j⟩, ⟨u-i, v-j⟩⟩ : (ℕ × ℕ) × ℕ ×ℕ),
-    simp only [nat.add_sub_of_le hij'.1, nat.add_sub_of_le hij'.2, eq_self_iff_true, and_self,
-      if_true],
-    { rintros ⟨⟨x,y⟩, ⟨z,t⟩⟩ hb hb',   rw if_neg, intro hb'',
-      simp only [finset.mem_product, finset.nat.mem_antidiagonal] at hb,
-      simp only [ne.def, prod.mk.inj_iff, not_and, and_imp] at hb',
-      simp only [prod.mk.inj_iff] at hb'',
-      specialize hb' hb''.2.1 hb''.2.2,
-      rw [hb''.2.1, hb''.2.2] at hb,  
-      apply hb', 
-      apply nat.add_left_cancel, rw [nat.add_sub_of_le hij'.1, ← hb''.2.1, hb''.1.1], 
-      apply nat.add_left_cancel, rw [nat.add_sub_of_le hij'.2, ← hb''.2.2, hb''.1.2], },
-    { intro hb, rw if_neg, intro hb', apply hb,
-      simp only [eq_self_iff_true, and_true] at hb', 
-      simp only [finset.mem_product, finset.nat.mem_antidiagonal],
-      apply and.intro hij,
-      apply nat.add_left_cancel, rw [h, ← hij], 
-      conv_rhs {rw [← hb'.1, ← hb'.2] }, 
-      simp only [← add_assoc, add_left_inj], 
-      simp only [add_assoc, add_right_inj],
-      apply add_comm,  }, },
-  { simp only [not_and_distrib, not_le] at hij', 
-    rw [hf ⟨i, j⟩ hij', mul_zero], },
-  { intro x,
-    split_ifs with hx,
-    { simp only [one_mul, hgf], rw hx.2, },
-    { rw zero_mul, } },
-end
+/- This lemma is awkward and mathematically obvious, 
+just rewrite the sum using the variable x which determines y, z, t.
+However, one of its points is to reduce a 4-fold sum to a 2-fold sum.  -/
+
+/-- The sum of f(x, y) on x + y = m and z + t = n and x + z = u and y + t = v 
+  is equal to the sum of  f(x, y) on x + y = m
+  provided f (x, y) vanishes if x > u or y > v.
 -/
 lemma rewriting_4_fold_sums {α : Type*} [comm_semiring α] {m n u v : ℕ} 
   (h : m + n = u + v) (f : ℕ × ℕ → α) {g : (ℕ × ℕ) × ℕ × ℕ → α}
@@ -127,10 +79,8 @@ begin
   rw finset.sum_filter, rw finset.sum_filter,
   simp_rw ← ite_and,
   suffices hf' : ∀ (x : (ℕ × ℕ) × ℕ × ℕ),
-  ite ((x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v) ∧ x.fst = (i, j))
-    (g x) 0 =
-  ite ((x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v) ∧ x.fst = (i, j))
-    1 0 * (f⟨i, j⟩),
+  ite ((x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v) ∧ x.fst = (i, j)) (g x) 0 =
+  ite ((x.fst.fst + x.snd.fst = u ∧ x.fst.snd + x.snd.snd = v) ∧ x.fst = (i, j)) 1 0 * (f⟨i, j⟩),
   rw finset.sum_congr rfl (λ x hx, hf' x),
   rw ← finset.sum_mul, 
   by_cases hij' : i ≤ u ∧ j ≤ v, 
@@ -165,6 +115,7 @@ begin
     { rw zero_mul, } },
 end
 
+/- -- Unused
 lemma rewriting_4_fold_sums' {m n u v : ℕ} 
   (h : m + n = u + v) (f : ℕ × ℕ → ℕ) {g : (ℕ × ℕ) × ℕ × ℕ → ℕ}
   (hgf : g = λ x, f(x.fst.fst, x.fst.snd) ) 
@@ -176,7 +127,10 @@ lemma rewriting_4_fold_sums' {m n u v : ℕ}
             u ∧ x.fst.snd + x.snd.snd = v)
              (finset.nat.antidiagonal m ×ˢ finset.nat.antidiagonal n))).sum g) =
   (finset.nat.antidiagonal m).sum (λ (ij : ℕ × ℕ), f ⟨ij.fst, ij.snd⟩) := 
-sorry -- rewriting_4_fold_sums h f hgf hf
+begin
+rw ← rewriting_4_fold_sums, --  h f hgf hf
+end
+-/
 
 /- TODO : There should be some general rewriting pattern 
 for sums indexed by finset.nat_tuple_antidiagonal 
@@ -189,7 +143,7 @@ lemma finset.sum_4_rw {α : Type*} [add_comm_monoid α] (f : ℕ × ℕ × ℕ �
   finset.sum (finset.range (n + 1)) (λ k, 
     finset.sum (finset.range (k + 1)) (λ a, 
       finset.sum (finset.range (n - k + 1)) (λ c, 
-        f(a, k-a,c, n - k - c)))) =
+        f(a, k - a, c, n - k - c)))) =
   finset.sum (finset.range (n + 1)) (λ l, 
     finset.sum (finset.range (l + 1)) (λ a, 
       finset.sum (finset.range (n - l + 1)) (λ b, 
