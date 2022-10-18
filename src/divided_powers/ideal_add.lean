@@ -43,8 +43,7 @@ begin
   have hcI : c ∈ I := sub_mem ha ha',
   suffices hcJ : c ∈ J,
   rw [haa',  hbb'],
-  have Ha'c : 
-  (finset.range (n + 1)).sum (λ (k : ℕ), hI.dpow k (a' + c) * hJ.dpow (n - k) b)
+  have Ha'c : (finset.range (n + 1)).sum (λ (k : ℕ), hI.dpow k (a' + c) * hJ.dpow (n - k) b)
    = (finset.range (n+1)).sum (λ (k : ℕ),
     (finset.range (k+1)).sum 
       (λ (l : ℕ), (hI.dpow l a') * (hJ.dpow (n-k) b) * (hI.dpow (k-l) c))),
@@ -72,30 +71,6 @@ begin
   let i : Π (x : (Σ (i : ℕ), ℕ)), (x ∈ s) → (Σ (i : ℕ), ℕ) := λ ⟨k, m⟩ h, ⟨m, n-k⟩,
   let t := ((finset.range (n + 1)).sigma (λ (a : ℕ), finset.range (n - a + 1))),
   let j : Π (y : (Σ (i : ℕ), ℕ)), (y ∈ t) → (Σ (i : ℕ), ℕ) := λ ⟨k, m⟩ h, ⟨n-m,k⟩,
-  /- 
-  -- rw finset.sum_bij' (λ (⟨k,m⟩ : σ (ℕ → ℕ)), (⟨m, k-m⟩) _ _ (λ ⟨k, m), ⟨k+m,k⟩) _ _ _ ,
-
-  -- s = (finset.range (n+1)).sigma (λ k, finset.range (k+1))
-  -- ⟨k,m⟩, 0 ≤ m ≤ k ≤ n  correspond à [m,k-m,n-k]
-  -- t = (finset.range (n+1)).sigma (λ k, finset.range (n-k+1))
-  -- ⟨k, m⟩, 0 ≤ k ≤ n, et 0 ≤ m ≤ n -k
-  -- correspond à [k, m, n-k-m]
-  -- bijection : k' = m, m' = k -m (donc n-k'-m'=n-k)
-  -- i := λ ⟨k,m⟩, ⟨m, k-m⟩
-  -- j := λ ⟨k',m'⟩, ⟨k'+m',k'⟩
-
-a'[x2] b[n-x1] c[x1-x2] = a'[y1] b[y2] c[n-y1-y2]
-y1 = x2, y2=n-x1
-x1 = n - y2, x2 = y1
-((finset.range (n + 1)).sigma (λ (a : ℕ), finset.range (a + 1))).sum
-    (λ (x : Σ (i : ℕ), ℕ), hI.dpow x.snd a' * hJ.dpow (n - x.fst) b * hI.dpow (x.fst - x.snd) c) =
-  ((finset.range (n + 1)).sigma (λ (a : ℕ), finset.range (n - a + 1))).sum
-    (λ (x : Σ (i : ℕ), ℕ), hI.dpow x.fst a' * hJ.dpow x.snd b * hJ.dpow (n - x.fst - x.snd) c)
-
-  -- (finset.range (n+1))
-  -- (λ k, finset.range (k+1)),
--/
-
   rw finset.sum_bij' i _ _ j _ _ ,
   { rintros ⟨k,m⟩ h, 
     change i ⟨n-m,k⟩ _ = _,
@@ -123,7 +98,7 @@ x1 = n - y2, x2 = y1
       apply congr_arg2, 
       change u - v = n - v - (n - u),
       simp only [finset.mem_sigma, finset.mem_range, nat.lt_succ_iff] at h,
-      rw nat.self_sub_sub_eq h.2 h.1, 
+      rw tsub_tsub_tsub_cancel_left h.1, 
       refl, },
 
     { rintros ⟨k,m⟩ h,
@@ -728,6 +703,26 @@ dpow_add := dpow_add hI hJ hIJ,
 dpow_smul := dpow_smul hI hJ hIJ,
 dpow_mul := dpow_mul hI hJ hIJ, 
 dpow_comp := dpow_comp hI hJ hIJ, }
+
+lemma dpow_unique {J : ideal A} (hJ : _root_.divided_powers J) 
+  (hsup : _root_.divided_powers (I + J)) 
+  (hI' : ∀ (n : ℕ) (a ∈ I), hI.dpow n a = hsup.dpow n a)
+  (hJ' : ∀ (n : ℕ) (b ∈ J), hJ.dpow n b = hsup.dpow n b) :
+let hIJ :  ∀ (n : ℕ) (a ∈ I ⊓ J), hI.dpow n a = hJ.dpow n a := 
+λ n a ha, by simp only [hI' n a (submodule.mem_inf.mp ha).1, hJ' n a (submodule.mem_inf.mp ha).2] in 
+  hsup = divided_powers hI hJ hIJ := 
+begin
+  intro hIJ,
+  apply eq_of_eq_on_ideal, 
+  intros n x hx, 
+  rw [ideal.add_eq_sup, submodule.mem_sup] at hx, 
+  obtain ⟨a, ha, b, hb, rfl⟩ := hx, 
+  simp only [divided_powers, dpow_eq hI hJ hIJ n ha hb], 
+  rw hsup.dpow_add n (submodule.mem_sup_left ha) (submodule.mem_sup_right hb), 
+  apply finset.sum_congr rfl, 
+  intros k hk,
+  apply congr_arg2 (*) (hI' _ a ha).symm (hJ' _ b hb).symm, 
+end
 
 end ideal_add
 end divided_powers

@@ -289,7 +289,7 @@ Delete obsolete versions
 (A) Simplify, 
   remove not_eq_or_aux (see REMOVE or MOVE) -- DONE
   Prove uniqueness of pd-structure when possible
-    (ideal_add, dpow_quot)
+    (ideal_add [Done], dpow_quot [Done])
 (M) Complete the lattice structure
 
 -/
