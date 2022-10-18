@@ -1,5 +1,5 @@
 import data.finset.basic -- for not_eq_or_aux
-import algebra.order.sub  -- for tsub_tsub_tsub_cancel_left
+import algebra.order.sub.basic  -- for tsub_tsub_tsub_cancel_left
 
 import data.finset.nat_antidiagonal -- for 4-fold sums
 import ring_theory.ideal.basic -- for 4-fold sums (might not be optimal)
@@ -18,22 +18,24 @@ begin
   apply hn, rw ← le_zero_iff, rw ← h.1, exact h.2, 
 end -/
 
+/- -- Now in mathlib
 lemma tsub_tsub_tsub_cancel_left {α : Type*} [add_comm_semigroup α] [partial_order α]
   [has_exists_add_of_le α] [covariant_class α α has_add.add has_le.le] [has_sub α] 
   [has_ordered_sub α] [contravariant_class α α has_add.add has_le.le] {a b c : α} (hcb : c ≤ b)
   (hab : b ≤ a) : a - c - (a - b) = b - c := 
 by rw [tsub_eq_iff_eq_add_of_le (tsub_le_tsub_left hcb a), tsub_add_eq_add_tsub hcb, add_comm, 
-  tsub_add_cancel_of_le hab]
+  tsub_add_cancel_of_le hab] -/
 
+/- -- Not used anymore
 lemma nat.self_sub_sub_eq {u v n : ℕ} (huv : v ≤ u) (hun : u ≤ n) :
   n - v - (n - u) = u - v :=
-tsub_tsub_tsub_cancel_left huv hun
+tsub_tsub_tsub_cancel_left hun
 /- begin
   rw nat.sub_eq_iff_eq_add (tsub_le_tsub_left h n),
   rw ← nat.sub_add_comm h,
   rw add_comm,
   rw nat.sub_add_cancel h', 
-end -/
+end -/ -/
 
 section classical
 open_locale classical
