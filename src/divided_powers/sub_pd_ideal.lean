@@ -93,6 +93,11 @@ namespace sub_pd_ideal
 
 variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 
+def mk' (J : ideal A) (hJ : is_sub_pd_ideal hI J) : sub_pd_ideal hI :=
+{ carrier := J,
+  is_sub_ideal := hJ.1,
+  dpow_mem_ideal := hJ.2 }
+
 instance : set_like (sub_pd_ideal hI) A :=
 { coe := λ s, s.carrier,
   coe_injective' := λ p q h, by rw [set_like.coe_set_eq] at h; cases p; cases q; congr'  }
@@ -273,25 +278,50 @@ instance : has_lt (sub_pd_ideal hI) := ⟨λ J J', J.carrier < J'.carrier⟩
 
 lemma lt_iff {J J' : sub_pd_ideal hI} : J < J' ↔ J.carrier < J'.carrier := iff.rfl
 
-instance : has_sup hI.sub_pd_ideal := ⟨λ J J', Inf {B | J ≤ B ∧ J' ≤ B}⟩
 
-lemma sup_def (J J' : sub_pd_ideal hI) : J ⊔ J' = Inf {B | J ≤ B ∧ J' ≤ B} := rfl
 
-lemma sup_carrier_def (J J' : sub_pd_ideal hI) :
-  (J ⊔ J').carrier = Inf {B | (J : ideal A) ≤ B ∧ (J' : ideal A) ≤ B} := 
-begin
-  rw sup_def, rw Inf_carrier_def,
-  apply le_antisymm,
-  { rw le_Inf_iff,
-    intros B hB,
-    rw infi_le_iff,
-    intros C hC,
-    specialize hC ⊤,
-    sorry },
-  { sorry }
-end
+instance : has_sup (sub_pd_ideal hI) := 
+⟨λ J J', begin
+apply sub_pd_ideal.mk' hI ((J : ideal A) ⊔ J'),
+have : (J : ideal A) ⊔ (J' : ideal A) = ideal.span(J ∪ J'),
+{ simp only [ideal.span_union, coe_coe, ideal.span_eq] },
+rw this,
+rw span_is_sub_pd_ideal_iff hI,
+  --(set.union_subset J.is_sub_ideal J'.is_sub_ideal),
+{ intros n hn x hx,
+  cases hx,
+  { exact ideal.subset_span (set.mem_union_left _ (J.dpow_mem_ideal n hn x hx)), },
+  { exact ideal.subset_span (set.mem_union_right _ (J'.dpow_mem_ideal n hn x hx)), }},
+  exact set.union_subset J.is_sub_ideal J'.is_sub_ideal,
+end⟩
 
-instance : has_Sup hI.sub_pd_ideal := ⟨λ S, Inf {J | ∀ J' ∈ S, J' ≤ J}⟩
+lemma sup_carrier_def (J J' : sub_pd_ideal hI) : (J ⊔ J').carrier = J ⊔ J' := rfl
+
+lemma submodule.supr_eq_span' {R M : Type*} [semiring R] [add_comm_monoid M] [module R M] {ι : Sort*} 
+(p : ι → submodule R M) (h : ι → Prop) : 
+  (⨆ (i : ι) (hi : h i), p i) = submodule.span R (⋃ (i : ι) (hi : h i), ↑(p i)) :=
+by simp_rw [← submodule.supr_span, submodule.span_eq]
+
+instance : has_Sup (sub_pd_ideal hI) := 
+⟨λ S, begin
+  apply sub_pd_ideal.mk' hI (Sup ((coe : sub_pd_ideal hI → ideal A) '' S)),
+  rw Sup_eq_supr,
+  rw submodule.supr_eq_span',
+  rw ideal.submodule_span_eq, 
+  rw span_is_sub_pd_ideal_iff hI,
+  { rintros n hn x ⟨T, hT, hTx⟩,
+    obtain ⟨J, hJ⟩ := hT,
+    simp only at hJ,
+    rw ← hJ at hTx,
+    obtain ⟨J', ⟨⟨hJ', rfl⟩, h'⟩⟩ := hTx,
+
+    apply ideal.subset_span,
+    apply set.mem_bUnion hJ',
+    obtain ⟨K, hKS, rfl⟩ := hJ',
+    exact K.dpow_mem_ideal n hn x h',
+  },
+  sorry
+end⟩
 
 
 /- instance : has_coe (sub_pd_ideal hI) (submodule A I) := ⟨ λ J,
@@ -326,11 +356,12 @@ by { ext x, exact ⟨λ ⟨h, h'⟩, h, λ h, ⟨h, J.property h.left⟩⟩ }
 lemma subtype.sup_def (J J' : {J : ideal A // J ≤ I}) : 
   (J ⊔ J' : {J : ideal A // J ≤ I} ) = 
     ⟨Inf {B | (J : ideal A) ≤ B ∧ (J' : ideal A) ≤ B}, Inf_le_of_le ⟨J.2, J'.2⟩ (le_refl I)⟩ :=
-by { 
+begin
   ext x,
   refine ⟨λ ⟨h, h'⟩, h, λ h, ⟨h, _⟩⟩,
   rw [subtype.coe_mk, submodule.mem_Inf] at h,
-  exact h I ⟨J.2, J'.2⟩ }
+  exact h I ⟨J.2, J'.2⟩
+end
 
 lemma coe_coe (J : sub_pd_ideal hI) : ((J : {J : ideal A // J ≤ I}) : ideal A) = (J : ideal A) := 
 rfl
