@@ -92,7 +92,6 @@ end is_sub_pd_ideal
 namespace sub_pd_ideal
 
 variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
-include hI
 
 instance : set_like (sub_pd_ideal hI) A :=
 { coe := λ s, s.carrier,
@@ -168,6 +167,9 @@ instance : has_inf (sub_pd_ideal hI) := ⟨λ J J',
 { carrier := J.carrier ⊓ J'.carrier,
   is_sub_ideal := λ x hx, J.is_sub_ideal hx.1,
   dpow_mem_ideal :=  λ n hn x hx, ⟨J.dpow_mem_ideal n hn x hx.1, J'.dpow_mem_ideal n hn x hx.2⟩ }⟩
+
+lemma inf_carrier_def (J J' : sub_pd_ideal hI) :
+  (J ⊓ J').carrier = J.carrier ⊓ J'.carrier := rfl
 
 instance : has_Inf (sub_pd_ideal hI) := ⟨λ S,
 { carrier := ⨅ s ∈ (has_insert.insert ⊤ S), (s : hI.sub_pd_ideal).carrier, 
@@ -260,6 +262,9 @@ end
 
 section complete_lattice
 
+instance : has_coe (sub_pd_ideal hI) (ideal A) := ⟨λ J, J.carrier⟩
+
+
 instance : has_le (sub_pd_ideal hI) := ⟨λ J J', J.carrier ≤ J'.carrier⟩
 
 lemma le_iff {J J' : sub_pd_ideal hI} : J ≤ J' ↔ J.carrier ≤ J'.carrier := iff.rfl
@@ -268,6 +273,97 @@ instance : has_lt (sub_pd_ideal hI) := ⟨λ J J', J.carrier < J'.carrier⟩
 
 lemma lt_iff {J J' : sub_pd_ideal hI} : J < J' ↔ J.carrier < J'.carrier := iff.rfl
 
+instance : has_sup hI.sub_pd_ideal := ⟨λ J J', Inf {B | J ≤ B ∧ J' ≤ B}⟩
+
+lemma sup_def (J J' : sub_pd_ideal hI) : J ⊔ J' = Inf {B | J ≤ B ∧ J' ≤ B} := rfl
+
+lemma sup_carrier_def (J J' : sub_pd_ideal hI) :
+  (J ⊔ J').carrier = Inf {B | (J : ideal A) ≤ B ∧ (J' : ideal A) ≤ B} := 
+begin
+  rw sup_def, rw Inf_carrier_def,
+  apply le_antisymm,
+  { rw le_Inf_iff,
+    intros B hB,
+    rw infi_le_iff,
+    intros C hC,
+    specialize hC ⊤,
+    sorry },
+  { sorry }
+end
+
+instance : has_Sup hI.sub_pd_ideal := ⟨λ S, Inf {J | ∀ J' ∈ S, J' ≤ J}⟩
+
+
+/- instance : has_coe (sub_pd_ideal hI) (submodule A I) := ⟨ λ J,
+{ carrier   := { x : I | (x : A) ∈ J.carrier},
+  add_mem'  := sorry,
+  zero_mem' := sorry,
+  smul_mem' := sorry }⟩ -/
+
+def subtype.galois_coinsertion : galois_coinsertion (λ J : {J : ideal A // J ≤ I}, (J : ideal A))
+  (λ J : ideal A, ⟨J ⊓ I, by exact inf_le_right⟩) :=
+galois_coinsertion.monotone_intro (λ J J' h, subtype.mk_le_mk.mpr (inf_le_inf_right I h))
+  (λ J J' h, h) (λ J, inf_le_left)
+  (λ ⟨J, hJ⟩, by simp only [subtype.coe_mk]; exact inf_eq_left.mpr hJ) 
+
+instance : has_coe (sub_pd_ideal hI) {J : ideal A // J ≤ I} :=  ⟨λ J, ⟨J.carrier, J.is_sub_ideal⟩⟩
+
+lemma coe_def (J : sub_pd_ideal hI) : (J : ideal A) = J.carrier := rfl
+
+instance : complete_lattice {J : ideal A // J ≤ I} := 
+galois_coinsertion.lift_complete_lattice (subtype.galois_coinsertion)
+
+lemma subtype.top_def : (⟨I, le_refl I⟩ : {J : ideal A // J ≤ I}) = ⊤ := 
+eq_top_iff.mpr (⊤ : {J : ideal A // J ≤ I}).property
+
+lemma subtype.bot_def : (⟨⊥, bot_le⟩ : {J : ideal A // J ≤ I}) = ⊥ := 
+by rw [subtype.mk_bot]
+
+lemma subtype.inf_def (J J' : {J : ideal A // J ≤ I}) : 
+  (J ⊓ J' : {J : ideal A // J ≤ I} ) = ⟨(J : ideal A) ⊓ (J' : ideal A), inf_le_of_left_le J.2⟩ :=
+by { ext x, exact ⟨λ ⟨h, h'⟩, h, λ h, ⟨h, J.property h.left⟩⟩ }
+
+lemma subtype.sup_def (J J' : {J : ideal A // J ≤ I}) : 
+  (J ⊔ J' : {J : ideal A // J ≤ I} ) = 
+    ⟨Inf {B | (J : ideal A) ≤ B ∧ (J' : ideal A) ≤ B}, Inf_le_of_le ⟨J.2, J'.2⟩ (le_refl I)⟩ :=
+by { 
+  ext x,
+  refine ⟨λ ⟨h, h'⟩, h, λ h, ⟨h, _⟩⟩,
+  rw [subtype.coe_mk, submodule.mem_Inf] at h,
+  exact h I ⟨J.2, J'.2⟩ }
+
+lemma coe_coe (J : sub_pd_ideal hI) : ((J : {J : ideal A // J ≤ I}) : ideal A) = (J : ideal A) := 
+rfl
+
+
+/- lemma coe_def (J : sub_pd_ideal hI) : 
+  (J : submodule A I).carrier = { x : I | (x : A) ∈ J.carrier } := sorry -/
+
+
+instance : complete_lattice (sub_pd_ideal hI) :=
+begin
+  refine function.injective.complete_lattice (λ J : sub_pd_ideal hI, (J : {J : ideal A // J ≤ I}))
+    (λ J J' h, (ext_iff _ _).mpr (subtype.ext_iff.mp h))
+  _ (λ J J', by rw subtype.inf_def; refl) _ _ _ _,
+  { intros J J',
+    rw [subtype.sup_def, subtype.ext_iff, coe_coe, coe_def, sup_carrier_def], refl,},
+  { sorry },
+  { sorry },
+  { rw ← subtype.top_def, refl },
+  { rw ← subtype.bot_def, refl }
+end
+
+/- 
+def galois_coinsertion : galois_coinsertion (λ J : sub_pd_ideal hI, (J.carrier : ideal A))
+  (λ J : ideal A, ⊤/- inter_quot hI J -/) :=
+begin
+  apply galois_coinsertion.monotone_intro,
+  { sorry },
+  { sorry },
+  { sorry },
+  { sorry }
+end -/
+/- 
 instance : complete_lattice (sub_pd_ideal hI) :=
 { sup := sorry,
   le  := has_le.le,
@@ -287,15 +383,33 @@ instance : complete_lattice (sub_pd_ideal hI) :=
   le_Sup := sorry,
   Sup_le := sorry,
   Inf := has_Inf.Inf,
-  Inf_le := λ S J hJS, sorry,
-  le_Inf := sorry,
+  Inf_le := λ S J hJS, 
+  begin
+    rw [le_iff, Inf_carrier_def],
+    apply Inf_le _,
+    rw [set.mem_range],
+    use J,
+    simp only [set.mem_insert_iff],
+    
+    sorry,
+  end,
+  le_Inf := λ S J h, 
+  begin
+    rw [le_iff, Inf_carrier_def, le_infi₂_iff],
+    intros B hB,
+    cases hB,
+    { rw hB, exact J.is_sub_ideal, },
+    { exact h B hB}, 
+  end,
   top := has_top.top,
   bot := has_bot.bot,
   le_top := λ J, J.is_sub_ideal,
-  bot_le := λ J, bot_le }
-end complete_lattice
+  bot_le := λ J, bot_le } -/
+end complete_lattice 
 
 end sub_pd_ideal
+
+#exit
 
 namespace quot
 
@@ -309,7 +423,6 @@ noncomputable def dpow (J : ideal A) : ℕ → (A ⧸ J) → (A ⧸ J) :=
   (λ a, (ideal.quotient.mk J) (hI.dpow n a) : I → A ⧸ J) 0
 
 variables {J : ideal A} (hIJ : is_sub_pd_ideal hI (J ⊓ I))
-include hIJ
 
 open_locale classical
 
