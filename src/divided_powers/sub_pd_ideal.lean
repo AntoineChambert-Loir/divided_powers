@@ -269,7 +269,6 @@ section complete_lattice
 
 instance : has_coe (sub_pd_ideal hI) (ideal A) := ⟨λ J, J.carrier⟩
 
-
 instance : has_le (sub_pd_ideal hI) := ⟨λ J J', J.carrier ≤ J'.carrier⟩
 
 lemma le_iff {J J' : sub_pd_ideal hI} : J ≤ J' ↔ J.carrier ≤ J'.carrier := iff.rfl
@@ -278,22 +277,17 @@ instance : has_lt (sub_pd_ideal hI) := ⟨λ J J', J.carrier < J'.carrier⟩
 
 lemma lt_iff {J J' : sub_pd_ideal hI} : J < J' ↔ J.carrier < J'.carrier := iff.rfl
 
-
-
 instance : has_sup (sub_pd_ideal hI) := 
-⟨λ J J', begin
-apply sub_pd_ideal.mk' hI ((J : ideal A) ⊔ J'),
-have : (J : ideal A) ⊔ (J' : ideal A) = ideal.span(J ∪ J'),
-{ simp only [ideal.span_union, coe_coe, ideal.span_eq] },
-rw this,
-rw span_is_sub_pd_ideal_iff hI,
-  --(set.union_subset J.is_sub_ideal J'.is_sub_ideal),
-{ intros n hn x hx,
-  cases hx,
-  { exact ideal.subset_span (set.mem_union_left _ (J.dpow_mem_ideal n hn x hx)), },
-  { exact ideal.subset_span (set.mem_union_right _ (J'.dpow_mem_ideal n hn x hx)), }},
-  exact set.union_subset J.is_sub_ideal J'.is_sub_ideal,
+⟨λ J J', sub_pd_ideal.mk' hI ((J : ideal A) ⊔ J')  $ begin
+  have hJJ' : (J : ideal A) ⊔ (J' : ideal A) = ideal.span(J ∪ J'),
+  { simp only [ideal.span_union, coe_coe, ideal.span_eq] },
+  rw [hJJ', span_is_sub_pd_ideal_iff hI (J ∪ J') (set.union_subset J.is_sub_ideal J'.is_sub_ideal)],
+  rintros n hn x (hx | hx),
+  { exact ideal.subset_span (set.mem_union_left _ (J.dpow_mem_ideal n hn x hx)) },
+  { exact ideal.subset_span (set.mem_union_right _ (J'.dpow_mem_ideal n hn x hx)) }
 end⟩
+
+lemma coe_def (J : sub_pd_ideal hI) : (J : ideal A) = J.carrier := rfl
 
 lemma sup_carrier_def (J J' : sub_pd_ideal hI) : (J ⊔ J').carrier = J ⊔ J' := rfl
 
@@ -303,32 +297,27 @@ lemma submodule.supr_eq_span' {R M : Type*} [semiring R] [add_comm_monoid M] [mo
 by simp_rw [← submodule.supr_span, submodule.span_eq]
 
 instance : has_Sup (sub_pd_ideal hI) := 
-⟨λ S, begin
-  apply sub_pd_ideal.mk' hI (Sup ((coe : sub_pd_ideal hI → ideal A) '' S)),
-  rw Sup_eq_supr,
-  rw submodule.supr_eq_span',
-  rw ideal.submodule_span_eq, 
-  rw span_is_sub_pd_ideal_iff hI,
+⟨λ S, sub_pd_ideal.mk' hI (Sup ((coe : sub_pd_ideal hI → ideal A) '' S)) $ begin
+   have h : (⋃ (i : ideal A) (hi : i ∈ coe '' S), ↑i) ⊆ (I : set A),
+  { rintros a ⟨-, ⟨J, rfl⟩, haJ⟩,
+    rw [set.mem_Union, set_like.mem_coe, exists_prop] at haJ,
+    obtain ⟨J', hJ'⟩ := (set.mem_image _ _ _).mp haJ.1,
+    rw [← hJ'.2, coe_def] at haJ,
+    exact J'.is_sub_ideal haJ.2, },
+  rw [Sup_eq_supr, submodule.supr_eq_span', ideal.submodule_span_eq, 
+    span_is_sub_pd_ideal_iff hI _ h],
   { rintros n hn x ⟨T, hT, hTx⟩,
     obtain ⟨J, hJ⟩ := hT,
-    simp only at hJ,
     rw ← hJ at hTx,
     obtain ⟨J', ⟨⟨hJ', rfl⟩, h'⟩⟩ := hTx,
-
     apply ideal.subset_span,
     apply set.mem_bUnion hJ',
     obtain ⟨K, hKS, rfl⟩ := hJ',
-    exact K.dpow_mem_ideal n hn x h',
-  },
-  sorry
+    exact K.dpow_mem_ideal n hn x h', },
 end⟩
 
-
-/- instance : has_coe (sub_pd_ideal hI) (submodule A I) := ⟨ λ J,
-{ carrier   := { x : I | (x : A) ∈ J.carrier},
-  add_mem'  := sorry,
-  zero_mem' := sorry,
-  smul_mem' := sorry }⟩ -/
+lemma Sup_carrier_def (S : set (sub_pd_ideal hI)) :
+  (Sup S).carrier = Sup ((coe : sub_pd_ideal hI → ideal A) '' S) := rfl
 
 def subtype.galois_coinsertion : galois_coinsertion (λ J : {J : ideal A // J ≤ I}, (J : ideal A))
   (λ J : ideal A, ⟨J ⊓ I, by exact inf_le_right⟩) :=
@@ -337,8 +326,6 @@ galois_coinsertion.monotone_intro (λ J J' h, subtype.mk_le_mk.mpr (inf_le_inf_r
   (λ ⟨J, hJ⟩, by simp only [subtype.coe_mk]; exact inf_eq_left.mpr hJ) 
 
 instance : has_coe (sub_pd_ideal hI) {J : ideal A // J ≤ I} :=  ⟨λ J, ⟨J.carrier, J.is_sub_ideal⟩⟩
-
-lemma coe_def (J : sub_pd_ideal hI) : (J : ideal A) = J.carrier := rfl
 
 instance : complete_lattice {J : ideal A // J ≤ I} := 
 galois_coinsertion.lift_complete_lattice (subtype.galois_coinsertion)
@@ -353,6 +340,10 @@ lemma subtype.inf_def (J J' : {J : ideal A // J ≤ I}) :
   (J ⊓ J' : {J : ideal A // J ≤ I} ) = ⟨(J : ideal A) ⊓ (J' : ideal A), inf_le_of_left_le J.2⟩ :=
 by { ext x, exact ⟨λ ⟨h, h'⟩, h, λ h, ⟨h, J.property h.left⟩⟩ }
 
+lemma subtype.Inf_def (S : set {J : ideal A // J ≤ I}) : 
+  (Inf S : {J : ideal A // J ≤ I} ) = ⟨(Inf ((coe : _ → ideal A) '' S)) ⊓ I, inf_le_right⟩ :=
+by { ext x, refl }
+
 lemma subtype.sup_def (J J' : {J : ideal A // J ≤ I}) : 
   (J ⊔ J' : {J : ideal A // J ≤ I} ) = 
     ⟨Inf {B | (J : ideal A) ≤ B ∧ (J' : ideal A) ≤ B}, Inf_le_of_le ⟨J.2, J'.2⟩ (le_refl I)⟩ :=
@@ -363,25 +354,51 @@ begin
   exact h I ⟨J.2, J'.2⟩
 end
 
+lemma subtype.Sup_def (S : set {J : ideal A // J ≤ I}) : 
+  (Sup S : {J : ideal A // J ≤ I} ) = ⟨(Sup ((coe : _ → ideal A) '' S)) ⊓ I, inf_le_right⟩ :=
+by { ext x, refl }
+
 lemma coe_coe (J : sub_pd_ideal hI) : ((J : {J : ideal A // J ≤ I}) : ideal A) = (J : ideal A) := 
 rfl
-
-
-/- lemma coe_def (J : sub_pd_ideal hI) : 
-  (J : submodule A I).carrier = { x : I | (x : A) ∈ J.carrier } := sorry -/
-
 
 instance : complete_lattice (sub_pd_ideal hI) :=
 begin
   refine function.injective.complete_lattice (λ J : sub_pd_ideal hI, (J : {J : ideal A // J ≤ I}))
-    (λ J J' h, (ext_iff _ _).mpr (subtype.ext_iff.mp h))
-  _ (λ J J', by rw subtype.inf_def; refl) _ _ _ _,
-  { intros J J',
-    rw [subtype.sup_def, subtype.ext_iff, coe_coe, coe_def, sup_carrier_def], refl,},
-  { sorry },
-  { sorry },
-  { rw ← subtype.top_def, refl },
-  { rw ← subtype.bot_def, refl }
+    (λ J J' h, (ext_iff _ _).mpr (subtype.ext_iff.mp h)) (λ J J', by rw subtype.sup_def; refl)
+    (λ J J', by rw subtype.inf_def; refl) _ _ (by rw ← subtype.top_def; refl) 
+    (by rw ← subtype.bot_def; refl),
+  { intro S,
+    conv_rhs { rw supr },
+    rw [subtype.Sup_def, subtype.ext_iff, coe_coe, coe_def, Sup_carrier_def, subtype.coe_mk, 
+      Sup_image, Sup_image, supr_range], 
+    have : ∀ (J : hI.sub_pd_ideal),
+      ((⨆ (H : J ∈ S), (J : {B : ideal A // B ≤ I}) : {B : ideal A // B ≤ I} ) : ideal A) =
+      (⨆ (H : J ∈ S), (J : ideal A)),
+    { intro J,
+      by_cases hJ : J ∈ S,
+      { rw [csupr_pos hJ, csupr_pos hJ], refl },
+      { simp only [hJ, supr_false, subtype.coe_eq_bot_iff, bot_le] }},
+    simp_rw this,
+    ext a,
+    refine ⟨λ ha, ⟨ha, _⟩, λ ha, ha.1⟩,
+    apply (submodule.mem_supr _).mp ha I,
+    intro J,
+    by_cases hJ : J ∈ S,
+    { rw csupr_pos hJ, exact J.is_sub_ideal, },
+    { simp only [hJ, supr_false, bot_le] }},
+  { intro S,
+    conv_rhs { rw infi },
+    rw [subtype.Inf_def, subtype.ext_iff, coe_coe, coe_def, Inf_carrier_def, subtype.coe_mk,
+      Inf_image, infi_range, infi_inf],
+    ext a,
+    simp only [ideal.mem_infi, ideal.mem_inf, set.mem_insert_iff, mem_carrier, forall_eq_or_imp],
+    refine ⟨λ ha J, ⟨_, ha.1⟩, λ ha, ⟨(ha ⊤).2, λ J hJ, _⟩⟩,
+    { by_cases hJ : J ∈ S,
+      { rw cinfi_pos hJ, exact ha.2 J hJ, },
+      { simp only [hJ, infi_false, ← subtype.top_def], exact ha.1 }},
+    { specialize ha J,
+      rw cinfi_pos hJ at ha,
+      exact ha.1 }}
 end
 
 /- 
