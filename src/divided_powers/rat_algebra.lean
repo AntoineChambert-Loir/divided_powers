@@ -105,9 +105,9 @@ begin
   have hk : k < n := lt_of_le_of_lt le_add_self hkm,
   have h_fac : (ring.inverse (m.factorial : A)) * (ring.inverse k.factorial) =
     ↑((m + k).choose m) * (ring.inverse (m + k).factorial),
-  { rw [ring.eq_mul_inverse_iff_mul_eq _ _ (factorial_is_unit hn_fac hkm), mul_assoc,
-    ring.inverse_mul_eq_iff_eq_mul _ _ (factorial_is_unit hn_fac hm),
-      ring.inverse_mul_eq_iff_eq_mul _ _ (factorial_is_unit hn_fac hk)],
+  { rw [ring.eq_mul_inverse_iff_mul_eq _ _ _ (factorial_is_unit hn_fac hkm), mul_assoc,
+    ring.inverse_mul_eq_iff_eq_mul _ _ _ (factorial_is_unit hn_fac hm),
+      ring.inverse_mul_eq_iff_eq_mul _ _ _ (factorial_is_unit hn_fac hk)],
     norm_cast, apply congr_arg,
     rw [← nat.add_choose_mul_factorial_mul_factorial, mul_comm, mul_comm _ m.factorial, 
       nat.choose_symm_add] },
@@ -142,8 +142,8 @@ begin
     rw dpow_dif_pos _ hx,
     have h_fac : (ring.inverse (m.factorial : A)) * (ring.inverse k.factorial) ^ m =
       ↑(mchoose m k) * (ring.inverse (m*k).factorial),
-    { rw [ring.eq_mul_inverse_iff_mul_eq _ _ (factorial_is_unit hn_fac hkm), mul_assoc,
-        ring.inverse_mul_eq_iff_eq_mul  _ _ (factorial_is_unit hn_fac hmn)],
+    { rw [ring.eq_mul_inverse_iff_mul_eq _ _ _ (factorial_is_unit hn_fac hkm), mul_assoc,
+        ring.inverse_mul_eq_iff_eq_mul  _ _ _ (factorial_is_unit hn_fac hmn)],
       rw ring.inverse_pow_mul_eq_iff_eq_mul _ _ (factorial_is_unit hn_fac hkn),
       rw [← mchoose_lemma _ hk,
         nat.cast_mul, nat.cast_mul, nat.cast_pow, mul_comm ↑m.factorial, mul_assoc] },
@@ -223,7 +223,7 @@ begin
   intros n x hx,
   have hn : is_unit (n.factorial : R) := factorial.is_unit n,
     rw [divided_powers_dpow_apply, dpow_def n hx, eq_comm,
-      ring.inverse_mul_eq_iff_eq_mul _ _ hn, factorial_mul_dpow_eq_pow _ _ _ hx]
+      ring.inverse_mul_eq_iff_eq_mul _ _ _ hn, factorial_mul_dpow_eq_pow _ _ _ hx]
 end
 
 end rat_algebra
