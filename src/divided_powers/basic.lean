@@ -21,6 +21,8 @@ Lectures notes in mathematics 407, Springer-Verlag.
 * P. Berthelot and A. Ogus (1978), *Notes on crystalline cohomology*, 
 Princeton University Press.
 
+* N. Roby (1963). « Lois polynomes et lois formelles en théorie des modules ». Annales scientifiques de l’École Normale Supérieure 80 (3): 213‑348. https://doi.org/10.24033/asens.1124.
+
 * N. Roby (1968), *Construction de certaines algèbres à puissances divisées*, 
 Bulletin de la Société Mathématique de France, Tome 96, p. 97-113. 
 doi: https://doi.org/10.24033/bsmf.1661
