@@ -111,6 +111,8 @@ instance : has_top (sub_pd_ideal hI) :=
   is_sub_ideal   := le_refl _,
   dpow_mem_ideal := λ n hn x hx, hI.dpow_mem hn hx }⟩
 
+lemma top_carrier_def : (⊤ : hI.sub_pd_ideal).carrier = I := rfl 
+
 instance : inhabited hI.sub_pd_ideal := ⟨⊤⟩
 
 /-- (0) is a sub-pd-ideal ot the pd-ideal I. -/
@@ -391,88 +393,14 @@ begin
   { intro S,
     conv_rhs { rw infi },
     rw [subtype.Inf_def, subtype.ext_iff, coe_coe, coe_def, Inf_carrier_def, subtype.coe_mk,
-      Inf_image, infi_range, infi_inf],
-
-      rw infi_insert,
-      --rw inf_comm,
-      --apply congr_arg2,
-
-
-      rw inf_infi,
-      simp_rw inf_comm,
-      
-
-      apply infi_congr,
-      intro J,
-      
-      sorry
-      
-      /- simp only [set.mem_insert_iff],
-
-
-    ext a,
-    simp only [ideal.mem_infi, ideal.mem_inf, set.mem_insert_iff, mem_carrier, forall_eq_or_imp],
-    refine ⟨λ ha J, ⟨_, ha.1⟩, λ ha, ⟨(ha ⊤).2, λ J hJ, _⟩⟩,
-    { by_cases hJ : J ∈ S,
-      { rw cinfi_pos hJ, exact ha.2 J hJ, },
-      { simp only [hJ, infi_false, ← subtype.top_def], exact ha.1 }},
-    { specialize ha J,
-      rw cinfi_pos hJ at ha,
-      exact ha.1 }} -/
+      Inf_image, infi_range, infi_inf, infi_insert, inf_infi],
+    apply infi_congr,
+    intro J,
+    by_cases hJ : J ∈ S,
+    { rw [cinfi_pos hJ, cinfi_pos hJ, inf_comm], refl, },
+    { simp only [hJ, infi_false, inf_top_eq, ← subtype.top_def, subtype.coe_mk, inf_idem], refl }}
 end
 
-/- 
-def galois_coinsertion : galois_coinsertion (λ J : sub_pd_ideal hI, (J.carrier : ideal A))
-  (λ J : ideal A, ⊤/- inter_quot hI J -/) :=
-begin
-  apply galois_coinsertion.monotone_intro,
-  { sorry },
-  { sorry },
-  { sorry },
-  { sorry }
-end -/
-/- 
-instance : complete_lattice (sub_pd_ideal hI) :=
-{ sup := sorry,
-  le  := has_le.le,
-  lt  := has_lt.lt,
-  le_refl := le_refl,
-  le_trans := λ J K L, le_trans,
-  lt_iff_le_not_le := λ J J', lt_iff_le_not_le,
-  le_antisymm := λ J J', le_antisymm,
-  le_sup_left := sorry,
-  le_sup_right := sorry,
-  sup_le := sorry,
-  inf := has_inf.inf,
-  inf_le_left := λ J J' x hx, hx.left,
-  inf_le_right := λ J J' x hx, hx.right,
-  le_inf := λ J K L hJK hJL, by { rw le_iff at hJK hJL ⊢, exact le_inf hJK hJL }, 
-  Sup := sorry,
-  le_Sup := sorry,
-  Sup_le := sorry,
-  Inf := has_Inf.Inf,
-  Inf_le := λ S J hJS, 
-  begin
-    rw [le_iff, Inf_carrier_def],
-    apply Inf_le _,
-    rw [set.mem_range],
-    use J,
-    simp only [set.mem_insert_iff],
-    
-    sorry,
-  end,
-  le_Inf := λ S J h, 
-  begin
-    rw [le_iff, Inf_carrier_def, le_infi₂_iff],
-    intros B hB,
-    cases hB,
-    { rw hB, exact J.is_sub_ideal, },
-    { exact h B hB}, 
-  end,
-  top := has_top.top,
-  bot := has_bot.bot,
-  le_top := λ J, J.is_sub_ideal,
-  bot_le := λ J, bot_le } -/
 end complete_lattice 
 
 end sub_pd_ideal
