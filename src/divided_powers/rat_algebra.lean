@@ -44,16 +44,16 @@ lemma dpow_add_dif_pos {n : ℕ} (hn_fac : is_unit ((n-1).factorial : A)) {m : �
 begin
   rw dpow_dif_pos m (ideal.add_mem I hx hy),
   simp only [dpow],
-  rw [ring.inverse_mul_eq_iff_eq_mul _ _ (factorial_is_unit hn_fac hmn), finset.mul_sum, add_pow],
+  rw [ring.inverse_mul_eq_iff_eq_mul _ _ _ (factorial_is_unit hn_fac hmn), finset.mul_sum, add_pow],
   apply finset.sum_congr rfl,
   intros k hk,
   rw [finset.mem_range, nat.lt_succ_iff] at hk,
   have h_ch : (m.choose k : A) =
     (m.factorial : A) * (ring.inverse (k.factorial)) * (ring.inverse ((m - k).factorial)),
   { have hadd : m = (m - k) + k := (tsub_add_cancel_iff_le.mpr hk).symm,
-    rw [ring.eq_mul_inverse_iff_mul_eq  _ _
+    rw [ring.eq_mul_inverse_iff_mul_eq _ _ _
       (factorial_is_unit hn_fac (lt_of_le_of_lt (nat.sub_le m k) hmn)),
-      ring.eq_mul_inverse_iff_mul_eq  _ _ (factorial_is_unit hn_fac  (lt_of_le_of_lt hk hmn))],
+      ring.eq_mul_inverse_iff_mul_eq  _ _ _ (factorial_is_unit hn_fac  (lt_of_le_of_lt hk hmn))],
     nth_rewrite 0 hadd,
     nth_rewrite 2 hadd,
     rw [← nat.cast_mul, ← nat.cast_mul, nat.add_choose_mul_factorial_mul_factorial],},

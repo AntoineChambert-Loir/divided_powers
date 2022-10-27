@@ -111,7 +111,7 @@ def toto (n : ℕ ):= λ (s : finset (M × ℕ)) (hs : finset.sum s (λ x, x.2) 
 noncomputable
 def grade (n : ℕ) : submodule R (divided_power_algebra R M) :=
 submodule.span R 
-  { u ∈ divided_power_algebra R M | ∃ (s : finset (M × ℕ)) (hs : finset.sum s (λ x, x.2) = n),
-  finset.prod s (λ x, ring_quot.mk_alg_hom R (rel R M) (mv_polynomial.X x)) = u}
+  { u : divided_power_algebra R M | ∃ (s : finset (M × ℕ)) (hs : finset.sum s (λ x, x.2) = n),
+  finset.prod s (λ x, ring_quot.mk_alg_hom R (rel R M) (mv_polynomial.X x)) = u }
 
 end divided_power_algebra

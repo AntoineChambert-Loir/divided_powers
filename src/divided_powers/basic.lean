@@ -185,7 +185,7 @@ begin
       (λ m hm, _) 
       (λ m _, m.2.fill a m.1)
       _ 
-      (λ m _, m.fill_filter_ne _ _ a) 
+      (λ m _, m.fill_filter_ne a) 
       -- explicit arguments above rather than m.fill_filter_ne a
       -- adjust once multinomial has been incorporated to mathlib
       (λ m hm, _)).symm,
@@ -204,7 +204,7 @@ begin
       intro hi', apply ha, rw hi', exact hi, },
       
     { exact λ m hm, sym_fill_mem a (mem_sigma.1 hm).2 },
-    { exact sym.filter_ne_fill _ _ a m (mt (mem_sym_iff.1 (mem_sigma.1 hm).2 a) ha) }},
+    { exact sym.filter_ne_fill a m (mt (mem_sym_iff.1 (mem_sigma.1 hm).2 a) ha) }},
 end
 
 /-- A “multinomial” theorem for divided powers — without multinomial coefficients -/

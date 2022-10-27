@@ -111,6 +111,8 @@ instance : has_top (sub_pd_ideal hI) :=
   is_sub_ideal   := le_refl _,
   dpow_mem_ideal := λ n hn x hx, hI.dpow_mem hn hx }⟩
 
+instance : inhabited hI.sub_pd_ideal := ⟨⊤⟩
+
 /-- (0) is a sub-pd-ideal ot the pd-ideal I. -/
 instance : has_bot (sub_pd_ideal hI) :=
 ⟨{ carrier       := ⊥,
@@ -390,6 +392,24 @@ begin
     conv_rhs { rw infi },
     rw [subtype.Inf_def, subtype.ext_iff, coe_coe, coe_def, Inf_carrier_def, subtype.coe_mk,
       Inf_image, infi_range, infi_inf],
+
+      rw infi_insert,
+      --rw inf_comm,
+      --apply congr_arg2,
+
+
+      rw inf_infi,
+      simp_rw inf_comm,
+      
+
+      apply infi_congr,
+      intro J,
+      
+      sorry
+      
+      /- simp only [set.mem_insert_iff],
+
+
     ext a,
     simp only [ideal.mem_infi, ideal.mem_inf, set.mem_insert_iff, mem_carrier, forall_eq_or_imp],
     refine ⟨λ ha J, ⟨_, ha.1⟩, λ ha, ⟨(ha ⊤).2, λ J hJ, _⟩⟩,
@@ -398,7 +418,7 @@ begin
       { simp only [hJ, infi_false, ← subtype.top_def], exact ha.1 }},
     { specialize ha J,
       rw cinfi_pos hJ at ha,
-      exact ha.1 }}
+      exact ha.1 }} -/
 end
 
 /- 
@@ -457,8 +477,6 @@ end complete_lattice
 
 end sub_pd_ideal
 
-#exit
-
 namespace quot
 
 variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
@@ -471,6 +489,8 @@ noncomputable def dpow (J : ideal A) : ℕ → (A ⧸ J) → (A ⧸ J) :=
   (λ a, (ideal.quotient.mk J) (hI.dpow n a) : I → A ⧸ J) 0
 
 variables {J : ideal A} (hIJ : is_sub_pd_ideal hI (J ⊓ I))
+
+include hIJ
 
 open_locale classical
 
