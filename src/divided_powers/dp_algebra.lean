@@ -17,34 +17,29 @@ The divided power algebra of a module -/
 
 open mv_polynomial
 
-
 variables (R : Type*) [comm_ring R]
 variables (M : Type*) [add_comm_monoid M] [module R M]
 
 namespace divided_power_algebra
 
-/- TODO : change to ℕ × M because (x,n) represents dpow n x -/
 inductive rel : mv_polynomial (ℕ × M) R → mv_polynomial (ℕ × M) R → Prop
 -- force `ι` to be linear and creates the divided powers
 | zero {a : M} : rel (X (0, a)) 1
 | smul {r : R} {n : ℕ} {a : M} : rel (X (n, r • a)) (r^n • X (n, a))
-| mul {m n : ℕ} {a : M} : rel (X (m, a) * X (n, a))
-  ((nat.choose (m + n) n) • X (m + n, a))
+| mul {m n : ℕ} {a : M} : rel (X (m, a) * X (n, a)) ((nat.choose (m + n) n) • X (m + n, a))
 | add {n : ℕ} {a b : M} : rel (X (n, a+b)) 
   (finset.sum (finset.range (n + 1)) (λ k, (X (k, a) * X (n - k, b))))
 
 end divided_power_algebra
 
 @[derive [inhabited, comm_ring, algebra R]]
-def divided_power_algebra:= ring_quot (divided_power_algebra.rel R M)
+def divided_power_algebra := ring_quot (divided_power_algebra.rel R M)
 
 namespace divided_power_algebra
 
 variable {M}
 
-/--
-The canonical linear map `M →ₗ[R] divided_power_algebra R M`.
--/
+/-- The canonical linear map `M →ₗ[R] divided_power_algebra R M`. -/
 def ι : M →ₗ[R] (divided_power_algebra R M) :=
 { to_fun := λ m, (ring_quot.mk_alg_hom R _ (X (1, m))),
   map_add' := λ x y, by { 
@@ -65,21 +60,44 @@ variable (M)
 def grade (n : ℕ) : submodule R (divided_power_algebra R M) :=
 submodule.span R 
   { u : divided_power_algebra R M | ∃ (s : finset (ℕ × M)) (hs : finset.sum s (λ x, x.1) = n),
-  finset.prod s (λ x, ring_quot.mk_alg_hom R (rel R M) (X x)) = u}
+    finset.prod s (λ x, ring_quot.mk_alg_hom R (rel R M) (X x)) = u }
 
 end divided_power_algebra
 
 /- graded_algebra (grade R M )-/
-instance graded_divided_power_algebra : graded_algebra (divided_power_algebra.grade R M) := { 
-  one_mem := sorry,
-  mul_mem := sorry,
+instance graded_divided_power_algebra : graded_algebra (divided_power_algebra.grade R M) :=
+{ one_mem    := sorry,
+  mul_mem    := sorry,
   decompose' := sorry,
-  left_inv := sorry,
-  right_inv := sorry }
+  left_inv   := sorry,
+  right_inv  := sorry }
 
 namespace divided_power_algebra
 
-instance : comm_ring (grade R M 0) := sorry
+instance : module R (grade R M 0) := (grade R M 0).module
+
+instance : has_add (grade R M 0) := infer_instance
+
+instance : comm_ring (grade R M 0) := 
+{ add           := (+),
+  add_assoc     := add_assoc,
+  zero          := 0,
+  zero_add      := zero_add,
+  add_zero      := add_zero,
+  neg           := has_neg.neg,
+  add_left_neg  := add_left_neg,
+  add_comm      := add_comm,
+  one           := sorry,
+  mul           := sorry,
+  mul_assoc     := sorry,
+  one_mul       := sorry,
+  mul_one       := sorry,
+  left_distrib  := sorry,
+  right_distrib := sorry,
+  mul_comm      := sorry,
+  /- ..(grade R M 0).module -- Why isn't this working? -/ }
+
+
 instance : algebra R (grade R M 0) := sorry
 
 /- We need the projections (divided_power_algebra R M) → grade R M n ,
@@ -88,21 +106,21 @@ more generally for graded algebras -/
 def proj' (n : ℕ) : divided_power_algebra R M →ₗ[R] grade R M n := sorry
 
 /- R → grade R M 0 is isomorphism -/
-example : ring_equiv R (grade R M 0) := { 
-  to_fun := (proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M)),
-  inv_fun := sorry,
-  left_inv := sorry,
+example : ring_equiv R (grade R M 0) := 
+{ to_fun    := (proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M)),
+  inv_fun   := sorry,
+  left_inv  := sorry,
   right_inv := sorry,
-  map_mul' := sorry,
-  map_add' := sorry }
+  map_mul'  := sorry,
+  map_add'  := sorry }
 
 /- ι : M → grade R M 1 is isomorphism -/
-example : linear_equiv (ring_hom.id R) M (grade R M 1) := { 
-  to_fun := (proj' R M 1) ∘ ι R,
-  map_add' := sorry,
+example : linear_equiv (ring_hom.id R) M (grade R M 1) :=
+{ to_fun    := (proj' R M 1) ∘ ι R,
+  map_add'  := sorry,
   map_smul' := sorry,
-  inv_fun := sorry,
-  left_inv := sorry,
+  inv_fun   := sorry,
+  left_inv  := sorry,
   right_inv := sorry }
 
 /- Define the augmentation ideal : (proj' R M 0).ker -/
