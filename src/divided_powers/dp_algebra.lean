@@ -99,39 +99,43 @@ begin
     exact submodule.smul_mem _ _ (hx hj) },
 end
 
+--variables {R M}
+
+def f :  R →+ (direct_sum ℕ (λ (i : ℕ), ↥(grade R M i))) := sorry
+
 instance : module R (direct_sum ℕ (λ (i : ℕ), ↥(grade R M i))) := infer_instance
 
-noncomputable! def decompose'' : ℕ × M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
-begin 
-  intro x,
-  apply direct_sum.of _ x.1 _,
-  set y : divided_power_algebra R M := ring_quot.mk_ring_hom (rel R M) (X x),
-  use y,
-  simp only [grade],
-  apply submodule.subset_span,
-  --simp only [exists_prop, set.mem_set_of_eq],
-  --use multiset.add_singleton_eq_iff,
-  use {x},
-  sorry
-end
+def decompose'' : ℕ × M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
+λ x,  direct_sum.of (λ n, grade R M n) x.1  
+  (⟨ring_quot.mk_alg_hom R (rel R M) (X x), submodule.subset_span ⟨{x},
+    by rw [multiset.map_singleton, multiset.sum_singleton],
+    by rw [multiset.map_singleton, multiset.prod_singleton]⟩⟩ : (grade R M x.1))
 
-noncomputable! def decompose' : mv_polynomial (ℕ × M) R →+ direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
-begin 
+noncomputable! def decompose' : mv_polynomial (ℕ × M) R → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
+begin
+  intro p,
+  refine p.sum _ ,
+  intros s a,
+  refine direct_sum.mk (λ n, grade R M n) s.frange (λ m, _),
+  obtain ⟨m, hm⟩ := m,
+  simp only [mem_coe] at hm,
+  rw finsupp.mem_frange at hm,
+  --exact p.sum (λs a, f a * s.prod (λ n e, decompose'' n ^ e))
   --change add_monoid_algebra R ((ℕ × M)  →₀ ℕ) →+ direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)),
-  --refine add_monoid_algebra.lift_nc  _ _,
+  --refine add_monoid_algebra.lift_nc  _ (decompose'' R M),
   --intro x,
   --apply direct_sum.mk,
   sorry
 end
 
-#exit
-
-noncomputable! def decompose : divided_power_algebra R M →+ direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
-begin 
-  intro x,
-  apply quot.lift,
+lemma decompose_rel' (a b : mv_polynomial (ℕ × M) R) (hab : ring_quot.rel (rel R M) a b) :
+  decompose' R M a = decompose' R M b :=
+begin
   sorry
 end
+
+def decompose : divided_power_algebra R M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
+λ x, quot.lift (decompose' R M) (decompose_rel' R M) (x.1)
 
 #exit
 /- graded_algebra (grade R M )-/
