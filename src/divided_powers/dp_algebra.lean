@@ -18,10 +18,11 @@ The divided power algebra of a module -/
 open finset mv_polynomial ring_quot
 
 variables (R : Type*) [comm_ring R]
-variables (M : Type*) [add_comm_monoid M] [module R M]
+variables (M : Type*) [add_comm_group M] [module R M]
 
 namespace divided_power_algebra
 
+-- The class of X (n, a) will be equal to dpow n a, with a ∈ M.
 inductive rel : mv_polynomial (ℕ × M) R → mv_polynomial (ℕ × M) R → Prop
 -- force `ι` to be linear and creates the divided powers
 | zero {a : M} : rel (X (0, a)) 1
@@ -59,25 +60,84 @@ lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) :
 variable (M)
 def grade (n : ℕ) : submodule R (divided_power_algebra R M) :=
 submodule.span R 
-  { u : divided_power_algebra R M | ∃ (s : finset (ℕ × M)) (hs : finset.sum s (λ x, x.1) = n),
-    finset.prod s (λ x, mk_alg_hom R (rel R M) (X x)) = u }
+  { u : divided_power_algebra R M | ∃ (s : multiset (ℕ × M)) 
+    (hs : (s.map (λ x : ℕ × M, x.1)).sum = n),
+    (s.map (λ x, mk_alg_hom R (rel R M) (X x))).prod = u }
 
 lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 := 
-submodule.subset_span ⟨{(0, 0)}, by rw [sum_singleton], by
-  rw [prod_singleton, ← map_one (mk_alg_hom R (rel R M)), mk_alg_hom_rel R rel.zero]⟩
+submodule.subset_span ⟨{(0, 0)}, by rw [multiset.map_singleton, multiset.sum_singleton], 
+  by { rw [multiset.map_singleton, multiset.prod_singleton, 
+    ← map_one (mk_alg_hom R (rel R M)), mk_alg_hom_rel R rel.zero]}⟩
 
 lemma mul_mem ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade R M i)
   (hj : gj ∈ grade R M j) : gi * gj ∈ grade R M (i + j) :=
 begin
- /-  simp only [grade, exists_prop, submodule.mem_span] at hi hj ⊢,
-  intros S hS,  -/
+  revert gj,
+  apply submodule.span_induction hi,
+  { intros x hx gj hj,
+    apply submodule.span_induction hj,
+    { intros y hy,
+      obtain ⟨s, hs, rfl⟩ := hx,
+      obtain ⟨t, ht, rfl⟩ := hy,
+      rw [← multiset.prod_add, ← multiset.map_add],
+      apply submodule.subset_span,
+      exact ⟨s + t, by rw [multiset.map_add, multiset.sum_add, hs, ht], rfl⟩,},
+    { rw mul_zero, exact zero_mem _, },
+    { intros y z hxy hxz,
+      rw left_distrib,
+      exact add_mem hxy hxz },
+    { intros r y hxy,
+      rw mul_smul_comm,
+      exact submodule.smul_mem _ r hxy,}},
+  { intros gj hj,
+    rw zero_mul, exact zero_mem _, },
+  { intros x y hx hy gj hj,
+    rw right_distrib,
+    exact add_mem (hx hj) (hy hj), },
+  { intros r x hx gj hj,
+    rw smul_mul_assoc,
+    exact submodule.smul_mem _ _ (hx hj) },
+end
+
+instance : module R (direct_sum ℕ (λ (i : ℕ), ↥(grade R M i))) := infer_instance
+
+noncomputable! def decompose'' : ℕ × M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
+begin 
+  intro x,
+  apply direct_sum.of _ x.1 _,
+  set y : divided_power_algebra R M := ring_quot.mk_ring_hom (rel R M) (X x),
+  use y,
+  simp only [grade],
+  apply submodule.subset_span,
+  --simp only [exists_prop, set.mem_set_of_eq],
+  --use multiset.add_singleton_eq_iff,
+  use {x},
   sorry
 end
 
+noncomputable! def decompose' : mv_polynomial (ℕ × M) R →+ direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
+begin 
+  --change add_monoid_algebra R ((ℕ × M)  →₀ ℕ) →+ direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)),
+  --refine add_monoid_algebra.lift_nc  _ _,
+  --intro x,
+  --apply direct_sum.mk,
+  sorry
+end
+
+#exit
+
+noncomputable! def decompose : divided_power_algebra R M →+ direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
+begin 
+  intro x,
+  apply quot.lift,
+  sorry
+end
+
+#exit
 /- graded_algebra (grade R M )-/
 instance graded : graded_algebra (divided_power_algebra.grade R M) :=
 { one_mem    := one_mem R M,
-  mul_mem    := sorry,
+  mul_mem    := mul_mem R M,
   decompose' := sorry,
   left_inv   := sorry,
   right_inv  := sorry }
@@ -92,26 +152,26 @@ instance : has_mul (grade R M 0) :=
 
 @[simp] lemma grade_zero_coe_one: ((1 : grade R M 0) : divided_power_algebra R M) = 1 := rfl
 
+
+instance : add_comm_monoid (grade R M 0) := infer_instance
+
+instance : has_neg (grade R M 0) := add_subgroup_class.has_neg
+
 instance : comm_ring (grade R M 0) := 
 { add           := (+),
-  add_assoc     := add_assoc,
   zero          := 0,
-  zero_add      := zero_add,
-  add_zero      := add_zero,
   neg           := has_neg.neg,
-  add_left_neg  := add_left_neg,
-  add_comm      := add_comm,
   one           := 1,
   mul           := (*),
   mul_assoc     := λ x y z, by ext; simp only [grade_zero_coe_mul, mul_assoc],
   one_mul       := λ x, by  ext; rw [grade_zero_coe_mul, grade_zero_coe_one, one_mul],
   mul_one       := λ x, by  ext; rw [grade_zero_coe_mul, grade_zero_coe_one, mul_one],
-  left_distrib  := λ x y z, by ext; simp only [submodule.coe_add, grade_zero_coe_mul, left_distrib],
+  left_distrib  := λ x y z, 
+  by ext; simp only [submodule.coe_add, grade_zero_coe_mul, left_distrib],
   right_distrib := λ x y z, 
     by ext; simp only [submodule.coe_add, grade_zero_coe_mul, right_distrib],
   mul_comm      := λ x y, by ext; simp only [grade_zero_coe_mul, mul_comm],
-  /- ..(grade R M 0).module -- Why isn't this working? -/ }
-
+  ..(infer_instance : add_comm_group (grade R M 0)), }
 
 instance : algebra R (grade R M 0) := sorry
 
