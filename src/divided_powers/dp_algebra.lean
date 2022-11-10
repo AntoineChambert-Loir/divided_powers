@@ -62,33 +62,35 @@ submodule.span R
   { u : divided_power_algebra R M | ∃ (s : finset (ℕ × M)) (hs : finset.sum s (λ x, x.1) = n),
     finset.prod s (λ x, mk_alg_hom R (rel R M) (X x)) = u }
 
-instance : has_one (grade R M 0) := 
-⟨⟨1, submodule.subset_span ⟨{(0, 0)}, by rw [sum_singleton], by
-  rw [prod_singleton, ← map_one (mk_alg_hom R (rel R M)), mk_alg_hom_rel R rel.zero]⟩⟩⟩
+lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 := 
+submodule.subset_span ⟨{(0, 0)}, by rw [sum_singleton], by
+  rw [prod_singleton, ← map_one (mk_alg_hom R (rel R M)), mk_alg_hom_rel R rel.zero]⟩
 
-instance : has_mul (grade R M 0) := 
-{ mul := λ x y, ⟨x*y, by sorry⟩ }
-
-@[simp] lemma grade_zero_coe_mul (x y : grade R M 0) :
-  ((x * y : grade R M 0) : divided_power_algebra R M) = (x : divided_power_algebra R M) * y := rfl
-
-@[simp] lemma grade_zero_coe_one: ((1 : grade R M 0) : divided_power_algebra R M) = 1 := rfl
-
-end divided_power_algebra
+lemma mul_mem ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade R M i)
+  (hj : gj ∈ grade R M j) : gi * gj ∈ grade R M (i + j) :=
+begin
+ /-  simp only [grade, exists_prop, submodule.mem_span] at hi hj ⊢,
+  intros S hS,  -/
+  sorry
+end
 
 /- graded_algebra (grade R M )-/
-instance graded_divided_power_algebra : graded_algebra (divided_power_algebra.grade R M) :=
-{ one_mem    := sorry,
+instance graded : graded_algebra (divided_power_algebra.grade R M) :=
+{ one_mem    := one_mem R M,
   mul_mem    := sorry,
   decompose' := sorry,
   left_inv   := sorry,
   right_inv  := sorry }
 
-namespace divided_power_algebra
+instance : has_one (grade R M 0) := ⟨⟨1, one_mem R M ⟩⟩
 
-instance : module R (grade R M 0) := (grade R M 0).module
+instance : has_mul (grade R M 0) := 
+{ mul := λ x y, ⟨x*y, by convert mul_mem R M x.2 y.2⟩ }
 
-instance : has_add (grade R M 0) := infer_instance
+@[simp] lemma grade_zero_coe_mul (x y : grade R M 0) :
+  ((x * y : grade R M 0) : divided_power_algebra R M) = (x : divided_power_algebra R M) * y := rfl
+
+@[simp] lemma grade_zero_coe_one: ((1 : grade R M 0) : divided_power_algebra R M) = 1 := rfl
 
 instance : comm_ring (grade R M 0) := 
 { add           := (+),
