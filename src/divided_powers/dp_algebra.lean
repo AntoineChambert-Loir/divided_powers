@@ -58,19 +58,42 @@ lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) :
   mk_alg_hom R (rel R M) (X (1, m)) = ι R m := rfl
 
 variable (M)
-def grade (n : ℕ) : submodule R (divided_power_algebra R M) :=
+def grade' (n : ℕ) : submodule R (divided_power_algebra R M) :=
 submodule.span R 
   { u : divided_power_algebra R M | ∃ (s : multiset (ℕ × M)) 
     (hs : (s.map (λ x : ℕ × M, x.1)).sum = n),
     (s.map (λ x, mk_alg_hom R (rel R M) (X x))).prod = u }
 
-lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 := 
+def grade (n : ℕ) : submodule R (divided_power_algebra R M) :=
+submodule.span R 
+  { u : divided_power_algebra R M | ∃ p : mv_polynomial (ℕ × M) R,
+    ((∀ v : ℕ × M →₀ ℕ, v ∈ p.support → 
+      finsum (λ x : ℕ × M, (v x) * x.1) = n ) 
+    ∧ mk_alg_hom R (rel R M) p = u) }
+
+lemma one_mem' : (1 : divided_power_algebra R M) ∈ grade' R M 0 := 
 submodule.subset_span ⟨{(0, 0)}, by rw [multiset.map_singleton, multiset.sum_singleton], 
   by { rw [multiset.map_singleton, multiset.prod_singleton, 
     ← map_one (mk_alg_hom R (rel R M)), mk_alg_hom_rel R rel.zero]}⟩
 
-lemma mul_mem ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade R M i)
-  (hj : gj ∈ grade R M j) : gi * gj ∈ grade R M (i + j) :=
+lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 :=
+submodule.subset_span ⟨C 1, 
+  ⟨λ v hv, 
+  begin
+    classical,
+    suffices hv : v = 0,
+    simp only [hv, finsupp.coe_zero, pi.zero_apply, zero_mul, finsum_zero],     
+    { apply symm,
+      by_contradiction hv', 
+      simp only [mem_support_iff, mv_polynomial.coeff_C, if_neg hv'] at hv,
+      apply hv, refl,},
+  end,
+  by simp only [map_one]⟩⟩
+
+
+
+lemma mul_mem' ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade' R M i)
+  (hj : gj ∈ grade' R M j) : gi * gj ∈ grade' R M (i + j) :=
 begin
   revert gj,
   apply submodule.span_induction hi,
@@ -82,6 +105,59 @@ begin
       rw [← multiset.prod_add, ← multiset.map_add],
       apply submodule.subset_span,
       exact ⟨s + t, by rw [multiset.map_add, multiset.sum_add, hs, ht], rfl⟩,},
+    { rw mul_zero, exact zero_mem _, },
+    { intros y z hxy hxz,
+      rw left_distrib,
+      exact add_mem hxy hxz },
+    { intros r y hxy,
+      rw mul_smul_comm,
+      exact submodule.smul_mem _ r hxy,}},
+  { intros gj hj,
+    rw zero_mul, exact zero_mem _, },
+  { intros x y hx hy gj hj,
+    rw right_distrib,
+    exact add_mem (hx hj) (hy hj), },
+  { intros r x hx gj hj,
+    rw smul_mul_assoc,
+    exact submodule.smul_mem _ _ (hx hj) },
+end
+
+
+lemma mul_mem ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade R M i)
+  (hj : gj ∈ grade R M j) : gi * gj ∈ grade R M (i + j) :=
+begin
+  revert gj,
+  apply submodule.span_induction hi,
+  { intros x hx gj hj,
+    apply submodule.span_induction hj,
+    { intros y hy,
+      obtain ⟨p, hp, rfl⟩ := hx,
+      obtain ⟨q, hq, rfl⟩ := hy,
+      apply submodule.subset_span,
+      use p * q, 
+      split,
+      intros w hw,
+      let hw' := mv_polynomial.support_mul p q hw, 
+      simp only [mem_bUnion] at hw', 
+      obtain ⟨u, hu, v, hv, huv⟩ := hw', 
+      simp only [mem_singleton] at huv, 
+      rw [huv, ← hp u hu, ← hq v hv, ← finsum_add_distrib],
+      apply finsum_congr, 
+      intro x, 
+      simp only [finsupp.coe_add, pi.add_apply], 
+      rw add_mul, 
+      -- finiteness assumptions
+      apply set.finite.subset u.support.finite_to_set _, 
+      intro i, 
+      simp only [function.mem_support, mem_coe, finsupp.mem_support_iff, ne.def],
+      intros hui hi, apply hui, rw [hi, zero_mul],
+      -- finiteness assumptions
+      apply set.finite.subset v.support.finite_to_set _, 
+      intro i, 
+      simp only [function.mem_support, mem_coe, finsupp.mem_support_iff, ne.def],
+      intros hvi hi, apply hvi, rw [hi, zero_mul],
+      --
+      simp only [map_mul], },
     { rw mul_zero, exact zero_mem _, },
     { intros y z hxy hxz,
       rw left_distrib,
@@ -111,38 +187,89 @@ def decompose'' : ℕ × M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :
     by rw [multiset.map_singleton, multiset.sum_singleton],
     by rw [multiset.map_singleton, multiset.prod_singleton]⟩⟩ : (grade R M x.1))
 
-noncomputable! def decompose' : mv_polynomial (ℕ × M) R → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
-begin
-  intro p,
+#check decompose''
+
+def decompose' : mv_polynomial (ℕ × M) R → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) := λ p, 
+  -- p = p.support.sum (λ (v : ℕ × M →₀ ℕ), ⇑(monomial v) (coeff v p))
+  p.support.sum
+    (λ (v : ℕ × M →₀ ℕ), 
+    direct_sum.of (λ n, grade R M n) 
+    (finsum (λ x : ℕ × M, (v x) * x.1))
+    (⟨ring_quot.mk_alg_hom R (rel R M) (monomial v (coeff v p)), 
+      begin
+        apply submodule.subset_span,
+        use monomial v (coeff v p), 
+        split,
+        { intros v' hv', 
+          suffices : v' = v, rw this, 
+          rw ← finset.mem_singleton, 
+          exact mv_polynomial.support_monomial_subset hv', },
+        refl,
+     end⟩))
+
+  /- p.support : finset ((ℕ × M) →₀ ℕ)
+    si v ∈ p.support, le monôme v est prod ("dpow n m")^(v (n, m))
+    son degré est finsum (λ x, x.1 * (v x))
+  -- p.coeff : ((ℕ × M) →₀ ℕ) → R
+  -- p is a lift of sum (coeff v p) • prod ("dpow n m")^(v (n, m))
+  -- dpow n m vit en degré n
+  -- (prod ("dpow n m")^(v (n,m))) vit en degré finsum (ℕ × M) (λ x, v x * x.1)
+  -/
+
+  /-
   refine p.sum _ ,
   intros s a,
   refine direct_sum.mk (λ n, grade R M n) s.frange (λ m, _),
   obtain ⟨m, hm⟩ := m,
   simp only [mem_coe] at hm,
   rw finsupp.mem_frange at hm,
+  
   --exact p.sum (λs a, f a * s.prod (λ n e, decompose'' n ^ e))
   --change add_monoid_algebra R ((ℕ × M)  →₀ ℕ) →+ direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)),
   --refine add_monoid_algebra.lift_nc  _ (decompose'' R M),
   --intro x,
   --apply direct_sum.mk,
-  sorry
-end
+  sorry-/
+
+def take_degree (p : mv_polynomial (ℕ ×M) R) (n : ℕ) :
+  finset (ℕ × M →₀ ℕ) := 
+  p.support.filter (λ v, finsum (λ x : ℕ × M, (v x) * x.1) = n)
+
+lemma decompose'_eq (p: mv_polynomial (ℕ × M) R) (n : ℕ) :
+  (decompose' R M p n : divided_power_algebra R M) = 
+  ring_quot.mk_alg_hom R (rel R M) 
+  ((p.support.filter 
+    (λ v : (ℕ × M) →₀ ℕ, finsum (λ x : ℕ × M, (v x) * x.1) = n )).sum 
+    (λ v, monomial v (coeff v p))) := sorry
 
 lemma decompose_rel' (a b : mv_polynomial (ℕ × M) R) (hab : ring_quot.rel (rel R M) a b) :
   decompose' R M a = decompose' R M b :=
 begin
-  sorry
+  induction hab with a b hab a b c h ih a b c h ih a b c h ih,
+  { -- rel 
+    induction hab with m c n m n p m n m m', 
+    { unfold decompose',
+    
+    
+    sorry },
+    { sorry },
+    { sorry },
+    { sorry } },
+  { sorry },
+  { sorry },
+  { sorry },
+
+
 end
 
 def decompose : divided_power_algebra R M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
 λ x, quot.lift (decompose' R M) (decompose_rel' R M) (x.1)
 
-#exit
 /- graded_algebra (grade R M )-/
 instance graded : graded_algebra (divided_power_algebra.grade R M) :=
 { one_mem    := one_mem R M,
   mul_mem    := mul_mem R M,
-  decompose' := sorry,
+  decompose' := decompose R M, 
   left_inv   := sorry,
   right_inv  := sorry }
 
