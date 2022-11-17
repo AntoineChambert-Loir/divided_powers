@@ -3,7 +3,6 @@ import ring_theory.power_series.basic
 import algebra_lemmas
 import combinatorics_lemmas
 import data.nat.choose.multinomial
-import temp_sym
 
 /-! # Divided powers 
 
@@ -35,6 +34,9 @@ doi: https://doi.org/10.24033/asens.1148
 -/
 
 section divided_powers_definition
+
+
+
 
 /-- The divided power structure on an ideal I of a commutative ring A -/
 @[ext] structure divided_powers {A : Type*} [comm_ring A] (I : ideal A) := 
@@ -293,5 +295,40 @@ Delete obsolete versions
   Prove uniqueness of pd-structure when possible
     (ideal_add [Done], dpow_quot [Done])
 (M) Complete the lattice structure
+
+-/
+
+/- 
+Idea of generalizing the theory to more general divisors systems
+modeling x^n/n!, x^n/p^n, etc.
+but it is not clear what to consider
+Also, not clear it can really be done…
+
+structure divisor_system {R : Type*} [comm_ring R] := 
+(dpow_choose : ℕ → ℕ → R)
+(dpow_mchoose : ℕ → ℕ → R)
+-- (conditions : Prop)
+Two options :
+1) dpow n x = x^n/(c n)
+Examples : c n = n.factorial,  c n = p ^ n
+2) dpow n x = x ^ n / (d 1 * d 2 * ... * d n)
+Examples : d n = n,  d n = p
+
+dpow n (x + y) = (x+y)^n / c n
+ = sum  (n.choose k) x ^(n -k) y ^k / c n
+ = sum [(n.choose k) (c k) (c (n-k)) / c n] dpow (n - k) x * dpow k y 
+
+  Case 1 : dpow_choose n k = 1 ;  case 2 : dpow_choose n k = choose
+
+dpow m x * dpow n x = x ^ m * x ^ n / c m * c n
+  = dpow (m + n) x * (c (n+m) / c m * c n)
+
+   Case 1 : coeff = (n+m).choose m ; Case 2 :  = 1
+
+dpow m (dpow n x) = (x ^n / c n) ^ m / c m = x ^ (m n) / ((c n ^ m) * c m)
+ = [ ] * dpow (m n) x
+  with [ ] = c (m n)/ (c n)^m (c m)
+
+  Case 1 : [ ] = mchoose m n, case 2 : p^ (-m)
 
 -/
