@@ -24,7 +24,7 @@ begin
   induction m with m ih,
   { rw [mchoose_zero, mul_one, zero_mul, nat.factorial_zero, pow_zero, mul_one] }, 
   { have hmn : (m + 1) * (m * n + n - 1).choose (n - 1) = (m * n + n).choose n,
-    { rw [← nat.mul_left_inj (nat.mul_pos (nat.factorial_pos (m * n)) (nat.factorial_pos n)), 
+    { rw [← mul_left_inj' (nat.mul_ne_zero (nat.factorial_ne_zero (m * n)) (nat.factorial_ne_zero n)),
         ← mul_assoc, ← mul_assoc, nat.add_choose_mul_factorial_mul_factorial,
         ← nat.mul_factorial_pred hn, mul_comm n _, ← mul_assoc, nat.add_sub_assoc hn (m * n),
         mul_comm,mul_assoc ((m + 1) * (m * n + (n - 1)).choose (n - 1)), mul_assoc (m + 1),
