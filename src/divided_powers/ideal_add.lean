@@ -557,7 +557,7 @@ mchoose m n =
         * ((nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑x * i))
         * (nat.multinomial (finset.range (n + 1)) (λ (i : ℕ), multiset.count i ↑x * (n - i))))) := 
 begin
-  rw ← nat.mul_left_inj (nat.choose_pos hp),
+  rw ← mul_left_inj' (pos_iff_ne_zero.mp (nat.choose_pos hp)),
 
   have : function.injective (coe : ℕ → ℚ) := nat.cast_injective,
   apply this, 
