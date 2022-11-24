@@ -159,8 +159,15 @@ begin
   --simp only [is_weighted_homogeneous],
   intros d hd,
   simp only [weighted_degree],
-  sorry
-  --exact hp,
+  specialize hp d hd,
+  apply finsum_eq_zero_of_forall_eq_zero,
+  intro e, 
+  suffices : d e = 0, simp only [this, zero_smul], 
+  by_cases he: e ∈ d.support, 
+  { change _ = 0 at hp, 
+    simp only [finsupp.sum, finset.sum_eq_zero_iff] at hp, 
+    exact hp e he, }, 
+  exact finsupp.not_mem_support_iff.mp he, 
 end
  
 lemma is_weighted_homogeneous_C (w : σ → M) (r : R) :
