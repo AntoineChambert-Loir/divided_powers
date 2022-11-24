@@ -156,7 +156,6 @@ begin
   erw [total_degree, finset.sup_eq_bot_iff] at hp,
   -- we have to do this in two steps to stop simp changing bot to zero
   simp_rw [mem_support_iff] at hp,
-  --simp only [is_weighted_homogeneous],
   intros d hd,
   simp only [weighted_degree],
   specialize hp d hd,
