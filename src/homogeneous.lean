@@ -1,6 +1,6 @@
 import algebra.direct_sum.internal
 import algebra.graded_monoid
-import data.mv_polynomial.monad --monad?
+import data.mv_polynomial.variables
 
 /-!
 # Homogeneous polynomials
@@ -58,16 +58,18 @@ begin
     (finite.subset t.finite_support (function.support_smul_subset_left t w))
 end
 
+lemma zero (w : σ → M)  : weighted_degree w 0 = 0 :=
+by simp only [weighted_degree, finsupp.coe_zero, pi.zero_apply, zero_smul, finsum_zero]
+
 lemma pow (w : σ → M) (s : σ →₀ ℕ) (n : ℕ) :
   weighted_degree w (n • s) = n • weighted_degree w s :=
 begin
   induction n with k hk,
-  { simp only [weighted_degree, finsupp.coe_zero, pi.zero_apply, zero_smul, finsum_zero],  },
+  { simp only [zero_smul, zero] },
   { simp only [succ_nsmul, mul, hk] },
 end
 
 end weighted_degree
-
 
 /-- A multivariate polynomial `φ` is homogeneous of weighted degree `m` if all monomials 
   occuring in `φ` have weighted degree `m`. -/
@@ -97,13 +99,95 @@ def weighted_homogeneous_submodule [comm_semiring R] (w : σ → M) (m : M) :
     { exact hb h },
   end }
 
-variables {σ R}
+variables {R}
 
 @[simp] lemma mem_weighted_homogeneous_submodule (w : σ → M) (m : M) (p : mv_polynomial σ R) :
   p ∈ weighted_homogeneous_submodule R w m ↔ p.is_weighted_homogeneous w m := iff.rfl
 
-variables (σ R)
+variables (R)
 
+/-- While equal, the former has a convenient definitional reduction. -/
+lemma weighted_homogeneous_submodule_eq_finsupp_supported (w : σ → M) (m : M) :
+  weighted_homogeneous_submodule R w m = 
+  finsupp.supported _ R {d | weighted_degree w d = m} :=
+begin
+  ext,
+  rw [finsupp.mem_supported, set.subset_def],
+  simp only [finsupp.mem_support_iff, finset.mem_coe],
+  refl,
+end
+
+variables {R}
+
+lemma weighted_homogeneous_submodule_mul [comm_semiring R] (w : σ → M) (m n : M) :
+  weighted_homogeneous_submodule R w m * weighted_homogeneous_submodule R w n ≤ 
+    weighted_homogeneous_submodule R w (m + n) :=
+begin
+  rw submodule.mul_le,
+  intros φ hφ ψ hψ c hc,
+  rw [coeff_mul] at hc,
+  obtain ⟨⟨d, e⟩, hde, H⟩ := finset.exists_ne_zero_of_sum_ne_zero hc,
+  have aux : coeff d φ ≠ 0 ∧ coeff e ψ ≠ 0,
+  { contrapose! H,
+    by_cases h : coeff d φ = 0;
+    simp only [*, ne.def, not_false_iff, zero_mul, mul_zero] at * },
+  specialize hφ aux.1, specialize hψ aux.2,
+  rw finsupp.mem_antidiagonal at hde,
+  classical,
+  have hd' : d.support ⊆ d.support ∪ e.support := finset.subset_union_left _ _,
+  have he' : e.support ⊆ d.support ∪ e.support := finset.subset_union_right _ _,
+  rw [← hde, ← hφ, ← hψ, weighted_degree.mul],
+end
+
+lemma is_weighted_homogeneous_monomial (w : σ → M) (d : σ →₀ ℕ) (r : R) {m : M} 
+  (hm : weighted_degree w d = m) : is_weighted_homogeneous w (monomial d r) m :=
+begin
+  intros c hc,
+  classical,
+  rw coeff_monomial at hc,
+  split_ifs at hc with h,
+  { subst c, exact hm },
+  { contradiction }
+end
+
+lemma is_weighted_homogeneous_of_total_degree_zero (w : σ → M) {p : mv_polynomial σ R} 
+  (hp : p.total_degree = 0) : is_weighted_homogeneous w p 0 :=
+begin
+  erw [total_degree, finset.sup_eq_bot_iff] at hp,
+  -- we have to do this in two steps to stop simp changing bot to zero
+  simp_rw [mem_support_iff] at hp,
+  --simp only [is_weighted_homogeneous],
+  intros d hd,
+  simp only [weighted_degree],
+  sorry
+  --exact hp,
+end
+ 
+lemma is_weighted_homogeneous_C (w : σ → M) (r : R) :
+  is_weighted_homogeneous w (C r : mv_polynomial σ R) 0 :=
+is_weighted_homogeneous_monomial _ _ _ (weighted_degree.zero w)
+
+variables (R)
+
+lemma is_weighted_homogeneous_zero (w : σ → M) (m : M) : 
+  is_weighted_homogeneous w (0 : mv_polynomial σ R) m :=
+(weighted_homogeneous_submodule R w m).zero_mem
+
+lemma is_weighted_homogeneous_one  (w : σ → M) :
+  is_weighted_homogeneous w (1 : mv_polynomial σ R) 0 :=
+is_weighted_homogeneous_C _ _
+
+variables {σ} (R)
+
+lemma is_weighted_homogeneous_X (w : σ → M) (i : σ) :
+  is_weighted_homogeneous w (X i : mv_polynomial σ R) (w i) :=
+begin
+  apply is_weighted_homogeneous_monomial,
+  simp only [weighted_degree, single_smul, one_smul, single_apply, ite_smul, zero_smul],
+  rw finsum_eq_single _ i,
+  { rw if_pos rfl },
+  { intros j hj, rw if_neg hj.symm }
+end
 
 #exit
 
@@ -235,6 +319,8 @@ begin
 end
 
 end
+
+--TODO: continue translating to `weighted_homogeneous`
 
 namespace is_homogeneous
 variables [comm_semiring R] {φ ψ : mv_polynomial σ R} {m n : ℕ}
