@@ -43,32 +43,33 @@ section add_comm_monoid
 variables [add_comm_monoid M]
 
 
-/-! ### `weighted_degrees` -/
+/-! ### `weighted_degree'` -/
 
 
-/-- The `weighted degree` of the monomial a*∏x_i^s_i is the sum ∑n_i*(wt x_i)  -/
-def weighted_degree (w : σ → M) (s : σ →₀ ℕ) /- (a : R) -/ : M :=
+-- I'm renaming this to save `weighted_degree` for the one taking an mv_polynomial as input
+/-- The `weighted degree'` of the monomial a*∏x_i^s_i is the sum ∑n_i*(wt x_i)  -/
+def weighted_degree' (w : σ → M) (s : σ →₀ ℕ) /- (a : R) -/ : M :=
 finsum (λ (i : σ), (s i) • (w i))
 --∑ i in s.support, (s i) • (w i) --potential alternative def
 
-namespace weighted_degree
+namespace weighted_degree'
 
 /-- The `weighted degree` of the product of monomials s * t is  the sum of their
   weighted degrees  -/
 lemma mul (w : σ → M) (s t : σ →₀ ℕ) : 
-  weighted_degree w (s + t) = weighted_degree w s + weighted_degree w t :=
+  weighted_degree' w (s + t) = weighted_degree' w s + weighted_degree' w t :=
 begin
-  simp only [weighted_degree, finsupp.coe_add, pi.add_apply, add_smul],
+  simp only [weighted_degree', finsupp.coe_add, pi.add_apply, add_smul],
   exact finsum_add_distrib 
     (finite.subset s.finite_support (function.support_smul_subset_left s w))
     (finite.subset t.finite_support (function.support_smul_subset_left t w))
 end
 
-lemma zero (w : σ → M)  : weighted_degree w 0 = 0 :=
-by simp only [weighted_degree, finsupp.coe_zero, pi.zero_apply, zero_smul, finsum_zero]
+lemma zero (w : σ → M)  : weighted_degree' w 0 = 0 :=
+by simp only [weighted_degree', finsupp.coe_zero, pi.zero_apply, zero_smul, finsum_zero]
 
 lemma pow (w : σ → M) (s : σ →₀ ℕ) (n : ℕ) :
-  weighted_degree w (n • s) = n • weighted_degree w s :=
+  weighted_degree' w (n • s) = n • weighted_degree' w s :=
 begin
   induction n with k hk,
   { simp only [zero_smul, zero] },
@@ -80,18 +81,18 @@ begin
 exact with_bot.has_Sup,
 end 
 
-/- def weighted_degree' [has_Sup M] (w : σ → M) (φ : mv_polynomial σ R) : with_bot M :=
-⨆ d ∈ { d | coeff d φ ≠ 0}, ((weighted_degree w d) : with_bot M)  -/
+/- def weighted_degree'' [has_Sup M] (w : σ → M) (φ : mv_polynomial σ R) : with_bot M :=
+⨆ d ∈ { d | coeff d φ ≠ 0}, ((weighted_degree' w d) : with_bot M)  -/
 
-/- def weighted_degree (w : σ → M) (φ : mv_polynomial σ R) : with_bot M :=
-⨆ ⦃d : σ →₀ ℕ⦄,  if coeff d φ ≠ 0 then ((weighted_degree w d) : with_bot M) else ⊥ -/
+/- def weighted_degree' (w : σ → M) (φ : mv_polynomial σ R) : with_bot M :=
+⨆ ⦃d : σ →₀ ℕ⦄,  if coeff d φ ≠ 0 then ((weighted_degree' w d) : with_bot M) else ⊥ -/
 
-end weighted_degree
+end weighted_degree'
 
 /-- A multivariate polynomial `φ` is homogeneous of weighted degree `m` if all monomials 
   occuring in `φ` have weighted degree `m`. -/
 def is_weighted_homogeneous (w : σ → M) (φ : mv_polynomial σ R) (m : M) : Prop := 
-∀ ⦃d⦄, coeff d φ ≠ 0 → weighted_degree w d = m 
+∀ ⦃d⦄, coeff d φ ≠ 0 → weighted_degree' w d = m 
 
 variable (R)
 
@@ -126,7 +127,7 @@ variables (R)
 /-- While equal, the former has a convenient definitional reduction. -/
 lemma weighted_homogeneous_submodule_eq_finsupp_supported (w : σ → M) (m : M) :
   weighted_homogeneous_submodule R w m = 
-  finsupp.supported _ R {d | weighted_degree w d = m} :=
+  finsupp.supported _ R {d | weighted_degree' w d = m} :=
 begin
   ext,
   rw [finsupp.mem_supported, set.subset_def],
@@ -153,11 +154,11 @@ begin
   classical,
   have hd' : d.support ⊆ d.support ∪ e.support := finset.subset_union_left _ _,
   have he' : e.support ⊆ d.support ∪ e.support := finset.subset_union_right _ _,
-  rw [← hde, ← hφ, ← hψ, weighted_degree.mul],
+  rw [← hde, ← hφ, ← hψ, weighted_degree'.mul],
 end
 
 lemma is_weighted_homogeneous_monomial (w : σ → M) (d : σ →₀ ℕ) (r : R) {m : M} 
-  (hm : weighted_degree w d = m) : is_weighted_homogeneous w (monomial d r) m :=
+  (hm : weighted_degree' w d = m) : is_weighted_homogeneous w (monomial d r) m :=
 begin
   intros c hc,
   classical,
@@ -174,7 +175,7 @@ begin
   -- we have to do this in two steps to stop simp changing bot to zero
   simp_rw [mem_support_iff] at hp,
   intros d hd,
-  simp only [weighted_degree],
+  simp only [weighted_degree'],
   specialize hp d hd,
   apply finsum_eq_zero_of_forall_eq_zero,
   intro e, 
@@ -188,7 +189,7 @@ end
  
 lemma is_weighted_homogeneous_C (w : σ → M) (r : R) :
   is_weighted_homogeneous w (C r : mv_polynomial σ R) 0 :=
-is_weighted_homogeneous_monomial _ _ _ (weighted_degree.zero w)
+is_weighted_homogeneous_monomial _ _ _ (weighted_degree'.zero w)
 
 variables (R)
 
@@ -206,7 +207,7 @@ lemma is_weighted_homogeneous_X (w : σ → M) (i : σ) :
   is_weighted_homogeneous w (X i : mv_polynomial σ R) (w i) :=
 begin
   apply is_weighted_homogeneous_monomial,
-  simp only [weighted_degree, single_smul, one_smul, single_apply, ite_smul, zero_smul],
+  simp only [weighted_degree', single_smul, one_smul, single_apply, ite_smul, zero_smul],
   rw finsum_eq_single _ i,
   { rw if_pos rfl },
   { intros j hj, rw if_neg hj.symm }
@@ -216,7 +217,7 @@ namespace is_weighted_homogeneous
 variables {R} {φ ψ : mv_polynomial σ R} {m n : M}
 
 lemma coeff_eq_zero {w : σ → M} (hφ : is_weighted_homogeneous w φ n) (d : σ →₀ ℕ) 
-  (hd : weighted_degree w d ≠ n) : coeff d φ = 0 :=
+  (hd : weighted_degree' w d ≠ n) : coeff d φ = 0 :=
 by { have aux := mt (@hφ d) hd, classical, rwa not_not at aux }
 
 lemma inj_right {w : σ → M} (hm : is_weighted_homogeneous w φ m)
@@ -301,7 +302,7 @@ See `sum_weighted_homogeneous_component` for the statement that `φ` is equal to
 of all its weighted homogeneous components. -/
 def weighted_homogeneous_component (w : σ → M) (n : M) :
   mv_polynomial σ R →ₗ[R] mv_polynomial σ R :=
-(submodule.subtype _).comp $ finsupp.restrict_dom _ _ {d | weighted_degree w d = n}
+(submodule.subtype _).comp $ finsupp.restrict_dom _ _ {d | weighted_degree' w d = n}
 
 section weighted_homogeneous_component
 open finset
@@ -309,13 +310,13 @@ variables {w : σ → M} (n : M) (φ ψ : mv_polynomial σ R)
 
 lemma coeff_weighted_homogeneous_component (d : σ →₀ ℕ) :
   coeff d (weighted_homogeneous_component w n φ) = 
-    if weighted_degree w d = n then coeff d φ else 0 :=
-by convert finsupp.filter_apply (λ d : σ →₀ ℕ, weighted_degree w d = n) φ d
+    if weighted_degree' w d = n then coeff d φ else 0 :=
+by convert finsupp.filter_apply (λ d : σ →₀ ℕ, weighted_degree' w d = n) φ d
 
 lemma weighted_homogeneous_component_apply :
   weighted_homogeneous_component w n φ =
-  ∑ d in φ.support.filter (λ d, weighted_degree w d = n), monomial d (coeff d φ) :=
-by convert finsupp.filter_eq_sum (λ d : σ →₀ ℕ, weighted_degree w d = n) φ
+  ∑ d in φ.support.filter (λ d, weighted_degree' w d = n), monomial d (coeff d φ) :=
+by convert finsupp.filter_eq_sum (λ d : σ →₀ ℕ, weighted_degree' w d = n) φ
 
 lemma weighted_homogeneous_component_is_weighted_homogeneous :
   (weighted_homogeneous_component w n φ).is_weighted_homogeneous w n :=
@@ -331,7 +332,7 @@ lemma weighted_homogeneous_component_C_mul (n : M) (r : R) :
 by simp only [C_mul', linear_map.map_smul]
 
 lemma weighted_homogeneous_component_eq_zero' (h : ∀ d : σ →₀ ℕ, d ∈ φ.support → 
-  weighted_degree w d ≠ n) : weighted_homogeneous_component w n φ = 0 :=
+  weighted_degree' w d ≠ n) : weighted_homogeneous_component w n φ = 0 :=
 begin
   rw [weighted_homogeneous_component_apply, sum_eq_zero],
   intros d hd, rw mem_filter at hd,
@@ -396,10 +397,10 @@ lemma weighted_homogeneous_component_zero [no_zero_smul_divisors ℕ M]
 begin
   ext1 d,
   rcases em (d = 0) with (rfl|hd),
-  { simp only [coeff_weighted_homogeneous_component, weighted_degree, finsupp.coe_zero, 
+  { simp only [coeff_weighted_homogeneous_component, weighted_degree', finsupp.coe_zero, 
       pi.zero_apply, zero_smul, finsum_zero, eq_self_iff_true, if_true, coeff_zero_C], },
   { rw [coeff_weighted_homogeneous_component, if_neg, coeff_C, if_neg (ne.symm hd)],
-    simp only [weighted_degree],
+    simp only [weighted_degree'],
     have h : function.support (λ (i : σ), d i • w i) ⊆ d.support,
     { erw function.support_smul,
       simp only [fun_support_eq, set.inter_subset_left] },
