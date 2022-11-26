@@ -276,10 +276,11 @@ end -/
 /--
 The homogeneous submodules form a graded ring. This instance is used by `direct_sum.comm_semiring`
 and `direct_sum.algebra`. -/
-instance homogeneous_submodule.gcomm_semiring {w : σ → M} :
+instance weighted_homogeneous_submodule.gcomm_semiring {w : σ → M} :
   set_like.graded_monoid (weighted_homogeneous_submodule R w) :=
 { one_mem := is_weighted_homogeneous_one R w,
   mul_mem := λ i j xi xj, is_weighted_homogeneous.mul }
+
 
 open_locale direct_sum
 noncomputable example {w : σ → M} : comm_semiring (⨁ i, weighted_homogeneous_submodule R w i) := 
