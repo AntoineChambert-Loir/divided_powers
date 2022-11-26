@@ -49,6 +49,7 @@ variables [add_comm_monoid M]
 /-- The `weighted degree` of the monomial a*∏x_i^s_i is the sum ∑n_i*(wt x_i)  -/
 def weighted_degree (w : σ → M) (s : σ →₀ ℕ) /- (a : R) -/ : M :=
 finsum (λ (i : σ), (s i) • (w i))
+--∑ i in s.support, (s i) • (w i) --potential alternative def
 
 namespace weighted_degree
 
@@ -248,10 +249,9 @@ begin
   { intro, simp only [is_weighted_homogeneous_one, finset.sum_empty, finset.prod_empty] },
   { intros i s his IH h,
     simp only [his, finset.prod_insert, finset.sum_insert, not_false_iff],
-    sorry
-    /- apply (h i (finset.mem_insert_self _ _)).mul (IH _),
+    apply (h i (finset.mem_insert_self _ _)).mul (IH _),
     intros j hjs,
-    exact h j (finset.mem_insert_of_mem hjs) -/ }
+      exact h j (finset.mem_insert_of_mem hjs) }
 end
 
 -- TODO : weighted version of total_degree
@@ -387,8 +387,11 @@ open finset
 
 variables [canonically_ordered_add_monoid M] {w : σ → M} (φ : mv_polynomial σ R)
 
+
+-- TODO: Q : Can we make this stronger?
 @[simp]
-lemma weighted_homogeneous_component_zero : 
+lemma weighted_homogeneous_component_zero [no_zero_smul_divisors ℕ M] 
+  (hw : ∀ i : σ, w i ≠ 0) : 
   weighted_homogeneous_component w 0 φ = C (coeff 0 φ) :=
 begin
   ext1 d,
@@ -397,13 +400,15 @@ begin
       pi.zero_apply, zero_smul, finsum_zero, eq_self_iff_true, if_true, coeff_zero_C], },
   { rw [coeff_weighted_homogeneous_component, if_neg, coeff_C, if_neg (ne.symm hd)],
     simp only [weighted_degree],
-
+    have h : function.support (λ (i : σ), d i • w i) ⊆ d.support,
+    { erw function.support_smul,
+      simp only [fun_support_eq, set.inter_subset_left] },
+    rw finsum_eq_sum_of_support_subset _ h,
+    simp only [sum_eq_zero_iff, finsupp.mem_support_iff, ne.def, not_forall, exists_prop,
+      smul_eq_zero, not_or_distrib, and_self_left],
     simp only [finsupp.ext_iff, finsupp.coe_zero, pi.zero_apply, not_forall] at hd,
-
-    
-    /- simp only [finsupp.ext_iff, finsupp.zero_apply] at hd,
-    simp [hd], -/
-    sorry }
+    obtain ⟨i, hi⟩ := hd,
+    exact ⟨i, hi, hw i⟩,}
 end
 
 end canonically_ordered_add_monoid
