@@ -7,21 +7,26 @@ import data.mv_polynomial.variables
 /-!
 # Homogeneous polynomials
 
-It is possible to assign weights to the variables of a multivariate polynomial ring, so that 
-monomials of the ring then have a weighted degree with respect to the weights of the variables. 
+It is possible to assign weights (in an arbitrary monoid- to the variables 
+of a multivariate polynomial ring, so that monomials of the ring 
+then have a weighted degree with respect  to the weights of the variables. 
 
 A multivariate polynomial `φ` is homogeneous of weighted degree `n`
 if all monomials occuring in `φ` have the same weighted degree `n`.
 
 ## Main definitions/lemmas
 
-* `is_homogeneous φ n`: a predicate that asserts that `φ` is homogeneous of weighted degree `n`.
+* `is_homogeneous φ n`: a predicate that asserts that `φ` is homogeneous 
+of weighted degree `n`.
 
+* `homogeneous_submodule σ R n`: the submodule of homogeneous polynomials 
+of weighted degree `n`.
 
-* `homogeneous_submodule σ R n`: the submodule of homogeneous polynomials of weighted degree `n`.
-* `homogeneous_component n`: the additive morphism that projects polynomials onto
-  their summand that is homogeneous of degree `n`.
-* `sum_homogeneous_component`: every polynomial is the sum of its homogeneous components
+* `homogeneous_component n`: the additive morphism that projects polynomials
+onto their summand that is homogeneous of degree `n`.
+
+* `sum_homogeneous_component`: every polynomial is the sum of its homogeneous 
+components
 
 -/
 
@@ -47,6 +52,21 @@ variables [add_comm_monoid M]
 
 
 -- I'm renaming this to save `weighted_degree` for the one taking an mv_polynomial as input
+
+-- Redefine `weighted_degree'` as an add_hom, this saves `pow` !
+def weighted_degree' (w : σ → M) : (σ →₀ ℕ) →+ M := {
+to_fun := λ s, finsum (λ (i : σ), (s i) • (w i)),
+map_add' := λ s t, 
+begin
+  simp only [finsupp.coe_add, pi.add_apply, add_smul], 
+  exact finsum_add_distrib
+    (finite.subset s.finite_support (function.support_smul_subset_left s w))
+    (finite.subset t.finite_support (function.support_smul_subset_left t w)),
+    end,
+map_zero' := 
+  by simp only [finsupp.coe_zero, pi.zero_apply, zero_smul, finsum_zero] }
+
+/-
 /-- The `weighted degree'` of the monomial a*∏x_i^s_i is the sum ∑n_i*(wt x_i)  -/
 def weighted_degree' (w : σ → M) (s : σ →₀ ℕ) /- (a : R) -/ : M :=
 finsum (λ (i : σ), (s i) • (w i))
@@ -76,6 +96,13 @@ begin
   { simp only [succ_nsmul, mul, hk] },
 end
 
+-/
+
+example (w : σ → M) (s : σ →₀ ℕ) (n : ℕ) :
+  weighted_degree' w (n • s) = n • weighted_degree' w s :=
+map_nsmul (weighted_degree' w) n s
+
+
 example [has_Sup M]: has_Sup (with_bot M) :=
 begin
 exact with_bot.has_Sup,
@@ -87,7 +114,9 @@ end
 /- def weighted_degree' (w : σ → M) (φ : mv_polynomial σ R) : with_bot M :=
 ⨆ ⦃d : σ →₀ ℕ⦄,  if coeff d φ ≠ 0 then ((weighted_degree' w d) : with_bot M) else ⊥ -/
 
+/-
 end weighted_degree'
+-/
 
 /-- A multivariate polynomial `φ` is homogeneous of weighted degree `m` if all monomials 
   occuring in `φ` have weighted degree `m`. -/
@@ -154,7 +183,7 @@ begin
   classical,
   have hd' : d.support ⊆ d.support ∪ e.support := finset.subset_union_left _ _,
   have he' : e.support ⊆ d.support ∪ e.support := finset.subset_union_right _ _,
-  rw [← hde, ← hφ, ← hψ, weighted_degree'.mul],
+  rw [← hde, ← hφ, ← hψ, map_add],
 end
 
 lemma is_weighted_homogeneous_monomial (w : σ → M) (d : σ →₀ ℕ) (r : R) {m : M} 
@@ -189,7 +218,7 @@ end
  
 lemma is_weighted_homogeneous_C (w : σ → M) (r : R) :
   is_weighted_homogeneous w (C r : mv_polynomial σ R) 0 :=
-is_weighted_homogeneous_monomial _ _ _ (weighted_degree'.zero w)
+is_weighted_homogeneous_monomial _ _ _ (map_zero _)
 
 variables (R)
 
@@ -207,10 +236,11 @@ lemma is_weighted_homogeneous_X (w : σ → M) (i : σ) :
   is_weighted_homogeneous w (X i : mv_polynomial σ R) (w i) :=
 begin
   apply is_weighted_homogeneous_monomial,
-  simp only [weighted_degree', single_smul, one_smul, single_apply, ite_smul, zero_smul],
+  simp only [weighted_degree', add_monoid_hom.coe_mk, single_smul, one_smul], 
+--  simp only [weighted_degree', single_smul, one_smul, single_apply, ite_smul, zero_smul],
   rw finsum_eq_single _ i,
-  { rw if_pos rfl },
-  { intros j hj, rw if_neg hj.symm }
+  { rw single_eq_same, },
+  { intros j hj, rw single_eq_of_ne hj.symm, }
 end
 
 namespace is_weighted_homogeneous
@@ -398,10 +428,9 @@ lemma weighted_homogeneous_component_zero [no_zero_smul_divisors ℕ M]
 begin
   ext1 d,
   rcases em (d = 0) with (rfl|hd),
-  { simp only [coeff_weighted_homogeneous_component, weighted_degree', finsupp.coe_zero, 
-      pi.zero_apply, zero_smul, finsum_zero, eq_self_iff_true, if_true, coeff_zero_C], },
+  { simp only [coeff_weighted_homogeneous_component, weighted_degree',if_pos, add_monoid_hom.coe_mk, finsupp.coe_zero, pi.zero_apply, zero_smul, finsum_zero, coeff_zero_C], },
   { rw [coeff_weighted_homogeneous_component, if_neg, coeff_C, if_neg (ne.symm hd)],
-    simp only [weighted_degree'],
+    simp only [weighted_degree', add_monoid_hom.coe_mk],
     have h : function.support (λ (i : σ), d i • w i) ⊆ d.support,
     { erw function.support_smul,
       simp only [fun_support_eq, set.inter_subset_left] },
