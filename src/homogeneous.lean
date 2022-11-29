@@ -15,7 +15,7 @@ is_weighted_homogeneous (1 : σ → ℕ) φ n
 lemma degree'_eq_weighted_degree' (d : σ →₀ ℕ) :
   ∑ i in d.support, d i = weighted_degree' (1 : σ → ℕ) d :=
 begin
-  simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one],
+  simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
   rw finsum_eq_sum_of_support_subset,
   rw finsupp.fun_support_eq d,
 end
@@ -62,15 +62,23 @@ end
 
 variables (σ) {R}
 
---TODO
+-- much longer than the initial two lines…
 lemma is_homogeneous_of_total_degree_zero {p : mv_polynomial σ R} (hp : p.total_degree = 0) :
   is_homogeneous p 0 :=
 begin
-  sorry
-  /- erw [total_degree, finset.sup_eq_bot_iff] at hp,
-  -- we have to do this in two steps to stop simp changing bot to zero
-  simp_rw [mem_support_iff] at hp,
-  exact hp, -/
+  intros m hm, 
+  simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk], 
+  apply finsum_eq_zero_of_forall_eq_zero,
+  intro x, 
+  by_cases hx : x ∈ m.support,
+  { change _ = ⊥ at hp,
+    simp_rw [total_degree, finset.sup_eq_bot_iff, mem_support_iff] at hp, 
+    specialize hp m hm, 
+    change _ = 0 at hp, 
+    simp only [finsupp.sum, finset.sum_eq_zero_iff] at hp,
+    exact hp x hx, },
+  { simp only [finsupp.mem_support_iff, not_not] at hx, 
+    exact hx, },
 end
 
 lemma is_homogeneous_C (r : R) :
@@ -125,17 +133,32 @@ is_weighted_homogeneous.prod s φ n h
 lemma total_degree (hφ : is_homogeneous φ n) (h : φ ≠ 0) :
   total_degree φ = n :=
 begin
-  sorry
-  /- rw total_degree,
+  rw total_degree,
   apply le_antisymm,
   { apply finset.sup_le,
     intros d hd,
     rw mem_support_iff at hd,
-    rw [finsupp.sum, hφ hd], },
+    -- simp only [finsupp.sum], 
+    specialize hφ hd, 
+    simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk] at hφ, 
+
+    rw ← hφ, apply le_of_eq, 
+    rw finsum_eq_sum_of_support_subset,
+    refl,
+    intro i,
+    simp only [finsupp.fun_support_eq, imp_self], },
   { obtain ⟨d, hd⟩ : ∃ d, coeff d φ ≠ 0 := exists_coeff_ne_zero h,
-    simp only [← hφ hd, finsupp.sum],
+    simp only [← hφ hd, weighted_degree', finsupp.sum],
+    simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
     replace hd := finsupp.mem_support_iff.mpr hd,
-    exact finset.le_sup hd, } -/
+    -- should be a lemma somewhere
+    suffices : finsum d = d.support.sum d, 
+    rw this,
+    exact finset.le_sup hd, 
+    -- proof 
+    rw finsum_eq_sum _, 
+    simp only [finsupp.fun_support_eq, finset.finite_to_set_to_finset], 
+    exact finsupp.finite_support d, } 
 end
 
 /--

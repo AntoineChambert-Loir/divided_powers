@@ -96,27 +96,23 @@ begin
   { simp only [succ_nsmul, mul, hk] },
 end
 
--/
-
-example (w : σ → M) (s : σ →₀ ℕ) (n : ℕ) :
-  weighted_degree' w (n • s) = n • weighted_degree' w s :=
-map_nsmul (weighted_degree' w) n s
-
-
-example [has_Sup M]: has_Sup (with_bot M) :=
-begin
-exact with_bot.has_Sup,
-end 
-
 /- def weighted_degree'' [has_Sup M] (w : σ → M) (φ : mv_polynomial σ R) : with_bot M :=
 ⨆ d ∈ { d | coeff d φ ≠ 0}, ((weighted_degree' w d) : with_bot M)  -/
 
 /- def weighted_degree' (w : σ → M) (φ : mv_polynomial σ R) : with_bot M :=
 ⨆ ⦃d : σ →₀ ℕ⦄,  if coeff d φ ≠ 0 then ((weighted_degree' w d) : with_bot M) else ⊥ -/
 
-/-
 end weighted_degree'
 -/
+
+example (w : σ → M) (s : σ →₀ ℕ) (n : ℕ) :
+  weighted_degree' w (n • s) = n • weighted_degree' w s :=
+map_nsmul (weighted_degree' w) n s
+
+example [has_Sup M]: has_Sup (with_bot M) :=
+begin
+exact with_bot.has_Sup,
+end 
 
 /-- A multivariate polynomial `φ` is homogeneous of weighted degree `m` if all monomials 
   occuring in `φ` have weighted degree `m`. -/
