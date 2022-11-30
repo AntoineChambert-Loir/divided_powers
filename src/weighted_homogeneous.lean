@@ -114,9 +114,60 @@ begin
 exact with_bot.has_Sup,
 end 
 
-/-- Weighted total degree of a multivariate polynomial -/
-def weighted_total_degree [semilattice_sup M] (w : σ → M) (p : mv_polynomial σ R) : with_bot M := 
+/- We need two notions of total degree.
+When `order_bot M`, it is reasonableto `⊥` to be the degree of the 0 polynomial,
+otherwise, we have to use `with_bot M` -/
+
+/-- Weighted total degree of a multivariate polynomial, in `with_bot M` -/
+def weighted_total_degree' [semilattice_sup M] 
+  (w : σ → M) (p : mv_polynomial σ R) : with_bot M := 
 p.support.sup (λ s, weighted_degree' w s)
+
+lemma weighted_total_degree'_eq_zero_iff [semilattice_sup M]
+  (w : σ → M) (p : mv_polynomial σ R) : 
+  weighted_total_degree' w p = ⊥ ↔ p = 0 :=
+begin
+  simp only [weighted_total_degree'],
+  simp only [finset.sup_eq_bot_iff, mem_support_iff, with_bot.coe_ne_bot],
+  simp only [mv_polynomial.eq_zero_iff ],
+  apply forall_congr,
+  intro s,
+  split,
+  intro h, by_contradiction h', exact h h', 
+  exact λ h' h, h h',
+end
+
+lemma weighted_total_degree'_zero [semilattice_sup M]
+  (w : σ → M) : weighted_total_degree' w (0 : mv_polynomial σ R) = ⊥ :=
+by simp only [weighted_total_degree', support_zero, finset.sup_empty]
+
+/-- Weighted total degree of a multivariate polynomial, with `order_bot M` -/
+def weighted_total_degree [semilattice_sup M] [order_bot M] 
+  (w : σ → M) (p : mv_polynomial σ R) : M := 
+p.support.sup (λ s, weighted_degree' w s)
+
+lemma weighted_total_degree_coe [semilattice_sup M] [order_bot M] 
+  (w : σ → M) (p : mv_polynomial σ R) (hp : p ≠ 0): 
+  weighted_total_degree' w p = ↑(weighted_total_degree w p) :=
+begin
+  rw [ne.def, ← weighted_total_degree'_eq_zero_iff w p, ← ne.def] at hp,
+  rw with_bot.ne_bot_iff_exists at hp,
+  obtain ⟨m, hm⟩ := hp, 
+  apply le_antisymm,
+  { simp only [weighted_total_degree, weighted_total_degree', finset.sup_le_iff, with_bot.coe_le_coe],
+    intros b hb, exact finset.le_sup hb, },
+  { simp only [weighted_total_degree],
+    have hm' : weighted_total_degree' w p ≤ m := le_of_eq hm.symm,
+    rw ← hm,
+    simp only [with_bot.coe_le_coe, finset.sup_le_iff, mem_support_iff],
+    simp only [weighted_total_degree', finset.sup_le_iff, mem_support_iff, 
+      ne.def, with_bot.coe_le_coe] at hm', 
+    exact hm', }
+end
+
+lemma weighted_total_degree_zero [semilattice_sup M] [order_bot M]
+  (w : σ → M) : weighted_total_degree w (0 : mv_polynomial σ R) = ⊥ :=
+by simp only [weighted_total_degree, support_zero, finset.sup_empty]
 
 /-- A multivariate polynomial `φ` is homogeneous of weighted degree `m` if all monomials 
   occuring in `φ` have weighted degree `m`. -/
@@ -197,23 +248,23 @@ begin
   { contradiction }
 end
 
-lemma is_weighted_homogeneous_of_total_degree_zero (w : σ → M) {p : mv_polynomial σ R} 
-  (hp : weighted_total_degree w p = 0) : is_weighted_homogeneous w p 0 :=
+/- If `⊥` is the smallest element of `M`, then a
+polynomial of weighted_total_degree `⊥` is weighted_homogeneous of degree `⊥`-/
+lemma is_weighted_homogeneous_of_total_degree_zero [semilattice_sup M] [order_bot M] 
+  (w : σ → M) {p : mv_polynomial σ R} (hp : weighted_total_degree w p = (⊥ : M)) :
+  is_weighted_homogeneous w p (⊥ : M) :=
 begin
-  erw [total_degree, finset.sup_eq_bot_iff] at hp,
-  -- we have to do this in two steps to stop simp changing bot to zero
-  simp_rw [mem_support_iff] at hp,
+  -- simp only [weighted_total_degree] at hp,
+  simp only [is_weighted_homogeneous],
   intros d hd,
-  simp only [weighted_degree'],
-  specialize hp d hd,
-  apply finsum_eq_zero_of_forall_eq_zero,
-  intro e, 
-  suffices : d e = 0, simp only [this, zero_smul], 
-  by_cases he: e ∈ d.support, 
-  { change _ = 0 at hp, 
-    simp only [finsupp.sum, finset.sum_eq_zero_iff] at hp, 
-    exact hp e he, }, 
-  exact finsupp.not_mem_support_iff.mp he, 
+  rw eq_bot_iff,
+  suffices hp0 : p ≠ 0,
+  have := weighted_total_degree_coe w p hp0,
+  simp only [weighted_total_degree', hp] at this, 
+  rw [← with_bot.coe_le_coe,← this],
+  apply finset.le_sup (mem_support_iff.mpr hd),
+  -- p ≠ 0
+  intro hp0, apply hd, simp only [hp0, coeff_zero],
 end
  
 lemma is_weighted_homogeneous_C (w : σ → M) (r : R) :
@@ -287,9 +338,9 @@ end
 
 /-- A non zero weighted homogeneous polynomial of degree n has weighted total degree n -/
 lemma weighted_total_degree [semilattice_sup M] {w : σ → M} (hφ : is_weighted_homogeneous w φ n) (h : φ ≠ 0) :
-  weighted_total_degree w φ = n :=
+  weighted_total_degree' w φ = n :=
 begin
-  simp only [weighted_total_degree],
+  simp only [weighted_total_degree'],
   apply le_antisymm,
   { simp only [is_weighted_homogeneous] at hφ,
     simp only [finset.sup_le_iff, mem_support_iff, with_bot.coe_le_coe],
@@ -303,8 +354,8 @@ end
 --TODO: decide if these should be instances or defs
 
 /--
-The homogeneous submodules form a graded ring. This instance is used by `direct_sum.comm_semiring`
-and `direct_sum.algebra`. -/
+The homogeneous submodules form a graded ring. 
+This instance is used by `direct_sum.comm_semiring` and `direct_sum.algebra`. -/
 instance weighted_homogeneous_submodule.gcomm_semiring {w : σ → M} :
   set_like.graded_monoid (weighted_homogeneous_submodule R w) :=
 { one_mem := is_weighted_homogeneous_one R w,
@@ -382,17 +433,20 @@ begin
 end
 
 --TODO: come back after defining weighted_total_degree
-lemma weighted_homogeneous_component_eq_zero [semilattice_sup M] (h : weighted_total_degree w φ < n) :
+lemma weighted_homogeneous_component_eq_zero [semilattice_sup M] (h : weighted_total_degree' w φ < n) :
   weighted_homogeneous_component w n φ = 0 :=
 begin
   apply weighted_homogeneous_component_eq_zero',
-  simp only [weighted_total_degree] at h, 
-  intros d hd, 
-  rw [weighted_total_degree, finset.sup_lt_iff] at h,
-  { intros d hd, exact ne_of_lt (h d hd), },
-  { exact lt_of_le_of_lt (nat.zero_le _) h, }
+  intros d hd hd', 
+  rw [lt_iff_le_and_ne] at h, 
+  obtain ⟨h1, h2⟩ := h, 
+  apply h2, 
+  apply le_antisymm h1,
+  simp only [weighted_total_degree', ← hd'],
+  exact finset.le_sup hd, 
 end 
 
+-- ACL : complete from here
 lemma sum_weighted_homogeneous_component :
   ∑ i in range (φ.total_degree + 1), weighted_homogeneous_component w i φ = φ :=
 begin
