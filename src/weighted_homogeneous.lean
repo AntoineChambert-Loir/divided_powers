@@ -114,6 +114,10 @@ begin
 exact with_bot.has_Sup,
 end 
 
+/-- Weighted total degree of a multivariate polynomial -/
+def weighted_total_degree [semilattice_sup M] (w : σ → M) (p : mv_polynomial σ R) : with_bot M := 
+p.support.sup (λ s, weighted_degree' w s)
+
 /-- A multivariate polynomial `φ` is homogeneous of weighted degree `m` if all monomials 
   occuring in `φ` have weighted degree `m`. -/
 def is_weighted_homogeneous (w : σ → M) (φ : mv_polynomial σ R) (m : M) : Prop := 
@@ -194,7 +198,7 @@ begin
 end
 
 lemma is_weighted_homogeneous_of_total_degree_zero (w : σ → M) {p : mv_polynomial σ R} 
-  (hp : p.total_degree = 0) : is_weighted_homogeneous w p 0 :=
+  (hp : weighted_total_degree w p = 0) : is_weighted_homogeneous w p 0 :=
 begin
   erw [total_degree, finset.sup_eq_bot_iff] at hp,
   -- we have to do this in two steps to stop simp changing bot to zero
@@ -281,21 +285,20 @@ begin
       exact h j (finset.mem_insert_of_mem hjs) }
 end
 
--- TODO : weighted version of total_degree
-/- lemma total_degree (hφ : is_homogeneous φ n) (h : φ ≠ 0) :
-  total_degree φ = n :=
+/-- A non zero weighted homogeneous polynomial of degree n has weighted total degree n -/
+lemma weighted_total_degree [semilattice_sup M] {w : σ → M} (hφ : is_weighted_homogeneous w φ n) (h : φ ≠ 0) :
+  weighted_total_degree w φ = n :=
 begin
-  rw total_degree,
+  simp only [weighted_total_degree],
   apply le_antisymm,
-  { apply finset.sup_le,
-    intros d hd,
-    rw mem_support_iff at hd,
-    rw [finsupp.sum, hφ hd], },
+  { simp only [is_weighted_homogeneous] at hφ,
+    simp only [finset.sup_le_iff, mem_support_iff, with_bot.coe_le_coe],
+    exact λ d hd, le_of_eq (hφ hd), },
   { obtain ⟨d, hd⟩ : ∃ d, coeff d φ ≠ 0 := exists_coeff_ne_zero h,
     simp only [← hφ hd, finsupp.sum],
     replace hd := finsupp.mem_support_iff.mpr hd,
     exact finset.le_sup hd, }
-end -/
+end 
 
 --TODO: decide if these should be instances or defs
 
@@ -366,12 +369,26 @@ begin
   exfalso, exact h _ hd.1 hd.2
 end
 
---TODO: come back after defining weighted_total_degree
-/- lemma weighted_homogeneous_component_eq_zero (h : φ.total_degree < n) :
-  weighted_homogeneous_component n φ = 0 :=
+lemma _root_.finset.lt_of_lt_sup (α :Type*) [semilattice_sup α] (ι : Type*)(s : finset ι) (f : ι → α) (a : α)
+  (h : finset.sup s (λ i, (f i : with_bot α)) < (a : with_bot α)) : ∀ i ∈ s, f i < a :=
 begin
-  apply homogeneous_component_eq_zero',
-  rw [total_degree, finset.sup_lt_iff] at h,
+  simp only [lt_iff_le_not_le, finset.sup_le_iff, with_bot.coe_le_coe] at h,
+  intros i hi,
+  rw lt_iff_le_not_le,
+  split,
+  exact h.1 i hi, 
+  intro h',
+  exact h.2 (le_trans (with_bot.coe_le_coe.mpr h') (finset.le_sup hi)), 
+end
+
+--TODO: come back after defining weighted_total_degree
+lemma weighted_homogeneous_component_eq_zero [semilattice_sup M] (h : weighted_total_degree w φ < n) :
+  weighted_homogeneous_component w n φ = 0 :=
+begin
+  apply weighted_homogeneous_component_eq_zero',
+  simp only [weighted_total_degree] at h, 
+  intros d hd, 
+  rw [weighted_total_degree, finset.sup_lt_iff] at h,
   { intros d hd, exact ne_of_lt (h d hd), },
   { exact lt_of_le_of_lt (nat.zero_le _) h, }
 end 
@@ -385,7 +402,6 @@ begin
   exact λ h, (coeff_eq_zero_of_total_degree_lt h).symm
 end
 
--/
 lemma weighted_homogeneous_component_weighted_homogeneous_polynomial (m n : M)
   (p : mv_polynomial σ R) (h : p ∈ weighted_homogeneous_submodule R w n) :
   weighted_homogeneous_component w m p = if m = n then p else 0 :=

@@ -1,4 +1,4 @@
-/- Copyright 2022 ACL @ MIdFF-/
+/- Copyright 2022 ACL & MIdFF-/
 
 import algebra.free_algebra
 import algebra.ring_quot
@@ -9,6 +9,7 @@ import ring_theory.graded_algebra.basic
 
 import divided_powers.basic
 import divided_powers.ideal_add
+import ..weighted_homogeneous
 
 noncomputable theory
 
