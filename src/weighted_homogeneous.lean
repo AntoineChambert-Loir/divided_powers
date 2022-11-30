@@ -446,14 +446,32 @@ begin
   exact finset.le_sup hd, 
 end 
 
--- ACL : complete from here
-lemma sum_weighted_homogeneous_component :
-  ∑ i in range (φ.total_degree + 1), weighted_homogeneous_component w i φ = φ :=
+lemma weighted_homogeneous_component_finsupp :
+  (function.support (λ m, weighted_homogeneous_component w m φ)).finite := 
 begin
+  suffices : function.support (λ m, weighted_homogeneous_component w m φ) ⊆  (λ d, weighted_degree' w d) '' φ.support,
+  exact finite.subset ((λ (d : σ →₀ ℕ), (weighted_degree' w) d) '' ↑(support φ)).to_finite this,
+  intros m hm, 
+  by_contradiction hm', apply hm,
+  simp only [mem_support, ne.def] at hm,
+  simp only [set.mem_image, not_exists, not_and] at hm', 
+  exact weighted_homogeneous_component_eq_zero' m φ hm', 
+end
+
+lemma sum_weighted_homogeneous_component :
+  finsum (λ m, weighted_homogeneous_component w m φ) = φ :=
+begin
+  rw finsum_eq_sum _ (weighted_homogeneous_component_finsupp φ),
   ext1 d,
-  suffices : φ.total_degree < d.support.sum d → 0 = coeff d φ,
-    by simpa [coeff_sum, coeff_homogeneous_component],
-  exact λ h, (coeff_eq_zero_of_total_degree_lt h).symm
+  simp only [coeff_sum, coeff_weighted_homogeneous_component],
+  rw finset.sum_eq_single (weighted_degree' w d),
+  { rw if_pos rfl, },
+  { intros m hm hm', rw if_neg hm'.symm, },
+  { intro hm, rw if_pos rfl, 
+    simp only [finite.mem_to_finset, mem_support, ne.def, not_not] at hm, 
+    have := coeff_weighted_homogeneous_component _ φ d,
+    rw [hm, if_pos rfl, coeff_zero] at this,
+    exact this.symm, },
 end
 
 lemma weighted_homogeneous_component_weighted_homogeneous_polynomial (m n : M)
