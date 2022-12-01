@@ -130,36 +130,22 @@ lemma prod {ι : Type*} (s : finset ι) (φ : ι → mv_polynomial σ R) (n : ι
   is_homogeneous (∏ i in s, φ i) (∑ i in s, n i) :=
 is_weighted_homogeneous.prod s φ n h
 
+
+lemma total_degree_eq_weighted_total_degree :
+  total_degree φ = weighted_total_degree (1 : σ → ℕ) φ := 
+begin
+  simp only [total_degree, weighted_total_degree, weighted_degree'],
+  simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
+  apply finset.sup_congr rfl,
+  intros a ha, 
+  simp only [finsupp.sum_eq_finsum, eq_self_iff_true, implies_true_iff], 
+end
+
 lemma total_degree (hφ : is_homogeneous φ n) (h : φ ≠ 0) :
   total_degree φ = n :=
-begin
-  rw total_degree,
-  apply le_antisymm,
-  { apply finset.sup_le,
-    intros d hd,
-    rw mem_support_iff at hd,
-    -- simp only [finsupp.sum], 
-    specialize hφ hd, 
-    simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk] at hφ, 
-
-    rw ← hφ, apply le_of_eq, 
-    rw finsum_eq_sum_of_support_subset,
-    refl,
-    intro i,
-    simp only [finsupp.fun_support_eq, imp_self], },
-  { obtain ⟨d, hd⟩ : ∃ d, coeff d φ ≠ 0 := exists_coeff_ne_zero h,
-    simp only [← hφ hd, weighted_degree', finsupp.sum],
-    simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
-    replace hd := finsupp.mem_support_iff.mpr hd,
-    -- should be a lemma somewhere
-    suffices : finsum d = d.support.sum d, 
-    rw this,
-    exact finset.le_sup hd, 
-    -- proof 
-    rw finsum_eq_sum _, 
-    simp only [finsupp.fun_support_eq, finset.finite_to_set_to_finset], 
-    exact finsupp.finite_support d, } 
-end
+by rw [total_degree_eq_weighted_total_degree, ← with_bot.coe_eq_coe, 
+    ← weighted_total_degree_coe _ φ h, 
+    is_weighted_homogeneous.weighted_total_degree hφ h]
 
 /--
 The homogeneous submodules form a graded ring. This instance is used by `direct_sum.comm_semiring`

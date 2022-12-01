@@ -48,6 +48,18 @@ section add_comm_monoid
 variables [add_comm_monoid M]
 
 
+lemma _root_.finsupp.sum_eq_finsum {ι M N : Type*} [has_zero M] [add_comm_monoid N] 
+  (f : ι →₀ M) (g : ι → M → N) (hg : ∀ i, g i 0 = 0):
+  finsupp.sum f g = finsum (λ i, g i (f i)) := 
+begin
+  rw finsum_eq_sum_of_support_subset,
+  rw finsupp.sum , 
+  intro i,
+  simp only [function.mem_support, ne.def, finset.mem_coe, finsupp.mem_support_iff],
+  intros h h', apply h, rw h', exact hg i, 
+end
+
+
 /-! ### `weighted_degree'` -/
 
 
@@ -420,7 +432,7 @@ begin
   exfalso, exact h _ hd.1 hd.2
 end
 
-lemma _root_.finset.lt_of_lt_sup (α :Type*) [semilattice_sup α] (ι : Type*)(s : finset ι) (f : ι → α) (a : α)
+/- lemma _root_.finset.lt_of_lt_sup (α :Type*) [semilattice_sup α] (ι : Type*)(s : finset ι) (f : ι → α) (a : α)
   (h : finset.sup s (λ i, (f i : with_bot α)) < (a : with_bot α)) : ∀ i ∈ s, f i < a :=
 begin
   simp only [lt_iff_le_not_le, finset.sup_le_iff, with_bot.coe_le_coe] at h,
@@ -430,7 +442,7 @@ begin
   exact h.1 i hi, 
   intro h',
   exact h.2 (le_trans (with_bot.coe_le_coe.mpr h') (finset.le_sup hi)), 
-end
+end -/
 
 --TODO: come back after defining weighted_total_degree
 lemma weighted_homogeneous_component_eq_zero [semilattice_sup M] (h : weighted_total_degree' w φ < n) :
@@ -515,15 +527,14 @@ begin
   { simp only [coeff_weighted_homogeneous_component, weighted_degree',if_pos, add_monoid_hom.coe_mk, finsupp.coe_zero, pi.zero_apply, zero_smul, finsum_zero, coeff_zero_C], },
   { rw [coeff_weighted_homogeneous_component, if_neg, coeff_C, if_neg (ne.symm hd)],
     simp only [weighted_degree', add_monoid_hom.coe_mk],
-    have h : function.support (λ (i : σ), d i • w i) ⊆ d.support,
-    { erw function.support_smul,
-      simp only [fun_support_eq, set.inter_subset_left] },
-    rw finsum_eq_sum_of_support_subset _ h,
-    simp only [sum_eq_zero_iff, finsupp.mem_support_iff, ne.def, not_forall, exists_prop,
-      smul_eq_zero, not_or_distrib, and_self_left],
+    rw ← finsupp.sum_eq_finsum d (λ i n, n • (w i)) _ , 
+    simp only [finsupp.sum, sum_eq_zero_iff, finsupp.mem_support_iff, ne.def, 
+      smul_eq_zero, not_forall, not_or_distrib, and_self_left, exists_prop],
+
     simp only [finsupp.ext_iff, finsupp.coe_zero, pi.zero_apply, not_forall] at hd,
     obtain ⟨i, hi⟩ := hd,
-    exact ⟨i, hi, hw i⟩,}
+    exact ⟨i, hi, hw i⟩, 
+    intro x, simp only [zero_smul], }
 end
 
 end canonically_ordered_add_monoid
