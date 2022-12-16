@@ -298,6 +298,17 @@ Delete obsolete versions
 
 -/
 
+example (M : Type*) [add_monoid M] : add_monoid (with_top M) := by refine with_top.add_monoid
+
+/- Roby (1965):
+ - Pregraded algebra (using mathlib's graded_algebra) - with_top unit (later, if needed)
+ - Tensor product of graded algebras is a graded algebra
+ - Add III' explicitly.
+ - Proposition 1
+ - Proposition 2
+ - Proposition 3
+-/
+
 /- 
 Idea of generalizing the theory to more general divisors systems
 modeling x^n/n!, x^n/p^n, etc.
