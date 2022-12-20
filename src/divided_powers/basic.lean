@@ -304,9 +304,11 @@ example (M : Type*) [add_monoid M] : add_monoid (with_top M) := by refine with_t
  - Pregraded algebra (using mathlib's graded_algebra) - with_top unit (later, if needed)
  - Tensor product of graded algebras is a graded algebra
  - Add III' explicitly.
- - Proposition 1
+ - Proposition 1 -- I think this is essentially Lemma 3.6 of [BO].
  - Proposition 2
  - Proposition 3
+
+ I just noticed that we are using dp and pd in different names, we should pick a convention.
 -/
 
 /- 
