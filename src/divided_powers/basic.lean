@@ -248,6 +248,57 @@ structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
 (dpow_comp : ∀ (n : ℕ) (a ∈ I), 
   hJ.dpow n (to_ring_hom a) = to_ring_hom (hI.dpow n a))
 
+/- Roby65, Proposition 2. (TODO: rename?)-/
+def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
+  (hI : divided_powers I) (hJ : divided_powers J) {f : A →+* B} (hf : I.map f ≤ J) : 
+  ideal A := 
+{ carrier   := {x ∈ I | ∀ (n : ℕ), f (hI.dpow n (x : A)) = (hJ.dpow n (f (x : A)))},
+  add_mem'  := λ x y hx hy,
+  begin
+    simp only [set.mem_sep_iff, set_like.mem_coe] at hx hy ⊢,
+    refine ⟨I.add_mem hx.1 hy.1, _⟩,
+    intros n,
+    rw [hI.dpow_add _ hx.1 hy.1, map_add,
+      hJ.dpow_add _ (hf ( ideal.mem_map_of_mem f hx.1)) (hf ( ideal.mem_map_of_mem f hy.1)),
+      map_sum], 
+    apply congr_arg,
+    ext k,
+    rw [map_mul, hx.2 k, hy.2 (n - k)]
+  end,
+  zero_mem' := begin
+    simp only [set.mem_sep_iff, set_like.mem_coe, submodule.zero_mem, map_zero, true_and],
+    intro n,
+    cases n,
+    { rw [hI.dpow_zero I.zero_mem, hJ.dpow_zero J.zero_mem, map_one] },
+    { rw [hI.dpow_eval_zero n.succ_ne_zero,hJ.dpow_eval_zero n.succ_ne_zero, map_zero] }
+  end,
+  smul_mem' := λ r x hx,
+  begin
+    simp only [set.mem_sep_iff, set_like.mem_coe] at hx ⊢,
+    refine ⟨I.smul_mem r hx.1, _⟩,
+    intros n,
+    rw [smul_eq_mul, hI.dpow_smul _ hx.1, map_mul, map_mul, map_pow,
+      hJ.dpow_smul _ (hf ( ideal.mem_map_of_mem f hx.1)), hx.2 n],
+  end }
+
+/- Roby65, Proposition 3.  (TODO: rename?) -/
+def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {S : set A} {J : ideal B}
+  (hI : divided_powers (ideal.span S)) (hJ : divided_powers J) {f : A →+* B}
+  (hf : (ideal.span S).map f ≤ J) (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
+  pd_morphism hI hJ := 
+{ to_ring_hom := f,
+  ideal_comp  := hf,
+  dpow_comp   := λ n x hx,
+  begin
+    have hS : S ⊆ (pd_morphism_ideal hI hJ hf),
+    { intros y hy,
+      simp only [set_like.mem_coe, pd_morphism_ideal, submodule.mem_mk, set.mem_sep_iff,
+        set_like.mem_coe], 
+      exact ⟨ideal.subset_span hy, h ⟨y, hy⟩⟩  },
+    rw ← ideal.span_le at hS,
+    exact ((hS hx).2 n).symm,
+  end }
+
 -- For the moment, the notation does not work
 -- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
 -- Also, we expect a `pd` subscript
