@@ -408,13 +408,37 @@ end divided_power_algebra
 section roby
 /- Formalization of Roby 1965, section 8 -/
 
-variables (A S : Type*) [comm_ring A] [algebra A R] [comm_ring S] [algebra A S] (I : ideal R) (J : ideal S)
+.
 
+open_locale tensor_product
+
+variables (A S : Type*) [comm_ring A] [algebra A R] [comm_ring S] [algebra A S] {I : ideal R}
+  {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J)
+
+
+def i_1 : R →ₐ R ⊗[A] S := algebra.tensor_product.include_left
+
+def i_2 : S →ₐ R ⊗[A] S := algebra.tensor_product.include_right
+
+variables {R S} (I J)
+def K : ideal (R ⊗[A] S) := (I.map (i_1 R A S)) ⊔ (J.map (i_2 R A S))
+
+namespace divided_powers
+
+variables {I J}
 /- Lemma 1 : uniqueness of the dp structure on R ⊗ S for I + J -/
-example 
+lemma on_tensor_product_unique (hK hK' : divided_powers (K A I J))
+  (hi_1 : is_pd_morphism hI hK (i_1 R A S)) (hi_1' : is_pd_morphism hI hK' (i_1 R A S))
+  (hi_2 : is_pd_morphism hJ hK (i_2 R A S)) (hi_2' : is_pd_morphism hJ hK' (i_2 R A S)) : 
+  hK = hK' :=
+sorry
 
-#check @algebra.tensor_product.include_left A _ R _ _ S _ _ 
+def cond_T : Prop :=
+∃ hK : divided_powers (K A I J), 
+  is_pd_morphism hI hK (i_1 R A S) ∧ is_pd_morphism hJ hK (i_2 R A S)
 
+
+end divided_powers
 
 end roby
 

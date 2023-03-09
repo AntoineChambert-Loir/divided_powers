@@ -257,10 +257,9 @@ end basic_lemmas
 section divided_powers_morphisms
 
 /-- Compatibility of a ring morphism with pd-structures -/
-structure is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
-  (hI : divided_powers I) (hJ : divided_powers J) (f : A →+* B) :=
-(ideal_comp : I.map f ≤ J)
-(dpow_comp : ∀ (n : ℕ) (a ∈ I), hJ.dpow n (f a) = f (hI.dpow n a))
+def is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
+  (hI : divided_powers I) (hJ : divided_powers J) (f : A →+* B) : Prop :=
+(I.map f) ≤ J ∧  ∀ (n : ℕ) (a ∈ I), hJ.dpow n (f a) = f (hI.dpow n a)
 
 /-- The structure of a pd_morphism between rings endowed with pd-rings -/
 structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
