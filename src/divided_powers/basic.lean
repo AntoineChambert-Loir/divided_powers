@@ -303,22 +303,42 @@ def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
   end }
 
 /- Roby65, Proposition 3.  (TODO: rename?) -/
-def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {S : set A} {J : ideal B}
-  (hI : divided_powers (ideal.span S)) (hJ : divided_powers J) {f : A →+* B}
-  (hf : (ideal.span S).map f ≤ J) (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
+def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
+  (hI : divided_powers I) (hJ : divided_powers J) {f : A →+* B} {S : set A} (hS : ideal.span S = I)
+  (hf : I.map f ≤ J) (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
   pd_morphism hI hJ := 
 { to_ring_hom := f,
   ideal_comp  := hf,
   dpow_comp   := λ n x hx,
   begin
-    have hS : S ⊆ (pd_morphism_ideal hI hJ hf),
+    have hS' : S ⊆ (pd_morphism_ideal hI hJ hf),
     { intros y hy,
       simp only [set_like.mem_coe, pd_morphism_ideal, submodule.mem_mk, set.mem_sep_iff,
         set_like.mem_coe], 
-      exact ⟨ideal.subset_span hy, h ⟨y, hy⟩⟩  },
-    rw ← ideal.span_le at hS,
-    exact ((hS hx).2 n).symm,
+      split,
+      rw ←hS, 
+      exact ideal.subset_span hy, 
+      exact h ⟨y, hy⟩ },
+    rw [← ideal.span_le, hS] at hS',
+    exact ((hS' hx).2 n).symm,
   end }
+
+/- Roby65, corollary after proposition 3 -/
+example {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A} (hS : ideal.span S = I) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
+begin
+  suffices : I.map (ring_hom.id A) ≤ I, 
+  have pd_id := pd_morphism_from_gens hI hI' hS this _,
+  ext n a,
+  by_cases ha : a ∈ I,
+  have := pd_id.dpow_comp n a ha, 
+  suffices pd_id_id : ∀ (x : A), pd_id.to_ring_hom x = x,
+  simp only [pd_id_id] at this,  exact this.symm, 
+  { intro x, sorry, },
+  sorry,
+  sorry,
+  sorry,
+end
+
 
 -- For the moment, the notation does not work
 -- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
