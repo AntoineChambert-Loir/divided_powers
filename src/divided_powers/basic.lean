@@ -158,6 +158,27 @@ end
 
 open finset
 
+/-- A product of divided powers is a multinomial coefficient times the divided power-/
+lemma mul_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} (n : ι → ℕ) {a : A} (ha : a ∈ I):
+  s.prod (λ i, hI.dpow (n i) a) = (nat.multinomial s n) * hI.dpow (s.sum n) a := 
+begin
+  revert s,
+  apply finset.induction,
+  -- case : s = ∅ 
+  simp only [prod_empty, nat.multinomial_nil, algebra_map.coe_one, sum_empty, one_mul, hI.dpow_zero ha],
+  -- inductive step
+  intros i s hi hrec,
+  rw finset.prod_insert hi, rw hrec, 
+  rw ←mul_assoc, 
+  nth_rewrite 1 [mul_comm], 
+  rw mul_assoc,
+  rw dpow_mul _ _ _ ha, 
+  rw ← finset.sum_insert hi, 
+  rw ← mul_assoc,
+  apply congr_arg2 _ _ rfl, 
+  rw [nat.multinomial_insert _ _ hi, mul_comm, nat.cast_mul, finset.sum_insert hi], 
+end
+
 -- Also : can it be used to deduce dpow_comp from the rest?
 /-- A generic “multinomial” theorem for divided powers — but without multinomial coefficients 
   — using only dpow_zero, dpow_add and dpow_eval_zero  -/
