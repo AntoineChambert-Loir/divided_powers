@@ -19,6 +19,8 @@ The divided power algebra of a module -/
 
 open finset mv_polynomial ring_quot
 
+section
+
 variables (R : Type*) [comm_ring R]
 variables (M : Type*) [add_comm_group M] [module R M]
 
@@ -381,7 +383,7 @@ more generally for graded algebras -/
 def proj' (n : ℕ) : divided_power_algebra R M →ₗ[R] grade R M n := sorry
 
 /- R → grade R M 0 is isomorphism -/
-example : ring_equiv R (grade R M 0) := 
+def ring_equiv_degree_zero : ring_equiv R (grade R M 0) := 
 { to_fun    := (proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M)),
   inv_fun   := sorry,
   left_inv  := sorry,
@@ -389,8 +391,16 @@ example : ring_equiv R (grade R M 0) :=
   map_mul'  := sorry,
   map_add'  := sorry }
 
+def proj_0_ring_hom : ring_hom (divided_power_algebra R M) R :=
+{ to_fun    := (ring_equiv_degree_zero R M).inv_fun ∘ (proj' R M 0),
+  map_one'  := sorry,
+  map_mul'  := sorry,
+  map_zero' := sorry,
+  map_add'  := sorry }
+
+
 /- ι : M → grade R M 1 is isomorphism -/
-example : linear_equiv (ring_hom.id R) M (grade R M 1) :=
+def linear_equiv_degree_one : linear_equiv (ring_hom.id R) M (grade R M 1) :=
 { to_fun    := (proj' R M 1) ∘ ι R,
   map_add'  := sorry,
   map_smul' := sorry,
@@ -398,12 +408,33 @@ example : linear_equiv (ring_hom.id R) M (grade R M 1) :=
   left_inv  := sorry,
   right_inv := sorry }
 
-/- Define the augmentation ideal : (proj' R M 0).ker -/
+def aug_ideal : ideal (divided_power_algebra R M) := (proj_0_ring_hom R M).ker
 
-/- Prove that the augmentation is an augmentation ideal,
-namely there is a section -/
+section
+
+def is_aug_ideal (R : Type*) [comm_ring R] (I : ideal R) : Prop :=
+∃ g : R⧸I →+* R, (ideal.quotient.mk I) ∘ g = id
+
+/- We prove that the augmentation is an augmentation ideal, namely there is a section -/
+lemma aug_ideal_is_aug_ideal : is_aug_ideal (divided_power_algebra R M) (aug_ideal R M) :=
+sorry
+
+variables (x : M) (n : ℕ)
+
+/-- Lemma 2 of Roby 65. -/
+lemma on_dp_algebra_unique (h h' : divided_powers (aug_ideal R M))
+  (h1 : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = mk_alg_hom R _ (X (n, x)))
+  (h1' : ∀ (x : M) (n : ℕ), h'.dpow n (ι R x) = mk_alg_hom R _ (X (n, x))) : 
+  h = h' := sorry
+
+def cond_D : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
+  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = mk_alg_hom R _ (X (n, x))
+
+end
 
 end divided_power_algebra
+
+end
 
 section roby
 /- Formalization of Roby 1965, section 8 -/
@@ -412,8 +443,8 @@ section roby
 
 open_locale tensor_product
 
-variables (A S : Type*) [comm_ring A] [algebra A R] [comm_ring S] [algebra A S] {I : ideal R}
-  {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J)
+variables (A R S : Type*) [comm_ring A] [comm_ring R] [algebra A R] [comm_ring S] [algebra A S] 
+  {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J)
 
 
 def i_1 : R →ₐ R ⊗[A] S := algebra.tensor_product.include_left
@@ -421,21 +452,35 @@ def i_1 : R →ₐ R ⊗[A] S := algebra.tensor_product.include_left
 def i_2 : S →ₐ R ⊗[A] S := algebra.tensor_product.include_right
 
 variables {R S} (I J)
-def K : ideal (R ⊗[A] S) := (I.map (i_1 R A S)) ⊔ (J.map (i_2 R A S))
+def K : ideal (R ⊗[A] S) := (I.map (i_1 A R S)) ⊔ (J.map (i_2 A R S))
 
 namespace divided_powers
 
 variables {I J}
 /- Lemma 1 : uniqueness of the dp structure on R ⊗ S for I + J -/
 lemma on_tensor_product_unique (hK hK' : divided_powers (K A I J))
-  (hi_1 : is_pd_morphism hI hK (i_1 R A S)) (hi_1' : is_pd_morphism hI hK' (i_1 R A S))
-  (hi_2 : is_pd_morphism hJ hK (i_2 R A S)) (hi_2' : is_pd_morphism hJ hK' (i_2 R A S)) : 
+  (hi_1 : is_pd_morphism hI hK (i_1 A R S)) (hi_1' : is_pd_morphism hI hK' (i_1 A R S))
+  (hi_2 : is_pd_morphism hJ hK (i_2 A R S)) (hi_2' : is_pd_morphism hJ hK' (i_2 A R S)) : 
   hK = hK' :=
 sorry
 
 def cond_T : Prop :=
 ∃ hK : divided_powers (K A I J), 
-  is_pd_morphism hI hK (i_1 R A S) ∧ is_pd_morphism hJ hK (i_2 R A S)
+  is_pd_morphism hI hK (i_1 A R S) ∧ is_pd_morphism hJ hK (i_2 A R S)
+
+section free
+
+def cond_T_free [hR_free : module.free A R] [hS_free : module.free A S] : Prop :=
+∃ hK : divided_powers (K A I J), 
+  is_pd_morphism hI hK (i_1 A R S) ∧ is_pd_morphism hJ hK (i_2 A R S)
+
+def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] [algebra A R]
+  {I : ideal R} (hI : divided_powers I) : Prop := 
+∃ (T : Type*) [comm_ring T], by exactI ∃ [algebra A T], by exactI ∃ [module.free A T]
+  {J : ideal T} (hJ : divided_powers J) (f : pd_morphism hI hJ), 
+  function.surjective f.to_ring_hom
+
+end free
 
 
 end divided_powers
