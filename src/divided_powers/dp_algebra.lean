@@ -6,6 +6,7 @@ import algebra.triv_sq_zero_ext
 import algebra.algebra.operations
 import linear_algebra.multilinear.basic
 import ring_theory.graded_algebra.basic
+import ring_theory.tensor_product
 
 import divided_powers.basic
 import divided_powers.ideal_add
@@ -399,7 +400,28 @@ example : linear_equiv (ring_hom.id R) M (grade R M 1) :=
 
 /- Define the augmentation ideal : (proj' R M 0).ker -/
 
-/- and a divided power structure on that ideal such that
+/- Prove that the augmentation is an augmentation ideal,
+namely there is a section -/
+
+end divided_power_algebra
+
+section roby
+/- Formalization of Roby 1965, section 8 -/
+
+variables (A S : Type*) [comm_ring A] [algebra A R] [comm_ring S] [algebra A S] (I : ideal R) (J : ideal S)
+
+/- Lemma 1 : uniqueness of the dp structure on R ⊗S for I + J -/
+example 
+
+#check @algebra.tensor_product.include_left A _ R _ _ S _ _ 
+
+
+end roby
+
+section divided_power_algebra
+
+/- 
+and a divided power structure on that ideal such that
 dpow R n (ι R x) = mk_alg_hom R (rel R M) (X (x, n)) 
 
 (x,n) represents dpow n x
@@ -414,10 +436,11 @@ where the sum is over functions → ℕ, with sum k
 
 /- Prove that it is unique… -/
 
-end divided_power_algebra
 
 /- Introduce notation ?
 Here : x ^ [n] = mk_alg_hom R _ (X (x, n))
 In general, x ^ [n]  for dpow n x ? 
 
 -/
+
+end divided_power_algebra
