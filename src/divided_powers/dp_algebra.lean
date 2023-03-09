@@ -410,7 +410,7 @@ section roby
 
 variables (A S : Type*) [comm_ring A] [algebra A R] [comm_ring S] [algebra A S] (I : ideal R) (J : ideal S)
 
-/- Lemma 1 : uniqueness of the dp structure on R ⊗S for I + J -/
+/- Lemma 1 : uniqueness of the dp structure on R ⊗ S for I + J -/
 example 
 
 #check @algebra.tensor_product.include_left A _ R _ _ S _ _ 
