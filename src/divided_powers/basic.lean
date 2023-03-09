@@ -158,6 +158,7 @@ end
 
 open finset
 
+/- Rob65, formula (III')-/
 /-- A product of divided powers is a multinomial coefficient times the divided power-/
 lemma mul_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} (n : ι → ℕ) {a : A} (ha : a ∈ I):
   s.prod (λ i, hI.dpow (n i) a) = (nat.multinomial s n) * hI.dpow (s.sum n) a := 
@@ -323,17 +324,23 @@ def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A
     exact ((hS' hx).2 n).symm,
   end }
 
+lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
+  (hI : divided_powers I) (hJ : divided_powers J) {f : A →+* B} {S : set A} (hS : ideal.span S = I)
+  (hf : I.map f ≤ J) (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
+  (pd_morphism_from_gens hI hJ hS hf h).to_ring_hom = f :=
+rfl
+
 /- Roby65, corollary after proposition 3 -/
 example {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A} (hS : ideal.span S = I) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
 begin
   suffices : I.map (ring_hom.id A) ≤ I, 
-  have pd_id := pd_morphism_from_gens hI hI' hS this _,
+  let pd_id := pd_morphism_from_gens hI hI' hS this _,
   ext n a,
   by_cases ha : a ∈ I,
   have := pd_id.dpow_comp n a ha, 
   suffices pd_id_id : ∀ (x : A), pd_id.to_ring_hom x = x,
   simp only [pd_id_id] at this,  exact this.symm, 
-  { intro x, sorry, },
+  { intro x,refl, },
   sorry,
   sorry,
   sorry,
