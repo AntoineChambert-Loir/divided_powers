@@ -4,8 +4,7 @@ import algebra.order.sub.basic  -- for tsub_tsub_tsub_cancel_left
 import data.finset.nat_antidiagonal -- for 4-fold sums
 import ring_theory.ideal.basic -- for 4-fold sums (might not be optimal)
 
-import temp_sym -- for range_sym lemmas
-
+import data.finset.sym
 
 /- -- Not used anymore
 -- The "unused arguments" linter incorrectly flags this (?!)
@@ -222,7 +221,7 @@ lemma range_sym_prop {m n : ℕ} {k : sym ℕ m} (hk :
   finset.sum (finset.range (n + 1)) (λ i,
     multiset.count i ↑k) = m := 
 begin
-  simp only [finset.mem_sym_iff'] at hk,
+  simp only [finset.mem_sym_iff] at hk,
   simp_rw ← k.prop, 
   rw ← multiset.to_finset_sum_count_eq ↑k, 
   apply symm,
