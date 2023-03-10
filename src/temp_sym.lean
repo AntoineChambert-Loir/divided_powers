@@ -5,7 +5,7 @@
 
 import tactic
 
-import import data.finset.sym
+import data.finset.sym
 
 section basic_sym
 
@@ -14,10 +14,13 @@ namespace sym
 open finset function multiset 
 
 variables (α : Type*) [decidable_eq α] (n : ℕ)
-
+#check mem_fill_iff
+/- -- Useless
 lemma mem_fill_iff' {a b : α} {i : fin (n + 1)} {s : sym α (n - i)} :
   a ∈ sym.fill b i s ↔ ((i : ℕ) ≠ 0 ∧ a = b) ∨ a ∈ s :=
-by rw [sym.fill, sym.mem_cast, sym.mem_append_iff, or_comm, sym.mem_repeat]
+by rw [sym.fill, sym.mem_cast, sym.mem_append_iff, or_comm], rw [sym.mem_repeat]
+-/
+
 
 end sym
 
