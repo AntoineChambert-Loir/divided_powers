@@ -138,13 +138,112 @@ end }
 
 #check decompose'
 
+def decompose'_fun : mv_polynomial σ R → direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i)) := λ φ, direct_sum.mk 
+  (λ (i : M), ↥(weighted_homogeneous_submodule R w i))
+  (finset.image (weighted_degree' w) φ.support)
+  (λ m, ⟨weighted_homogeneous_component w m φ, weighted_homogeneous_component_mem w φ m⟩)
+
+lemma decompose'_add' : ∀ (φ ψ : mv_polynomial σ R), decompose'_fun R w (φ + ψ) = decompose'_fun R w φ + decompose'_fun R w ψ :=
+begin
+  intros φ ψ,
+  simp only [decompose'_fun],
+  rw dfinsupp.ext_iff,
+  simp only [direct_sum.mk],
+  intro i, 
+  dsimp,
+  rw ← subtype.coe_inj,
+  rw submodule.coe_add, 
+  simp only [apply_dite coe, subtype.coe_mk, submodule.coe_zero, dite_eq_ite],
+  simp only [decompose'_aux], 
+  rw [map_add],
+end
+
+lemma decompose'_map_zero' : decompose'_fun R w 0 = 0 := 
+begin
+  simp only [decompose'_fun],
+  rw dfinsupp.ext_iff,
+  simp only [direct_sum.mk],
+  intro i,
+  simp only [mem_image, mem_support_iff, coeff_zero, ne.def, eq_self_iff_true, not_true, is_empty.exists_iff, exists_false,
+  not_false_iff, add_monoid_hom.coe_mk, dfinsupp.mk_apply, dif_neg, direct_sum.zero_apply],
+end
+
+lemma direct_sum_one_coeffs (i : M) : 
+  (((1 : direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i))) i) : mv_polynomial σ R) 
+  = ite (i = 0) (1 : mv_polynomial σ R) (0 : mv_polynomial σ R) :=
+begin
+  conv_lhs { dsimp [has_one.one], }, 
+  split_ifs,
+  rw h,
+  rw direct_sum.of_eq_same,
+  refl,
+  rw direct_sum.of_eq_of_ne,
+  refl,
+  exact ne.symm h,
+end
+
+lemma decompose'_map_one' : decompose'_fun R w 1 = 1 := 
+begin
+  classical,
+  simp only [decompose'_fun],
+  rw dfinsupp.ext_iff,
+  simp only [direct_sum.mk],
+  intro i,
+  simp only [subtype.coe_mk, add_monoid_hom.coe_mk, dfinsupp.mk_apply],
+  rw ← subtype.coe_inj,
+  simp only [apply_dite coe, subtype.coe_mk, submodule.coe_zero, dite_eq_ite],
+  simp only [decompose'_aux], 
+
+  rw direct_sum_one_coeffs, 
+  rw weighted_homogeneous_component_weighted_homogeneous_polynomial,
+  swap,
+  apply is_weighted_homogeneous_one,
+  by_cases hi : i = 0,
+  rw [if_pos, if_pos], exact hi, exact hi,
+  rw [if_neg hi, if_neg], exact hi,
+end
+
+lemma decompose'_map_mul' : ∀ (φ ψ : mv_polynomial σ R), decompose'_fun R w (φ * ψ) = decompose'_fun R w φ * decompose'_fun R w ψ :=
+begin
+sorry,
+end
+
 /-- The alg_hom map from polynomials to the direct sum of the homogeneous components -/
 def decompose'a : mv_polynomial σ R →ₐ[R] direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i)) := {
-map_one'  := sorry,
-map_mul'  := sorry,
-map_zero' := sorry,
-commutes' := sorry,
-.. decompose' R w }
+to_fun  := λ φ, direct_sum.mk 
+  (λ (i : M), ↥(weighted_homogeneous_submodule R w i))
+  (finset.image (weighted_degree' w) φ.support)
+  (λ m, ⟨weighted_homogeneous_component w m φ, weighted_homogeneous_component_mem w φ m⟩),
+map_add'  := decompose'_add' R w, 
+/- map_smul' := 
+begin
+  intros a φ, 
+  rw dfinsupp.ext_iff,
+  simp only [direct_sum.mk],
+  intro i, 
+  dsimp,
+  rw ← subtype.coe_inj,
+  rw submodule.coe_smul, 
+  simp only [apply_ite coe, subtype.coe_mk, submodule.coe_zero],
+  simp only [decompose'_aux], rw [map_smul],
+end, -/
+map_mul'  := 
+begin
+  intros φ ψ,
+  rw dfinsupp.ext_iff,
+  simp only [direct_sum.mk],
+  intro i, 
+  -- dsimp,
+  rw ← subtype.coe_inj,
+  sorry,
+  /- 
+  rw submodule.coe_mul, 
+  simp only [apply_ite coe, subtype.coe_mk, submodule.coe_zero],
+  simp only [decompose'_aux], rw [map_mul], -/
+end, 
+map_one'  := decompose'_map_one' R w, 
+map_zero' := decompose'_map_zero' R w,
+commutes' := sorry }
 
 def graded_polynomial_algebra : graded_algebra 
 (λ (m : M), weighted_homogeneous_submodule R w m) := graded_algebra.of_alg_hom (λ (m : M), weighted_homogeneous_submodule R w m) (decompose'a R w) (sorry) (sorry) 
