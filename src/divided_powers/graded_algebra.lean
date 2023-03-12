@@ -150,7 +150,8 @@ begin
   rw dfinsupp.ext_iff,
   simp only [direct_sum.mk],
   intro i, 
-  dsimp,
+  simp only [add_monoid_hom.coe_mk, dfinsupp.mk_apply],
+  dsimp, 
   rw ← subtype.coe_inj,
   rw submodule.coe_add, 
   simp only [apply_dite coe, subtype.coe_mk, submodule.coe_zero, dite_eq_ite],
@@ -244,6 +245,28 @@ end,
 map_one'  := decompose'_map_one' R w, 
 map_zero' := decompose'_map_zero' R w,
 commutes' := sorry }
+
+/- Better approach : this will work! -/
+example : direct_sum.is_internal
+  (λ (i : M), (weighted_homogeneous_submodule R w i))
+  := 
+begin
+  classical,
+  split,
+  { -- injectivity
+    intros p q,
+    intro hpq,
+    rw mv_polynomial.ext_iff  at hpq, 
+    ext, 
+    specialize hpq m, 
+  rw [← direct_sum.sum_support_of _ p, ← direct_sum.sum_support_of _ q ] at hpq, 
+  simp only [map_sum, direct_sum.coe_add_monoid_hom_of, mv_polynomial.coeff_sum] at hpq,
+  by_cases hi : weighted_degree' w m = i,
+  rw [finset.sum_eq_single i, finset.sum_eq_single i] at hpq, 
+  exact hpq, 
+  }
+end
+
 
 def graded_polynomial_algebra : graded_algebra 
 (λ (m : M), weighted_homogeneous_submodule R w m) := graded_algebra.of_alg_hom (λ (m : M), weighted_homogeneous_submodule R w m) (decompose'a R w) (sorry) (sorry) 
