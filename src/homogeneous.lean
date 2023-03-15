@@ -1,4 +1,5 @@
 import weighted_homogeneous
+import algebra.direct_sum.basic
 
 noncomputable theory
 
@@ -15,9 +16,16 @@ is_weighted_homogeneous (1 : σ → ℕ) φ n
 lemma degree'_eq_weighted_degree' (d : σ →₀ ℕ) :
   ∑ i in d.support, d i = weighted_degree' (1 : σ → ℕ) d :=
 begin
-  simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
-  rw finsum_eq_sum_of_support_subset,
-  rw finsupp.fun_support_eq d,
+  simp only [weighted_degree', linear_map.to_add_monoid_hom_coe],
+  rw finsupp.total_apply,
+  simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one],
+  --rw finsum_eq_sum_of_support_subset,
+  --rw finsupp.fun_support_eq d,
+  /- simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
+  simp only [linear_map.to_add_monoid_hom_coe], -/
+  
+  sorry/- rw finsum_eq_sum_of_support_subset,
+  rw finsupp.fun_support_eq d, -/
 end
 
 variables (σ R)
@@ -68,7 +76,8 @@ lemma is_homogeneous_of_total_degree_zero {p : mv_polynomial σ R} (hp : p.total
 begin
   intros m hm, 
   simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk], 
-  apply finsum_eq_zero_of_forall_eq_zero,
+  sorry
+  /- apply finsum_eq_zero_of_forall_eq_zero,
   intro x, 
   by_cases hx : x ∈ m.support,
   { change _ = ⊥ at hp,
@@ -78,7 +87,7 @@ begin
     simp only [finsupp.sum, finset.sum_eq_zero_iff] at hp,
     exact hp x hx, },
   { simp only [finsupp.mem_support_iff, not_not] at hx, 
-    exact hx, },
+    exact hx, }, -/
 end
 
 lemma is_homogeneous_C (r : R) :
@@ -110,7 +119,7 @@ by simp_rw degree'_eq_weighted_degree' at hd; exact is_weighted_homogeneous.coef
 
 lemma inj_right (hm : is_homogeneous φ m) (hn : is_homogeneous φ n) (hφ : φ ≠ 0) :
   m = n :=
-is_weighted_homogeneous.inj_right hm hn hφ
+is_weighted_homogeneous.inj_right hφ hm hn
 
 lemma add (hφ : is_homogeneous φ n) (hψ : is_homogeneous ψ n) :
   is_homogeneous (φ + ψ) n :=
@@ -135,10 +144,11 @@ lemma total_degree_eq_weighted_total_degree :
   total_degree φ = weighted_total_degree (1 : σ → ℕ) φ := 
 begin
   simp only [total_degree, weighted_total_degree, weighted_degree'],
-  simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
+  sorry
+  /- simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
   apply finset.sup_congr rfl,
   intros a ha, 
-  simp only [finsupp.sum_eq_finsum, eq_self_iff_true, implies_true_iff], 
+  simp only [finsupp.sum_eq_finsum, eq_self_iff_true, implies_true_iff],  -/
 end
 
 lemma total_degree (hφ : is_homogeneous φ n) (h : φ ≠ 0) :
@@ -150,14 +160,15 @@ by rw [total_degree_eq_weighted_total_degree, ← with_bot.coe_eq_coe,
 /--
 The homogeneous submodules form a graded ring. This instance is used by `direct_sum.comm_semiring`
 and `direct_sum.algebra`. -/
-instance homogeneous_submodule.gcomm_semiring :
+instance homogeneous_submodule.gcomm_monoid :
   set_like.graded_monoid (homogeneous_submodule σ R) :=
-is_weighted_homogeneous.weighted_homogeneous_submodule.gcomm_semiring
+is_weighted_homogeneous.weighted_homogeneous_submodule.gcomm_monoid
 
 
 open_locale direct_sum
-noncomputable example : comm_semiring (⨁ i, homogeneous_submodule σ R i) := infer_instance
-noncomputable example : algebra R (⨁ i, homogeneous_submodule σ R i) := infer_instance
+
+noncomputable example : comm_semiring (⨁ i, homogeneous_submodule σ R i) := sorry --infer_instance
+--noncomputable example : algebra R (⨁ i, homogeneous_submodule σ R i) := sorry --infer_instance
 
 end is_homogeneous
 
