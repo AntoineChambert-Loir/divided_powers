@@ -10,7 +10,7 @@ import ring_theory.tensor_product
 
 import divided_powers.basic
 import divided_powers.ideal_add
-import ..weighted_homogeneous
+import ..weighted_homogeneous -- PR #17855
 
 noncomputable theory
 
@@ -305,13 +305,22 @@ begin
       intro h, exact hm h.symm, },
 
     -- second support condition
-    
-    
-    
-    sorry,
-     }, 
+    unfold direct_sum.of, 
+    simp only [mem_support_iff, not_not, dfinsupp.single_add_hom_apply, dfinsupp.single_eq_zero],
+    intro hv, simp_rw hv, 
+    simp only [map_zero, submodule.mk_eq_zero], }, 
   sorry
 end
+
+lemma not_mem_monomial_support (n : ℕ) (v : ℕ × M →₀ ℕ) (c : R) :
+v ∉ ((monomial v) c).support
+↔ c = 0  := 
+begin
+  classical,
+rw [mv_polynomial.not_mem_support_iff, mv_polynomial.coeff_monomial], 
+simp only [eq_self_iff_true, if_true], 
+end
+
 
 lemma decompose_rel' (a b : mv_polynomial (ℕ × M) R) (hab : ring_quot.rel (rel R M) a b) :
   decompose' R M a = decompose' R M b :=
