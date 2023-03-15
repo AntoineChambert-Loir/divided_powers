@@ -1,8 +1,8 @@
 [package]
 name = "divided_powers"
 version = "0.1"
-lean_version = "leanprover-community/lean:3.49.0"
+lean_version = "leanprover-community/lean:3.50.3"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "fd47bdf09e90f553519c712378e651975fe8c829"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "21e3562c5e12d846c7def5eff8cdbc520d7d4936"}
