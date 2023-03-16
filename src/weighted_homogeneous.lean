@@ -42,7 +42,7 @@ components.
 
 noncomputable theory
 
-open_locale classical big_operators
+open_locale big_operators
 
 open set function finset finsupp add_monoid_algebra
 
@@ -181,7 +181,7 @@ begin
 end
 
 /-- Monomials are weighted homogeneous. -/
-lemma is_weighted_homogeneous_monomial (w : σ → M) (d : σ →₀ ℕ) (r : R) {m : M}
+lemma is_weighted_homogeneous_monomial [decidable_eq σ] (w : σ → M) (d : σ →₀ ℕ) (r : R) {m : M}
   (hm : weighted_degree' w d = m) : is_weighted_homogeneous w (monomial d r) m :=
 begin
   intros c hc,
@@ -204,24 +204,24 @@ begin
 end
 
 /-- Constant polynomials are weighted homogeneous of degree 0. -/
-lemma is_weighted_homogeneous_C (w : σ → M) (r : R) :
+lemma is_weighted_homogeneous_C [decidable_eq σ] (w : σ → M) (r : R) :
   is_weighted_homogeneous w (C r : mv_polynomial σ R) 0 :=
 is_weighted_homogeneous_monomial _ _ _ (map_zero _)
 
 variables (R)
 
 /-- 0 is weighted homogeneous of any degree. -/
-lemma is_weighted_homogeneous_zero (w : σ → M) (m : M) :
+lemma is_weighted_homogeneous_zero [decidable_eq σ] (w : σ → M) (m : M) :
   is_weighted_homogeneous w (0 : mv_polynomial σ R) m :=
 (weighted_homogeneous_submodule R w m).zero_mem
 
 /-- 1 is weighted homogeneous of degree 0. -/
-lemma is_weighted_homogeneous_one (w : σ → M) :
+lemma is_weighted_homogeneous_one [decidable_eq σ] (w : σ → M) :
   is_weighted_homogeneous w (1 : mv_polynomial σ R) 0 :=
 is_weighted_homogeneous_C _ _
 
 /-- An indeterminate `i : σ` is weighted homogeneous of degree `w i`. -/
-lemma is_weighted_homogeneous_X (w : σ → M) (i : σ) :
+lemma is_weighted_homogeneous_X [decidable_eq σ] (w : σ → M) (i : σ) :
   is_weighted_homogeneous w (X i : mv_polynomial σ R) (w i) :=
 begin
   apply is_weighted_homogeneous_monomial,
@@ -265,12 +265,14 @@ weighted_homogeneous_submodule_mul w m n $ submodule.mul_mem_mul hφ hψ
 
 /-- A product of weighted homogeneous polynomials is weighted homogeneous, with weighted degree
   equal to the sum of the weighted degrees. -/
-lemma prod {ι : Type*} (s : finset ι) (φ : ι → mv_polynomial σ R) (n : ι → M) {w : σ → M} :
+lemma prod [decidable_eq σ] {ι : Type*} [decidable_eq ι] (s : finset ι) (φ : ι → mv_polynomial σ R) (n : ι → M) {w : σ → M} :
   (∀ i ∈ s, is_weighted_homogeneous w (φ i) (n i)) →
   is_weighted_homogeneous w (∏ i in s, φ i) (∑ i in s, n i) :=
 begin
   apply finset.induction_on s,
-  { intro, simp only [is_weighted_homogeneous_one, finset.sum_empty, finset.prod_empty] },
+  { intro, 
+    rw [finset.sum_empty, finset.prod_empty],
+    exact is_weighted_homogeneous_one R w, },
   { intros i s his IH h,
     simp only [his, finset.prod_insert, finset.sum_insert, not_false_iff],
     apply (h i (finset.mem_insert_self _ _)).mul (IH _),
@@ -294,7 +296,7 @@ begin
 end
 
 /-- The weighted homogeneous submodules form a graded monoid. -/
-instance weighted_homogeneous_submodule.gcomm_monoid {w : σ → M} :
+instance weighted_homogeneous_submodule.gcomm_monoid [decidable_eq σ] {w : σ → M} :
   set_like.graded_monoid (weighted_homogeneous_submodule R w) :=
 { one_mem := is_weighted_homogeneous_one R w,
   mul_mem := λ i j xi xj, is_weighted_homogeneous.mul }
@@ -315,19 +317,20 @@ section weighted_homogeneous_component
 
 variables {w : σ → M} (n : M) (φ ψ : mv_polynomial σ R)
 
-lemma coeff_weighted_homogeneous_component (d : σ →₀ ℕ) :
+
+lemma coeff_weighted_homogeneous_component [decidable_eq M] (d : σ →₀ ℕ) :
   coeff d (weighted_homogeneous_component w n φ) =
     if weighted_degree' w d = n then coeff d φ else 0 :=
 finsupp.filter_apply (λ d : σ →₀ ℕ, weighted_degree' w d = n) φ d
 
-lemma weighted_homogeneous_component_apply :
+lemma weighted_homogeneous_component_apply [decidable_eq M] :
   weighted_homogeneous_component w n φ =
   ∑ d in φ.support.filter (λ d, weighted_degree' w d = n), monomial d (coeff d φ) :=
 finsupp.filter_eq_sum (λ d : σ →₀ ℕ, weighted_degree' w d = n) φ
 
 /-- The `n` weighted homogeneous component of a polynomial is weighted homogeneous of
 weighted degree `n`. -/
-lemma weighted_homogeneous_component_is_weighted_homogeneous :
+lemma weighted_homogeneous_component_is_weighted_homogeneous [decidable_eq M] :
   (weighted_homogeneous_component w n φ).is_weighted_homogeneous w n :=
 begin
   intros d hd,
@@ -339,7 +342,7 @@ end
   weighted_homogeneous_component w n (C r * φ) = C r * weighted_homogeneous_component w n φ :=
 by simp only [C_mul', linear_map.map_smul]
 
-lemma weighted_homogeneous_component_eq_zero' (h : ∀ d : σ →₀ ℕ, d ∈ φ.support →
+lemma weighted_homogeneous_component_eq_zero' [decidable_eq M] (h : ∀ d : σ →₀ ℕ, d ∈ φ.support →
   weighted_degree' w d ≠ n) : weighted_homogeneous_component w n φ = 0 :=
 begin
   rw [weighted_homogeneous_component_apply, sum_eq_zero],
@@ -347,7 +350,7 @@ begin
   exfalso, exact h _ hd.1 hd.2
 end
 
-lemma weighted_homogeneous_component_eq_zero [semilattice_sup M] [order_bot M]
+lemma weighted_homogeneous_component_eq_zero [semilattice_sup M] [order_bot M] [decidable_eq M]
   (h : weighted_total_degree w φ < n) : weighted_homogeneous_component w n φ = 0 :=
 begin
   rw [weighted_homogeneous_component_apply, sum_eq_zero],
@@ -358,7 +361,7 @@ begin
   exact lt_of_le_of_lt (le_weighted_total_degree w hd.1) h,
 end
 
-lemma weighted_homogeneous_component_finsupp :
+lemma weighted_homogeneous_component_finsupp [decidable_eq M] :
   (function.support (λ m, weighted_homogeneous_component w m φ)).finite :=
 begin
   suffices : function.support (λ m, weighted_homogeneous_component w m φ) ⊆
@@ -374,10 +377,11 @@ end
 variable (w)
 
 /-- Every polynomial is the sum of its weighted homogeneous components. -/
-lemma sum_weighted_homogeneous_component :
+lemma sum_weighted_homogeneous_component [decidable_eq M] :
   finsum (λ m, weighted_homogeneous_component w m φ) = φ :=
 begin
-  rw finsum_eq_sum _ (weighted_homogeneous_component_finsupp φ),
+  rw finsum_eq_sum (λ (m : M), (weighted_homogeneous_component w m) φ)
+    (weighted_homogeneous_component_finsupp φ),
   ext1 d,
   simp only [coeff_sum, coeff_weighted_homogeneous_component],
   rw finset.sum_eq_single (weighted_degree' w d),
@@ -385,7 +389,7 @@ begin
   { intros m hm hm', rw if_neg hm'.symm, },
   { intro hm, rw if_pos rfl,
     simp only [finite.mem_to_finset, mem_support, ne.def, not_not] at hm,
-    have := coeff_weighted_homogeneous_component _ φ d,
+    have := coeff_weighted_homogeneous_component (_ :M) φ d,
     rw [hm, if_pos rfl, coeff_zero] at this,
     exact this.symm, },
 end
@@ -393,8 +397,8 @@ end
 variable {w}
 
 /-- The weighted homogeneous components of a weighted homogeneous polynomial. -/
-lemma weighted_homogeneous_component_weighted_homogeneous_polynomial (m n : M)
-  (p : mv_polynomial σ R) (h : p ∈ weighted_homogeneous_submodule R w n) :
+lemma weighted_homogeneous_component_weighted_homogeneous_polynomial [decidable_eq M]
+  (m n : M) (p : mv_polynomial σ R) (h : p ∈ weighted_homogeneous_submodule R w n) :
   weighted_homogeneous_component w m p = if m = n then p else 0 :=
 begin
   simp only [mem_weighted_homogeneous_submodule] at h,
@@ -420,7 +424,8 @@ variables [canonically_ordered_add_monoid M] {w : σ → M} (φ : mv_polynomial 
 
 /-- If `M` is a `canonically_ordered_add_monoid`, then the `weighted_homogeneous_component`
   of weighted degree `0` of a polynomial is its constant coefficient. -/
-@[simp] lemma weighted_homogeneous_component_zero [no_zero_smul_divisors ℕ M]
+@[simp] lemma weighted_homogeneous_component_zero 
+  [decidable_eq σ] [decidable_eq M] [no_zero_smul_divisors ℕ M]
   (hw : ∀ i : σ, w i ≠ 0) : weighted_homogeneous_component w 0 φ = C (coeff 0 φ) :=
 begin
   ext1 d,

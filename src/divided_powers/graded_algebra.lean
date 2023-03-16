@@ -46,107 +46,14 @@ def direct_sum.is_internal.graded_algebra (hM : direct_sum.is_internal M) :
   -- (coe_alg_iso_of_is_internal hM).left_inv,
   ..(infer_instance : set_like.graded_monoid M) }
 
-/- -- Original version
-
-section direct_sum
-/- Given an R-algebra A and a family (ι → submodule R A) of submodules
-parameterized by an additive monoid
-and statisfying `set_like.graded_monoid M` (essentially, is multiplicative)
-such that `direct_sum.is_internal M` (A is the direct sum of the M i),
-we endow A with the structure of a graded algebra. 
-The submodules are the *homogeneous* parts -/
-
-
-variables (R : Type*) [comm_semiring R] (A : Type*) [comm_semiring A] [algebra R A]
-variables (ι : Type*) [decidable_eq ι] 
-
-variables (M : ι → submodule R A) [add_monoid ι] [set_like.graded_monoid M]
-
-variables {R A ι M}
-
-def decompose_fun_of (hM : direct_sum.is_internal M) : 
-  A → direct_sum ι (λ (i : ι), ↥(M i)) := (function.bijective_iff_has_inverse.mp hM).some
-
-lemma decompose_fun_of_apply_iff (hM : direct_sum.is_internal M) (a : A) (b : direct_sum ι (λ (i : ι), ↥(M i))) : decompose_fun_of hM a = b ↔
-  a = direct_sum.coe_add_monoid_hom M b := 
-begin
-  have hMl : function.left_inverse (decompose_fun_of hM) ⇑(direct_sum.coe_add_monoid_hom M) := (function.bijective_iff_has_inverse.mp hM).some_spec.1,
-  have hMr : function.right_inverse (decompose_fun_of hM) ⇑(direct_sum.coe_add_monoid_hom M) := (function.bijective_iff_has_inverse.mp hM).some_spec.2,
-  split,
-  { intro hab, rw [← hab, hMr a], },
-  { intro hab, rw [hab, hMl b], }
-end
-
-def decompose_of (hM : direct_sum.is_internal M) : 
-  A →ₐ[R] direct_sum ι (λ (i : ι), ↥(M i)) := {
-to_fun    := decompose_fun_of hM, 
-map_one'  := 
-begin
-  rw decompose_fun_of_apply_iff, 
-  have : (direct_sum.of (λ (i : ι), ↥(M i)) 0) 1 = 1 := rfl,
-  simp only [← this,  direct_sum.coe_add_monoid_hom_of], 
-  refl,
-end,
-map_mul'  := λ a b, 
-begin
-  classical,
-  rw direct_sum.mul_eq_sum_support_ghas_mul,
-  rw decompose_fun_of_apply_iff, 
-  conv_lhs { rw (decompose_fun_of_apply_iff hM a _).mp rfl,
-    rw (decompose_fun_of_apply_iff hM b _).mp rfl,
-  rw ← direct_sum.sum_support_of (λ i, ↥(M i)) (decompose_fun_of hM a),  
-  rw ← direct_sum.sum_support_of (λ i, ↥(M i)) (decompose_fun_of hM b), },
-  rw map_sum, rw map_sum, 
-  rw finset.sum_mul_sum, 
-  rw map_sum,
-  apply congr_arg2, 
-  refl,
-  ext ⟨i,j⟩,
-  simp only [direct_sum.coe_add_monoid_hom_of, set_like.coe_ghas_mul],
-end,
-map_zero' := by rw [decompose_fun_of_apply_iff, map_zero],
-map_add'  := λ a b,
-begin
-  rw [decompose_fun_of_apply_iff, map_add],
-  apply congr_arg2 (+),
-  rw ← decompose_fun_of_apply_iff, rw ← decompose_fun_of_apply_iff,   
-end,
-commutes' := λ r, 
-begin
-  rw [decompose_fun_of_apply_iff, direct_sum.algebra_map_apply],
-  simp only [direct_sum.coe_add_monoid_hom_of, submodule.set_like.coe_galgebra_to_fun],
-end }
-
-def graded_algebra_of (hM : direct_sum.is_internal M): graded_algebra M := 
-graded_algebra.of_alg_hom M (decompose_of hM) (
-  begin
-    ext a, 
-    simp only [alg_hom.coe_comp, function.comp_app, alg_hom.coe_id, id.def],
-    apply symm,
-    suffices : a = (direct_sum.coe_add_monoid_hom M) ((decompose_fun_of hM) a),
-    exact this, 
-    rw ← (decompose_fun_of_apply_iff hM _ _),
-  end) (
-  begin
-    intros i x, 
-    suffices : (decompose_fun_of hM) ↑x = _,
-    exact this,
-    rw decompose_fun_of_apply_iff hM, 
-    rw direct_sum.coe_add_monoid_hom_of , 
-  end)
-
- -/
-
-
 
 end direct_sum
 
 
 section weighted_homogeneous
 
-/- Here, given a weight `w : σ → M`, where `M` is an additive and commutative monoid, we endow the ring of multivariate polynomials `mv_polynomial σ R` with the structure of a graded algebra -/
-
--- This does not work yet, but there are proofs below that (should) do the job, one just needs to put them in correct order
+/- Here, given a weight `w : σ → M`, where `M` is an additive and commutative monoid, we endow the
+  ring of multivariate polynomials `mv_polynomial σ R` with the structure of a graded algebra -/
 
 variables {R : Type*} [comm_semiring R] 
 variables {M : Type*} [add_comm_monoid M] [decidable_eq M]
@@ -221,21 +128,27 @@ begin
   exact hm, 
 end
 
-lemma direct_sum.finite_support
+lemma direct_sum.finite_support [decidable_eq σ] [decidable_eq R]
   (x : direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i))) :
   (function.support (λ (i : M), (x i : mv_polynomial σ R))).finite := 
+set.finite.subset (dfinsupp.support x : set M).to_finite (direct_sum.support_subset R w x)
+
+
+instance [decidable_eq σ] [decidable_eq R] :
+  Π (i : M) (x : ↥(weighted_homogeneous_submodule R w i)), decidable (x ≠ 0) :=
 begin
-  classical,
-  exact set.finite.subset (dfinsupp.support x : set M).to_finite (direct_sum.support_subset R w x),
+  intros m x,
+  rw [ne.def, ← set_like.coe_eq_coe], 
+  apply_instance,
 end
 
 -- Should we use dfinsupp.sum instead of finsum in our weighted_homogeneous file?
-lemma direct_sum.coe_add_monoid_hom_eq_finsum
-  (x : direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i))) : 
+lemma direct_sum.coe_add_monoid_hom_eq_finsum [decidable_eq σ] [decidable_eq R]
+  (x : direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i))) 
+  /- [h_dec : Π (i : M) (x : ↥(weighted_homogeneous_submodule R w i)), decidable (x ≠ 0)]  -/: 
   ((direct_sum.coe_add_monoid_hom (λ (i : M), weighted_homogeneous_submodule R w i)) x) = 
   finsum (λ m, x m) :=
 begin
-  classical,
   rw [direct_sum.coe_add_monoid_hom, direct_sum.to_add_monoid, dfinsupp.lift_add_hom_apply,
     dfinsupp.sum_add_hom_apply],
   simp_rw [add_submonoid_class.coe_subtype],
@@ -249,7 +162,7 @@ lemma weighted_homogeneous_component_weighted_homogeneous_polynomial' (m : M)
   (@weighted_homogeneous_component  R M _ _ _ w m) ↑x = x :=
 by rw [weighted_homogeneous_component_weighted_homogeneous_polynomial m m _ x.prop, if_pos rfl]
  
-lemma weighted_homogeneous_component_direct_sum
+lemma weighted_homogeneous_component_direct_sum [decidable_eq σ] [decidable_eq R]
   (x : direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i))) (m : M) : 
   (weighted_homogeneous_component w m) 
     ((direct_sum.coe_add_monoid_hom (λ (i : M), weighted_homogeneous_submodule R w i)) x) = x m :=
@@ -259,18 +172,28 @@ begin
     ← weighted_homogeneous_component_weighted_homogeneous_polynomial'],
   apply finsum_eq_single,
   intros n hn,
-  rw [weighted_homogeneous_component_weighted_homogeneous_polynomial m n _ (x n).prop, if_neg],
-  exact hn.symm,  -- Weird that I can't combine it with the previous line
+  rw [ne.def, eq_comm] at hn,
+  rw [weighted_homogeneous_component_weighted_homogeneous_polynomial m n _ (x n).prop, if_neg hn], 
 end
 
-def mv_polynomial_weighted_decomposition : 
+lemma direct_sum.coe_add_monoid_hom_eq_dfinsupp_sum [decidable_eq σ] [decidable_eq R]
+  (x : direct_sum M (λ (i : M), ↥(weighted_homogeneous_submodule R w i))) :
+  (direct_sum.coe_add_monoid_hom (λ (i : M), weighted_homogeneous_submodule R w i)) x = 
+    dfinsupp.sum x (λ (x : M), coe):=
+begin
+  rw [direct_sum.coe_add_monoid_hom, direct_sum.to_add_monoid, dfinsupp.lift_add_hom_apply,
+    dfinsupp.sum_add_hom_apply],
+  simp only [add_submonoid_class.coe_subtype],
+end
+
+def mv_polynomial_weighted_decomposition [decidable_eq σ] [decidable_eq R] : 
   direct_sum.decomposition (weighted_homogeneous_submodule R w) := 
 { decompose'  := decompose'_fun R w,
   left_inv    := λ φ,
   begin
-    classical,
     conv_rhs { rw [← sum_weighted_homogeneous_component w φ, 
-      finsum_eq_sum _ (weighted_homogeneous_component_finsupp φ)], },
+      finsum_eq_sum (λ (m : M), (weighted_homogeneous_component w m) φ)
+        (weighted_homogeneous_component_finsupp φ)], },
     rw ← direct_sum.sum_support_of (λ m, ↥(weighted_homogeneous_submodule R w m))
       (decompose'_fun R w φ),
     simp only [direct_sum.coe_add_monoid_hom_of, mv_polynomial.coeff_sum, map_sum],
@@ -302,40 +225,35 @@ def mv_polynomial_weighted_decomposition :
       simp only [subtype.coe_mk, hφ_def],
       ext,      
       apply congr_arg,
-      exact weighted_homogeneous_component_direct_sum _ _ _ _,
-    },
+      exact weighted_homogeneous_component_direct_sum _ _ _ _ },
     { rw direct_sum.mk_dif_neg _ _ hm,
       simp only [finset.mem_image, mem_support_iff, ne.def, exists_prop, not_exists,
         not_and', not_not] at hm,
       rw [← subtype.coe_inj, submodule.coe_zero, eq_comm, mv_polynomial.eq_zero_iff],
       intros d',
       by_cases hd' : (weighted_degree' w) d' = m,
-      { convert hm d' hd' using 1,
-        rw [hφ_def, direct_sum.coe_add_monoid_hom, direct_sum.to_add_monoid,
-          dfinsupp.lift_add_hom_apply,dfinsupp.sum_add_hom_apply, dfinsupp.sum],
-          -- It seems to me that there are some missing rw lemmas for direct_sum
-        simp only [add_submonoid_class.coe_subtype],
-        have hm' : m ∉ dfinsupp.support x → coeff d' (x m : mv_polynomial σ R) = 0,
+      { have hm' : m ∉ dfinsupp.support x → coeff d' (x m : mv_polynomial σ R) = 0,
         { intros h,
           simp only [dfinsupp.mem_support_to_fun, not_not] at h,
           rw h,
           simp only [submodule.coe_zero, coeff_zero] },
-        rw [coeff_sum, finset.sum_eq_single _ _ hm'],
+        convert hm d' hd' using 1,
+        rw [hφ_def, direct_sum.coe_add_monoid_hom_eq_dfinsupp_sum, dfinsupp.sum, coeff_sum, 
+          finset.sum_eq_single _ _ hm'],
         intros n hn hmn,
         rw [← weighted_homogeneous_component_weighted_homogeneous_polynomial',
-           coeff_weighted_homogeneous_component, if_neg],
-        rw hd', --weird
+          coeff_weighted_homogeneous_component, if_neg],
+        rw hd',
         exact hmn.symm },
       { rw [← weighted_homogeneous_component_weighted_homogeneous_polynomial',
-          coeff_weighted_homogeneous_component, if_neg],
-        exact hd',  /- Same comment as above -/}}, 
+          coeff_weighted_homogeneous_component, if_neg hd'], }}, 
   end }
-
-#exit
 
 end mv_polynomial
 
 end weighted_homogeneous
+
+#exit --Unused draft below
 
 
 /- import algebra.free_algebra
@@ -479,7 +397,7 @@ def decompose'_fun : mv_polynomial σ R → direct_sum M (λ (i : M), ↥(weight
   (λ (i : M), ↥(weighted_homogeneous_submodule R w i))
   (finset.image (weighted_degree' w) φ.support)
   (λ m, ⟨weighted_homogeneous_component w m φ, weighted_homogeneous_component_mem w φ m⟩)
-
+fintype
 lemma decompose'_fun_coe_apply (φ : mv_polynomial σ R) (m : M) : (decompose'_fun R w φ m : mv_polynomial σ R) = weighted_homogeneous_component w m φ := 
 begin
   simp only [decompose'_fun],
