@@ -15,18 +15,7 @@ is_weighted_homogeneous (1 : σ → ℕ) φ n
 
 lemma degree'_eq_weighted_degree' (d : σ →₀ ℕ) :
   ∑ i in d.support, d i = weighted_degree' (1 : σ → ℕ) d :=
-begin
-  simp only [weighted_degree', linear_map.to_add_monoid_hom_coe],
-  rw finsupp.total_apply,
-  simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one],
-  --rw finsum_eq_sum_of_support_subset,
-  --rw finsupp.fun_support_eq d,
-  /- simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
-  simp only [linear_map.to_add_monoid_hom_coe], -/
-  
-  sorry/- rw finsum_eq_sum_of_support_subset,
-  rw finsupp.fun_support_eq d, -/
-end
+by simp [weighted_degree', finsupp.total, finsupp.sum]
 
 variables (σ R)
 
@@ -61,7 +50,7 @@ variables [comm_semiring R]
 
 variables {σ R}
 
-lemma is_homogeneous_monomial (d : σ →₀ ℕ) (r : R) (n : ℕ) (hn : ∑ i in d.support, d i = n) :
+lemma is_homogeneous_monomial [decidable_eq σ] (d : σ →₀ ℕ) (r : R) (n : ℕ) (hn : ∑ i in d.support, d i = n) :
   is_homogeneous (monomial d r) n :=
 begin
   simp_rw degree'_eq_weighted_degree' at hn,
@@ -75,36 +64,37 @@ lemma is_homogeneous_of_total_degree_zero {p : mv_polynomial σ R} (hp : p.total
   is_homogeneous p 0 :=
 begin
   intros m hm, 
-  simp only [weighted_degree', pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk], 
-  sorry
-  /- apply finsum_eq_zero_of_forall_eq_zero,
+  simp only [weighted_degree', finsupp.total, finsupp.sum, pi.one_apply, linear_map.to_add_monoid_hom_coe, finsupp.coe_lsum,
+  linear_map.coe_smul_right, linear_map.id_coe, id.def, algebra.id.smul_eq_mul, mul_one, finset.sum_eq_zero_iff,
+  finsupp.mem_support_iff, not_imp_self], 
   intro x, 
-  by_cases hx : x ∈ m.support,
-  { change _ = ⊥ at hp,
-    simp_rw [total_degree, finset.sup_eq_bot_iff, mem_support_iff] at hp, 
+  by_cases hx : x ∈ m.support, 
+  { rw ← mem_support_iff at hm,  
+    change _ = ⊥ at hp,
+    rw [total_degree, finset.sup_eq_bot_iff] at hp, 
     specialize hp m hm, 
     change _ = 0 at hp, 
     simp only [finsupp.sum, finset.sum_eq_zero_iff] at hp,
     exact hp x hx, },
   { simp only [finsupp.mem_support_iff, not_not] at hx, 
-    exact hx, }, -/
+    exact hx, }, 
 end
 
-lemma is_homogeneous_C (r : R) :
+lemma is_homogeneous_C [decidable_eq σ] (r : R) :
   is_homogeneous (C r : mv_polynomial σ R) 0 :=
 is_weighted_homogeneous_C (1 : σ → ℕ) r
 
 variables (σ R)
 
-lemma is_homogeneous_zero (n : ℕ) : is_homogeneous (0 : mv_polynomial σ R) n :=
+lemma is_homogeneous_zero [decidable_eq σ] (n : ℕ) : is_homogeneous (0 : mv_polynomial σ R) n :=
 is_weighted_homogeneous_zero R (1 : σ → ℕ) n
 
-lemma is_homogeneous_one : is_homogeneous (1 : mv_polynomial σ R) 0 :=
+lemma is_homogeneous_one [decidable_eq σ] : is_homogeneous (1 : mv_polynomial σ R) 0 :=
 is_weighted_homogeneous_one R (1 : σ → ℕ)
 
 variables {σ} (R)
 
-lemma is_homogeneous_X (i : σ) :
+lemma is_homogeneous_X [decidable_eq σ] (i : σ) :
   is_homogeneous (X i : mv_polynomial σ R) 1 :=
 is_weighted_homogeneous_X R (1 : σ → ℕ) i
 
@@ -134,7 +124,7 @@ lemma mul (hφ : is_homogeneous φ m) (hψ : is_homogeneous ψ n) :
   is_homogeneous (φ * ψ) (m + n) :=
 is_weighted_homogeneous.mul hφ hψ
 
-lemma prod {ι : Type*} (s : finset ι) (φ : ι → mv_polynomial σ R) (n : ι → ℕ)
+lemma prod [decidable_eq σ] {ι : Type*} [decidable_eq ι] (s : finset ι) (φ : ι → mv_polynomial σ R) (n : ι → ℕ)
   (h : ∀ i ∈ s, is_homogeneous (φ i) (n i)) :
   is_homogeneous (∏ i in s, φ i) (∑ i in s, n i) :=
 is_weighted_homogeneous.prod s φ n h
@@ -143,12 +133,11 @@ is_weighted_homogeneous.prod s φ n h
 lemma total_degree_eq_weighted_total_degree :
   total_degree φ = weighted_total_degree (1 : σ → ℕ) φ := 
 begin
-  simp only [total_degree, weighted_total_degree, weighted_degree'],
-  sorry
-  /- simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one, add_monoid_hom.coe_mk],
-  apply finset.sup_congr rfl,
+  rw [total_degree, weighted_total_degree, weighted_degree'],
+  apply finset.sup_congr rfl, 
   intros a ha, 
-  simp only [finsupp.sum_eq_finsum, eq_self_iff_true, implies_true_iff],  -/
+  simp only [finsupp.total, pi.one_apply, linear_map.to_add_monoid_hom_coe, finsupp.coe_lsum, linear_map.coe_smul_right,
+  linear_map.id_coe, id.def, algebra.id.smul_eq_mul, mul_one], 
 end
 
 lemma total_degree (hφ : is_homogeneous φ n) (h : φ ≠ 0) :
@@ -160,7 +149,7 @@ by rw [total_degree_eq_weighted_total_degree, ← with_bot.coe_eq_coe,
 /--
 The homogeneous submodules form a graded ring. This instance is used by `direct_sum.comm_semiring`
 and `direct_sum.algebra`. -/
-instance homogeneous_submodule.gcomm_monoid :
+instance homogeneous_submodule.gcomm_monoid [decidable_eq σ] :
   set_like.graded_monoid (homogeneous_submodule σ R) :=
 is_weighted_homogeneous.weighted_homogeneous_submodule.gcomm_monoid
 

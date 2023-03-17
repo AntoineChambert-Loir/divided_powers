@@ -361,6 +361,7 @@ begin
   exact lt_of_le_of_lt (le_weighted_total_degree w hd.1) h,
 end
 
+variable (w)
 lemma weighted_homogeneous_component_finsupp [decidable_eq M] :
   (function.support (λ m, weighted_homogeneous_component w m φ)).finite :=
 begin
@@ -378,11 +379,9 @@ variable (w)
 
 /-- Every polynomial is the sum of its weighted homogeneous components. -/
 lemma sum_weighted_homogeneous_component [decidable_eq M] :
-  finsum (λ m, weighted_homogeneous_component w m φ) = φ :=
+  (weighted_homogeneous_component_finsupp w φ).to_finset.sum (λ m, weighted_homogeneous_component w m φ) = φ :=
 begin
-  rw finsum_eq_sum (λ (m : M), (weighted_homogeneous_component w m) φ)
-    (weighted_homogeneous_component_finsupp φ),
-  ext1 d,
+   ext1 d,
   simp only [coeff_sum, coeff_weighted_homogeneous_component],
   rw finset.sum_eq_single (weighted_degree' w d),
   { rw if_pos rfl, },
@@ -394,6 +393,10 @@ begin
     exact this.symm, },
 end
 
+lemma finsum_weighted_homogeneous_component [decidable_eq M] :
+ finsum (λ m, weighted_homogeneous_component w m φ) = φ :=
+by rw [finsum_eq_sum _ (weighted_homogeneous_component_finsupp w φ), sum_weighted_homogeneous_component]
+ 
 variable {w}
 
 /-- The weighted homogeneous components of a weighted homogeneous polynomial. -/
