@@ -404,22 +404,42 @@ by rw [finsum_eq_sum _ (weighted_homogeneous_component_finsupp w φ), sum_weight
  
 variable {w}
 
-/-- The weighted homogeneous components of a weighted homogeneous polynomial. -/
-lemma weighted_homogeneous_component_weighted_homogeneous_polynomial [decidable_eq M]
-  (m n : M) (p : mv_polynomial σ R) (h : p ∈ weighted_homogeneous_submodule R w n) :
-  weighted_homogeneous_component R w m p = if m = n then p else 0 :=
+lemma weighted_homogeneous_component_of_weighted_homogeneous_polynomial_same 
+  [decidable_eq M] (m : M) (p : mv_polynomial σ R) (hp : is_weighted_homogeneous w p m) :
+  weighted_homogeneous_component R w m p = p :=
 begin
-  simp only [mem_weighted_homogeneous_submodule] at h,
-  ext x,
+  ext x, 
   rw coeff_weighted_homogeneous_component,
   by_cases zero_coeff : coeff x p = 0,
   { split_ifs,
-    all_goals { simp only [zero_coeff, coeff_zero], }, },
-  { rw h zero_coeff,
-    simp only [show n = m ↔ m = n, from eq_comm],
-    split_ifs with h1,
-    { refl },
-    { simp only [coeff_zero] } }
+    refl, rw zero_coeff, },
+  { rw [hp zero_coeff, if_pos], refl, }
+end
+
+lemma weighted_homogeneous_component_of_weighted_homogeneous_polynomial_other 
+  [decidable_eq M] 
+  (m n : M) (p : mv_polynomial σ R) (hp : is_weighted_homogeneous w p m) :
+  n ≠ m → weighted_homogeneous_component R w n p = 0 :=
+begin
+  intro hn,
+  ext x, 
+  rw coeff_weighted_homogeneous_component,
+  by_cases zero_coeff : coeff x p = 0,
+  { split_ifs,
+    rw zero_coeff, rw coeff_zero, rw coeff_zero, },
+  { rw if_neg, rw coeff_zero, rw hp zero_coeff, exact ne.symm hn, }
+end
+
+/-- The weighted homogeneous components of a weighted homogeneous polynomial. -/
+lemma weighted_homogeneous_component_weighted_homogeneous_polynomial [decidable_eq M]
+  (m n : M) (p : mv_polynomial σ R) (hp : p ∈ weighted_homogeneous_submodule R w n) :
+  weighted_homogeneous_component R w m p = if m = n then p else 0 :=
+begin
+  rw mem_weighted_homogeneous_submodule at hp,
+  split_ifs,
+  rw [h],
+  exact weighted_homogeneous_component_of_weighted_homogeneous_polynomial_same n p hp,
+  exact weighted_homogeneous_component_of_weighted_homogeneous_polynomial_other n m p hp h,
 end
 
 end weighted_homogeneous_component
