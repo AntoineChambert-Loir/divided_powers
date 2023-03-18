@@ -58,8 +58,12 @@ variables [add_comm_monoid M]
 
 /-- The `weighted degree'` of the finitely supported function `s : σ →₀ ℕ` is the sum
   `∑(s i)•(w i)`. -/
-def weighted_degree' (w : σ → M) : (σ →₀ ℕ) →+ M :=
+
+/- def weighted_degree' (w : σ → M) : (σ →₀ ℕ) →+ M :=
 (finsupp.total σ M ℕ w).to_add_monoid_hom
+-/
+
+def weighted_degree' (w : σ → M) : (σ →₀ ℕ) →ₗ[ℕ] M := (finsupp.total σ M ℕ w)
 
 section semilattice_sup
 variable [semilattice_sup M]
@@ -225,7 +229,7 @@ lemma is_weighted_homogeneous_X [decidable_eq σ] (w : σ → M) (i : σ) :
   is_weighted_homogeneous w (X i : mv_polynomial σ R) (w i) :=
 begin
   apply is_weighted_homogeneous_monomial,
-  simp only [weighted_degree', linear_map.to_add_monoid_hom_coe, total_single, one_nsmul],
+  simp only [weighted_degree', add_monoid_hom.coe_coe, total_single, one_nsmul],
 end
 
 namespace is_weighted_homogeneous
@@ -425,24 +429,84 @@ section canonically_ordered_add_monoid
 
 variables [canonically_ordered_add_monoid M] {w : σ → M} (φ : mv_polynomial σ R)
 
-/-- If `M` is a `canonically_ordered_add_monoid`, then the `weighted_homogeneous_component`
-  of weighted degree `0` of a polynomial is its constant coefficient. -/
+def non_trivial_weight (w : σ → M) := ∀ n x, n • (w x) = 0 → n = 0
+
+lemma non_trivial_weight_of [no_zero_smul_divisors ℕ M] (hw : ∀ i : σ, w i ≠ 0) :
+  non_trivial_weight w :=
+begin
+  intros n x, rw smul_eq_zero, 
+  intro hnx, 
+  cases hnx with hn hx, 
+  exact hn,
+  exfalso, exact hw x hx,
+end
+
+/-- If `M` is a `canonically_ordered_add_monoid`, 
+  then the `weighted_homogeneous_component` of weighted degree `0` 
+  of a polynomial is its constant coefficient. -/
 @[simp] lemma weighted_homogeneous_component_zero 
-  [decidable_eq σ] [decidable_eq M] [no_zero_smul_divisors ℕ M]
-  (hw : ∀ i : σ, w i ≠ 0) : weighted_homogeneous_component w 0 φ = C (coeff 0 φ) :=
+  [decidable_eq σ] [decidable_eq M] (hw : non_trivial_weight w) : 
+  weighted_homogeneous_component w 0 φ = C (coeff 0 φ) :=
 begin
   ext1 d,
   rcases em (d = 0) with (rfl|hd),
   { simp only [coeff_weighted_homogeneous_component, if_pos, map_zero, coeff_zero_C] },
   { rw [coeff_weighted_homogeneous_component, if_neg, coeff_C, if_neg (ne.symm hd)],
-    simp only [weighted_degree', linear_map.to_add_monoid_hom_coe, finsupp.total_apply,
-      finsupp.sum, sum_eq_zero_iff, finsupp.mem_support_iff, ne.def, smul_eq_zero,
-      not_forall, not_or_distrib, and_self_left, exists_prop],
-    simp only [finsupp.ext_iff, finsupp.coe_zero, pi.zero_apply, not_forall] at hd,
-    obtain ⟨i, hi⟩ := hd,
-    exact ⟨i, hi, hw i⟩ }
+    rw [weighted_degree', finsupp.total_apply, finsupp.sum, sum_eq_zero_iff],
+    intro h,
+    apply hd, 
+    ext x, simp only [finsupp.coe_zero, pi.zero_apply], 
+    specialize h x, 
+    by_contradiction hx, 
+    rw finsupp.mem_support_iff at h,
+    exact hx (hw (d x) x (h hx)), }
 end
 
 end canonically_ordered_add_monoid
+
+section canonically_linear_ordered_monoid
+
+variables [canonically_linear_ordered_add_monoid M] 
+  {w : σ → M} (φ : mv_polynomial σ R)
+
+lemma weighted_degree'_eq_zero_iff (hw : non_trivial_weight w) (m : σ →₀ ℕ) : 
+  weighted_degree' w m = 0 ↔ ∀ (x : σ), m x = 0 :=
+begin
+  rw [weighted_degree', finsupp.total],
+  simp only [coe_lsum, linear_map.coe_smul_right, linear_map.id_coe, id.def, bot_eq_zero'], 
+  rw [finsupp.sum, finset.sum_eq_zero_iff],
+  apply forall_congr, intro x,
+  rw finsupp.mem_support_iff, 
+  split, 
+  intro hx, 
+  by_contradiction hx', apply hx', 
+  exact hw _ _ (hx hx'), 
+  intros hax hax', simp only [hax, zero_smul],
+end
+
+lemma is_weighted_homogeneous_of_total_weighted_degree_zero_iff {p : mv_polynomial σ R} : 
+  p.weighted_total_degree w = 0 ↔ is_weighted_homogeneous w p 0 :=
+begin
+  rw [weighted_total_degree, ← bot_eq_zero, finset.sup_eq_bot_iff, bot_eq_zero], 
+  rw [is_weighted_homogeneous],
+  apply forall_congr, intro m,
+  rw mem_support_iff, 
+end
+
+lemma weighted_total_degree_eq_zero_iff 
+  (hw : non_trivial_weight w)
+  (p : mv_polynomial σ R) :
+  p.weighted_total_degree w = 0
+  ↔ ∀ (m : σ →₀ ℕ) (hm : m ∈ p.support) (x : σ), m x = ⊥ :=
+begin
+  rw is_weighted_homogeneous_of_total_weighted_degree_zero_iff, 
+  rw is_weighted_homogeneous,
+  apply forall_congr, intro m,
+  rw [mem_support_iff, bot_eq_zero],
+  apply forall_congr, intro hm, 
+  exact weighted_degree'_eq_zero_iff hw m, 
+end
+
+end canonically_linear_ordered_monoid
 
 end mv_polynomial

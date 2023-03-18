@@ -1,38 +1,49 @@
 import weighted_homogeneous
 import algebra.direct_sum.basic
+import algebra.direct_sum.ring
+import algebra.direct_sum.internal
+
 
 noncomputable theory
 
 open_locale big_operators
 
 namespace mv_polynomial
-variables {σ : Type*} {τ : Type*} {R : Type*} {S : Type*}
-
-/-- A multivariate polynomial `φ` is homogeneous of degree `n`
-if all monomials occuring in `φ` have degree `n`. -/
-def is_homogeneous [comm_semiring R] (φ : mv_polynomial σ R) (n : ℕ) :=
-is_weighted_homogeneous (1 : σ → ℕ) φ n
-
+variables {σ : Type*} {τ : Type*} {R : Type*} [comm_semiring R] {S : Type*}
+  
 lemma degree'_eq_weighted_degree' (d : σ →₀ ℕ) :
   ∑ i in d.support, d i = weighted_degree' (1 : σ → ℕ) d :=
 by simp [weighted_degree', finsupp.total, finsupp.sum]
 
-variables (σ R)
+lemma unit_weight_is_non_trivial_weight : non_trivial_weight (1 : σ → ℕ) := 
+  non_trivial_weight_of (λ x : σ, one_ne_zero)
+
+/-- A multivariate polynomial `φ` is homogeneous of degree `n`
+if all monomials occuring in `φ` have degree `n`. -/
+def is_homogeneous (φ : mv_polynomial σ R) (n : ℕ) :=
+is_weighted_homogeneous (1 : σ → ℕ) φ n
+
+variables (σ R) 
+
+lemma total_degree_eq_weighted_total_degree (φ : mv_polynomial σ R) :
+  φ.total_degree = weighted_total_degree (1 : σ → ℕ) φ := 
+by simp only [total_degree, weighted_total_degree, weighted_degree', 
+  finsupp.total, pi.one_apply, finsupp.coe_lsum, linear_map.coe_smul_right, 
+  linear_map.id_coe, id.def, algebra.id.smul_eq_mul, mul_one]
 
 /-- The submodule of homogeneous `mv_polynomial`s of degree `n`. -/
-def homogeneous_submodule [comm_semiring R] (n : ℕ) :
-  submodule R (mv_polynomial σ R) :=
+def homogeneous_submodule (n : ℕ) : submodule R (mv_polynomial σ R) :=
 weighted_homogeneous_submodule R (1 : σ → ℕ) n
 
 variables {σ R}
 
-@[simp] lemma mem_homogeneous_submodule [comm_semiring R] (n : ℕ) (p : mv_polynomial σ R) :
+@[simp] lemma mem_homogeneous_submodule (n : ℕ) (p : mv_polynomial σ R) :
   p ∈ homogeneous_submodule σ R n ↔ p.is_homogeneous n := iff.rfl
 
 variables (σ R)
 
 /-- While equal, the former has a convenient definitional reduction. -/
-lemma homogeneous_submodule_eq_finsupp_supported [comm_semiring R] (n : ℕ) :
+lemma homogeneous_submodule_eq_finsupp_supported (n : ℕ) :
   homogeneous_submodule σ R n = finsupp.supported _ R {d | ∑ i in d.support, d i = n} :=
 begin
   simp_rw degree'_eq_weighted_degree',
@@ -41,12 +52,11 @@ end
 
 variables {σ R}
 
-lemma homogeneous_submodule_mul [comm_semiring R] (m n : ℕ) :
+lemma homogeneous_submodule_mul (m n : ℕ) :
   homogeneous_submodule σ R m * homogeneous_submodule σ R n ≤ homogeneous_submodule σ R (m + n) :=
 weighted_homogeneous_submodule_mul (1 : σ → ℕ) m n
 
 section
-variables [comm_semiring R]
 
 variables {σ R}
 
@@ -59,26 +69,36 @@ end
 
 variables (σ) {R}
 
--- much longer than the initial two lines…
-lemma is_homogeneous_of_total_degree_zero {p : mv_polynomial σ R} (hp : p.total_degree = 0) :
-  is_homogeneous p 0 :=
+lemma total_degree_eq_zero_iff 
+  (p : mv_polynomial σ R) :
+  p.total_degree = 0
+  ↔ ∀ (m : σ →₀ ℕ) (hm : m ∈ p.support) (x : σ), m x = 0 :=
 begin
-  intros m hm, 
-  simp only [weighted_degree', finsupp.total, finsupp.sum, pi.one_apply, linear_map.to_add_monoid_hom_coe, finsupp.coe_lsum,
-  linear_map.coe_smul_right, linear_map.id_coe, id.def, algebra.id.smul_eq_mul, mul_one, finset.sum_eq_zero_iff,
-  finsupp.mem_support_iff, not_imp_self], 
-  intro x, 
-  by_cases hx : x ∈ m.support, 
-  { rw ← mem_support_iff at hm,  
-    change _ = ⊥ at hp,
-    rw [total_degree, finset.sup_eq_bot_iff] at hp, 
-    specialize hp m hm, 
-    change _ = 0 at hp, 
-    simp only [finsupp.sum, finset.sum_eq_zero_iff] at hp,
-    exact hp x hx, },
-  { simp only [finsupp.mem_support_iff, not_not] at hx, 
-    exact hx, }, 
+  rw [total_degree_eq_weighted_total_degree, 
+    weighted_total_degree_eq_zero_iff _ p, bot_eq_zero],
+  intros n x, 
+  simp only [pi.one_apply, algebra.id.smul_eq_mul, mul_one, imp_self],
 end
+
+  /- 
+begin
+  rw [total_degree, ← bot_eq_zero, finset.sup_eq_bot_iff, bot_eq_zero], 
+  apply forall_congr, intro a, 
+  apply forall_congr, intro hap,
+  simp only [finsupp.sum, finset.sum_eq_zero_iff, finsupp.mem_support_iff],
+  apply forall_congr, 
+  intro x, 
+  simp only [not_imp_self],
+end
+ -/
+
+lemma is_homogeneous_of_total_degree_zero_iff {p : mv_polynomial σ R} : 
+  p.total_degree = 0 ↔ is_homogeneous p 0 :=
+by rw [total_degree_eq_weighted_total_degree,
+  is_weighted_homogeneous_of_total_weighted_degree_zero_iff, is_homogeneous]
+
+lemma is_homogeneous_of_total_degree_zero {p : mv_polynomial σ R} 
+  (hp : p.total_degree = 0) : is_homogeneous p 0  := (is_homogeneous_of_total_degree_zero_iff σ).mp hp
 
 lemma is_homogeneous_C [decidable_eq σ] (r : R) :
   is_homogeneous (C r : mv_polynomial σ R) 0 :=
@@ -101,7 +121,7 @@ is_weighted_homogeneous_X R (1 : σ → ℕ) i
 end
 
 namespace is_homogeneous
-variables [comm_semiring R] {φ ψ : mv_polynomial σ R} {m n : ℕ}
+variables {φ ψ : mv_polynomial σ R} {m n : ℕ}
 
 lemma coeff_eq_zero (hφ : is_homogeneous φ n) (d : σ →₀ ℕ) (hd : ∑ i in d.support, d i ≠ n) :
   coeff d φ = 0 :=
@@ -146,9 +166,8 @@ by rw [total_degree_eq_weighted_total_degree, ← with_bot.coe_eq_coe,
     ← weighted_total_degree_coe _ φ h, 
     is_weighted_homogeneous.weighted_total_degree hφ h]
 
-/--
-The homogeneous submodules form a graded ring. This instance is used by `direct_sum.comm_semiring`
-and `direct_sum.algebra`. -/
+/-- The homogeneous submodules form a graded ring. 
+This instance is used by `direct_sum.comm_semiring` and `direct_sum.algebra`. -/
 instance homogeneous_submodule.gcomm_monoid [decidable_eq σ] :
   set_like.graded_monoid (homogeneous_submodule σ R) :=
 is_weighted_homogeneous.weighted_homogeneous_submodule.gcomm_monoid
@@ -156,26 +175,37 @@ is_weighted_homogeneous.weighted_homogeneous_submodule.gcomm_monoid
 
 open_locale direct_sum
 
-noncomputable example : comm_semiring (⨁ i, homogeneous_submodule σ R i) := sorry --infer_instance
+/- 
+noncomputable example : 
+  direct_sum.gcomm_semiring [decidable_eq σ] (λ i, homogeneous_submodule σ R i) := 
+begin
+-- apply direct_sum.comm_semiring , 
+  haveI : set_like.graded_monoid (λ (i : ℕ), homogeneous_submodule σ R i),
+  apply is_weighted_homogeneous.weighted_homogeneous_submodule.gcomm_monoid, 
+apply set_like.gcomm_semiring, 
+sorry,
+end
+-/
+
 --noncomputable example : algebra R (⨁ i, homogeneous_submodule σ R i) := sorry --infer_instance
 
 end is_homogeneous
 
 section
 noncomputable theory
-open_locale classical
+-- open_locale classical
 open finset
 
 /-- `homogeneous_component n φ` is the part of `φ` that is homogeneous of degree `n`.
 See `sum_homogeneous_component` for the statement that `φ` is equal to the sum
 of all its homogeneous components. -/
-def homogeneous_component [comm_semiring R] (n : ℕ) :
+def homogeneous_component (n : ℕ) :
   mv_polynomial σ R →ₗ[R] mv_polynomial σ R :=
 weighted_homogeneous_component (1 : σ → ℕ) n
 
 section homogeneous_component
 open finset
-variables [comm_semiring R] (n : ℕ) (φ ψ : mv_polynomial σ R)
+variables (n : ℕ) (φ ψ : mv_polynomial σ R)
 
 lemma coeff_homogeneous_component (d : σ →₀ ℕ) :
   coeff d (homogeneous_component n φ) = if ∑ i in d.support, d i = n then coeff d φ else 0 :=
@@ -197,8 +227,9 @@ lemma homogeneous_component_is_homogeneous :
 weighted_homogeneous_component_is_weighted_homogeneous n φ
 
 @[simp]
-lemma homogeneous_component_zero : homogeneous_component 0 φ = C (coeff 0 φ) :=
-weighted_homogeneous_component_zero φ (λ x : σ, one_ne_zero)
+lemma homogeneous_component_zero [decidable_eq σ] : 
+  homogeneous_component 0 φ = C (coeff 0 φ) :=
+weighted_homogeneous_component_zero φ unit_weight_is_non_trivial_weight
 
 @[simp]
 lemma homogeneous_component_C_mul (n : ℕ) (r : R) :
