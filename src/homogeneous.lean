@@ -196,26 +196,29 @@ noncomputable theory
 -- open_locale classical
 open finset
 
+variable (R)
 /-- `homogeneous_component n φ` is the part of `φ` that is homogeneous of degree `n`.
 See `sum_homogeneous_component` for the statement that `φ` is equal to the sum
 of all its homogeneous components. -/
 def homogeneous_component (n : ℕ) :
   mv_polynomial σ R →ₗ[R] mv_polynomial σ R :=
-weighted_homogeneous_component (1 : σ → ℕ) n
+weighted_homogeneous_component R (1 : σ → ℕ) n
+
+variable {R}
 
 section homogeneous_component
 open finset
 variables (n : ℕ) (φ ψ : mv_polynomial σ R)
 
 lemma coeff_homogeneous_component (d : σ →₀ ℕ) :
-  coeff d (homogeneous_component n φ) = if ∑ i in d.support, d i = n then coeff d φ else 0 :=
+  coeff d (homogeneous_component R n φ) = if ∑ i in d.support, d i = n then coeff d φ else 0 :=
 begin
   simp_rw degree'_eq_weighted_degree',
   convert coeff_weighted_homogeneous_component n φ d,
 end
 
 lemma homogeneous_component_apply :
-  homogeneous_component n φ =
+  homogeneous_component R n φ =
   ∑ d in φ.support.filter (λ d, ∑ i in d.support, d i = n), monomial d (coeff d φ) :=
 begin
   simp_rw degree'_eq_weighted_degree',
@@ -223,21 +226,21 @@ begin
 end
 
 lemma homogeneous_component_is_homogeneous :
-  (homogeneous_component n φ).is_homogeneous n :=
+  (homogeneous_component R n φ).is_homogeneous n :=
 weighted_homogeneous_component_is_weighted_homogeneous n φ
 
 @[simp]
 lemma homogeneous_component_zero [decidable_eq σ] : 
-  homogeneous_component 0 φ = C (coeff 0 φ) :=
+  homogeneous_component R 0 φ = C (coeff 0 φ) :=
 weighted_homogeneous_component_zero φ unit_weight_is_non_trivial_weight
 
 @[simp]
 lemma homogeneous_component_C_mul (n : ℕ) (r : R) :
-  homogeneous_component n (C r * φ) = C r * homogeneous_component n φ :=
+  homogeneous_component R n (C r * φ) = C r * homogeneous_component R n φ :=
 weighted_homogeneous_component_C_mul φ n r
 
 lemma homogeneous_component_eq_zero' (h : ∀ d : σ →₀ ℕ, d ∈ φ.support → ∑ i in d.support, d i ≠ n) :
-  homogeneous_component n φ = 0 :=
+  homogeneous_component R n φ = 0 :=
 begin
   simp_rw degree'_eq_weighted_degree' at h,
   exact weighted_homogeneous_component_eq_zero' n φ h,
@@ -245,7 +248,7 @@ end
 
 --TODO: change proof when `weighted_total_degree` exists.
 lemma homogeneous_component_eq_zero (h : φ.total_degree < n) :
-  homogeneous_component n φ = 0 :=
+  homogeneous_component R n φ = 0 :=
 begin
   apply homogeneous_component_eq_zero',
   rw [total_degree, finset.sup_lt_iff] at h,
@@ -255,7 +258,7 @@ end
 
 --TODO: change proof when `weighted_total_degree` exists.
 lemma sum_homogeneous_component :
-  ∑ i in range (φ.total_degree + 1), homogeneous_component i φ = φ :=
+  ∑ i in range (φ.total_degree + 1), homogeneous_component R i φ = φ :=
 begin
   ext1 d,
   suffices : φ.total_degree < d.support.sum d → 0 = coeff d φ,
@@ -265,7 +268,7 @@ end
 
 lemma homogeneous_component_homogeneous_polynomial (m n : ℕ)
   (p : mv_polynomial σ R) (h : p ∈ homogeneous_submodule σ R n) :
-  homogeneous_component m p = if m = n then p else 0 :=
+  homogeneous_component R m p = if m = n then p else 0 :=
 by convert weighted_homogeneous_component_weighted_homogeneous_polynomial m n p h
 
 end homogeneous_component
