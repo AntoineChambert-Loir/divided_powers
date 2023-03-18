@@ -299,7 +299,6 @@ def mv_polynomial_weighted_decomposition [decidable_eq σ] [decidable_eq R] :
     apply dfinsupp.ext, intro m, 
     rw ← subtype.coe_inj, 
     rw decompose'_fun_apply, 
---    have := direct_sum.coe_linear_map_eq_dfinsupp_sum _ x, 
     change (weighted_homogeneous_component R w m) ((direct_sum.coe_linear_map (weighted_homogeneous_submodule R w)) x) = ↑(x m), 
     rw direct_sum.coe_linear_map_eq_dfinsupp_sum, 
     rw dfinsupp.sum,
@@ -315,13 +314,12 @@ def mv_polynomial_weighted_decomposition [decidable_eq σ] [decidable_eq R] :
       simp only [hm, submodule.coe_zero, map_zero], },
   end }
 
-
-example [decidable_eq σ] [decidable_eq R] : graded_algebra (weighted_homogeneous_submodule R w) :=
+/-- mv_polynomial as a graded algebra, for an arbitrary weight -/
+def mv_polynomial_weighted_graded_algebra 
+  [decidable_eq σ] [decidable_eq R] : 
+  graded_algebra (weighted_homogeneous_submodule R w) :=
 { to_decomposition  := mv_polynomial_weighted_decomposition R w,
-  to_graded_monoid  := sorry }
-
-
-
+  to_graded_monoid  := infer_instance, }
 
 end mv_polynomial
 

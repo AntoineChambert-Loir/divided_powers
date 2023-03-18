@@ -307,7 +307,6 @@ instance weighted_homogeneous_submodule.gcomm_monoid [decidable_eq σ] {w : σ �
 
 end is_weighted_homogeneous
 
-
 /-- `weighted_homogeneous_component w n φ` is the part of `φ` that is weighted homogeneous of
   weighted degree `n`, with respect to the weights `w`.
   See `sum_weighted_homogeneous_component` for the statement that `φ` is equal to the sum
