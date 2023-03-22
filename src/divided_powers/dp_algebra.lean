@@ -44,6 +44,9 @@ by the ring relation defined by divided_power_algebra.rel -/
 @[derive [inhabited, comm_ring, algebra R]]
 def divided_power_algebra := ring_quot (divided_power_algebra.rel R M)
 
+/- TODO : upgrade this definition to a graded algebra
+this requires to define some graded_ring_quot when the relations are homogeneous -/
+
 namespace divided_power_algebra
 
 variable {M}
