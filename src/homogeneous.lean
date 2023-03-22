@@ -11,6 +11,10 @@ open_locale big_operators
 namespace mv_polynomial
 variables {σ : Type*} {τ : Type*} {R : Type*} [comm_semiring R] {S : Type*}
   
+-- TODO : delete or replace below 
+/-- The degree of a monoomial -/
+def degree' := weighted_degree' (1 : σ → ℕ)
+
 lemma degree'_eq_weighted_degree' (d : σ →₀ ℕ) :
   ∑ i in d.support, d i = weighted_degree' (1 : σ → ℕ) d :=
 by simp [weighted_degree', finsupp.total, finsupp.sum]
@@ -206,7 +210,13 @@ weighted_homogeneous_component R (1 : σ → ℕ) n
 
 variable {R}
 
+lemma homogeneous_component_mem 
+  (φ : mv_polynomial σ R) (i : ℕ) :
+  homogeneous_component R i φ ∈ homogeneous_submodule σ R i :=
+weighted_homogeneous_component_mem _ φ i
+
 section homogeneous_component
+
 open finset
 variables (n : ℕ) (φ ψ : mv_polynomial σ R)
 
@@ -274,5 +284,29 @@ by convert weighted_homogeneous_component_weighted_homogeneous_polynomial m n p 
 end homogeneous_component
 
 end
+
+section graded_algebra
+
+variable (σ)
+/-- The decomposition of mv_polynomial σ R into  homogeneous submodules -/
+def decomposition [decidable_eq σ] [decidable_eq R] : 
+  direct_sum.decomposition (homogeneous_submodule σ R) :=  weighted_decomposition R (1 : σ → ℕ)
+
+/-- Given a weight, mv_polynomial as a graded algebra -/
+def graded_algebra 
+  [decidable_eq σ] [decidable_eq R] : 
+  graded_algebra (homogeneous_submodule σ R) :=
+  weighted_graded_algebra R (1 : σ → ℕ)
+
+lemma decomposition.decompose'_eq [decidable_eq σ] [decidable_eq R] : (decomposition σ).decompose' = 
+λ (φ : mv_polynomial σ R), direct_sum.mk 
+  (λ (i : ℕ), ↥(homogeneous_submodule σ R i))
+  (finset.image degree' φ.support)
+  (λ m, ⟨homogeneous_component R m φ, homogeneous_component_mem φ m⟩) := rfl 
+
+lemma decomposition.decompose'_apply [decidable_eq σ] [decidable_eq R] (φ : mv_polynomial σ R) (i : ℕ) : ((decomposition σ).decompose' φ i : mv_polynomial σ R) = homogeneous_component R i φ := 
+weighted_decomposition.decompose'_apply R _ φ i 
+ 
+end graded_algebra
 
 end mv_polynomial
