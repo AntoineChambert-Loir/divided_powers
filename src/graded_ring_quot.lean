@@ -60,6 +60,13 @@ def direct_sum.lmap {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i,
   direct_sum ι β →ₗ[R] direct_sum ι γ :=
 direct_sum.to_module R ι _ (λ i, linear_map.comp (direct_sum.lof R ι γ i) (h i))
 
+def direct_sum.lmap' {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i, module R (β i)]
+  [Π i, add_comm_monoid (γ i)] [Π i, module R (γ i)] {F : Π (i : ι), Type*}
+  [Π i, linear_map_class (F i) R (β i) (γ i)] (h : Π i, F i) :
+  direct_sum ι β →ₗ[R] direct_sum ι γ :=
+direct_sum.to_module R ι (direct_sum ι γ)
+  (λ i, linear_map.comp (direct_sum.lof R ι γ i)⟨h i, map_add _, map_smulₛₗ _⟩)
+
 lemma direct_sum.lmap_eq_map {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i, module R (β i)]
   [Π i, add_comm_monoid (γ i)] [Π i, module R (γ i)] (h : Π i, β i →ₗ[R] γ i) : 
 (direct_sum.lmap h).to_add_hom = direct_sum.map (λ i, (h i).to_add_monoid_hom) := rfl
