@@ -1,19 +1,86 @@
+import algebra.module.linear_map
+
+
 -- import algebra.module.graded_module
 import ring_theory.graded_algebra.homogeneous_ideal
 import ring_theory.ideal.quotient
+
+section Nat_module
+
+end Nat_module
+
+example {β : Type*} [add_comm_monoid β] : module ℕ β := 
+  add_comm_monoid.nat_module
+
+example {β γ : Type*} [add_comm_monoid β] [add_comm_monoid γ] (f : β →+ γ) : β →ₗ[ℕ] γ :=  
+{
+to_fun := f,
+map_add' := f.map_add, 
+map_smul' := λ r x, by simp only [map_nsmul, eq_nat_cast, nat.cast_id] }
+
+example {β γ : Type*} [add_comm_monoid β] [add_comm_monoid γ] (f : β →+ γ) : β →ₗ[ℕ] γ :=  f.to_nat_linear_map 
+
+section Int_module
+
+example {β : Type*} [add_comm_group β]: module ℤ β := 
+  add_comm_group.int_module β
+
+example {β γ : Type*} [add_comm_group β] [add_comm_group γ] (f : β →+ γ) : β →ₗ[ℤ] γ := {
+to_fun := f,
+map_add' := f.map_add, 
+map_smul' := λ r x, by simp only [eq_int_cast, int.cast_id, map_zsmul f r x] }
+
+example {β γ : Type*} [add_comm_group β] [add_comm_group γ] (f : β →+ γ) : β →ₗ[ℤ] γ := f.to_int_linear_map 
+
+end Int_module
 
 section direct_sum
 
 variables {ι : Type*} [decidable_eq ι]
 
+variables {R : Type*} [comm_semiring R]
+
 lemma direct_sum.mk_apply {β : ι → Type*} [Π i, add_comm_monoid (β i)] 
   (s : finset ι) (f : Π (i : s), β ↑i) (i : ι): 
   direct_sum.mk β s f i = dite (i ∈ s) (λ h, f ⟨i, h⟩) (λ h, 0) := rfl
 
+-- Three versions of a direct sum of maps
+-- (for add_monoid_hom, stuff with classes, and linear maps, which should be upgraded to classes as well)
 def direct_sum.map {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i, add_comm_monoid (γ i)] (h : Π i, β i →+ γ i): 
   direct_sum ι β →+ direct_sum ι γ :=
- direct_sum.to_add_monoid (λ i, add_monoid_hom.comp (direct_sum.of γ i) (h i))
+direct_sum.to_add_monoid (λ i, add_monoid_hom.comp (direct_sum.of γ i) (h i))
 
+def direct_sum.map' {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i, add_comm_monoid (γ i)] {F : Π (i : ι), Type*} [Π i, add_monoid_hom_class (F i) (β i) (γ i)] (h : Π i, F i): 
+  direct_sum ι β →+ direct_sum ι γ :=
+direct_sum.to_add_monoid (λ i, add_monoid_hom.comp (direct_sum.of γ i) (h i))
+
+example {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i, add_comm_monoid (γ i)] (h : Π i, β i →+ γ i) :
+direct_sum.map' h = direct_sum.map h :=  rfl
+
+def direct_sum.lmap {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i, module R (β i)] [Π i, add_comm_monoid (γ i)] [Π i, module R (γ i)] (h : Π i, β i →ₗ[R] γ i): 
+  direct_sum ι β →ₗ[R] direct_sum ι γ :=
+ direct_sum.to_module R ι _ (λ i, linear_map.comp (direct_sum.lof R ι γ i) (h i))
+
+lemma direct_sum.lmap_eq_map {β γ : ι → Type*} [Π i, add_comm_monoid (β i)] [Π i, module R (β i)] [Π i, add_comm_monoid (γ i)] [Π i, module R (γ i)] (h : Π i, β i →ₗ[R] γ i): 
+(direct_sum.lmap h).to_add_hom = direct_sum.map (λ i, (h i).to_add_monoid_hom) := rfl
+
+example {β : Type*} [add_comm_monoid β] : module ℕ β := 
+  add_comm_monoid.nat_module
+
+example {β γ : Type*} [add_comm_monoid β] [add_comm_monoid γ] (f : β →+ γ) : β →ₗ[ℕ] γ := {
+to_fun := f,
+map_add' := f.map_add, 
+map_smul' := λ r x, by simp only [map_nsmul, eq_nat_cast, nat.cast_id] }
+
+example {β : Type*} [add_comm_group β]: module ℤ β := 
+  add_comm_group.int_module β
+
+example {β γ : Type*} [add_comm_group β] [add_comm_group γ] (f : β →+ γ) : β →ₗ[ℤ] γ := {
+to_fun := f,
+map_add' := f.map_add, 
+map_smul' := λ r x, by simp only [eq_int_cast, int.cast_id, map_zsmul f r x] }
+
+-- I want this as a linear map, as well
 def direct_sum.component' {β : ι → Type* } [Π i, add_comm_monoid (β i)] (i : ι):
   direct_sum ι β →+ β i := {
 to_fun := λ x, x i,
@@ -197,10 +264,78 @@ variables {ι : Type*} [decidable_eq ι] [add_monoid ι]
 variables {A : Type*} [comm_ring A] [decidable_eq A]
 variables {σ : Type*} [set_like σ A] [add_submonoid_class σ A] 
 
-variables (𝒜 : ι → σ) [h𝒜 : graded_ring 𝒜] 
+-- Is this not the way to do it ?
+-- variables (𝒜 : ι → σ ) 
+variables (𝒜 : ι → submodule ℤ A) [h𝒜 : graded_ring 𝒜] 
 
--- submodule ℤ A) 
 variables (I : ideal A) (hI: ideal.is_homogeneous 𝒜 I)
+
+-- It seems I start understanding what I'm doing
+instance : semilinear_map_class (A →+* A ⧸ I) (ring_hom.id ℤ) _ _ := { 
+coe := λ f a, f a,
+coe_injective' := λ f g hfg, ring_hom.ext (λ x, function.funext_iff.mp hfg x),
+map_add := map_add, 
+map_smulₛₗ := λ f r a, by simp only [zsmul_eq_mul, map_mul, map_int_cast, eq_int_cast, int.cast_id] }
+
+/-- The graded pieces of A ⧸ I -/
+def quot_submodule : ι → submodule ℤ (A ⧸ I) := λ i, submodule.map (ideal.quotient.mk I) (𝒜 i)
+
+/-- The decomposition at the higher level -/
+def quot_decompose_aux [graded_ring 𝒜] :
+  A → direct_sum ι (λ (i : ι), ↥(quot_submodule 𝒜 I i)) := λ a,
+begin
+  refine (direct_sum.map _) (direct_sum.decompose 𝒜 a),
+  exact λ i, {
+  to_fun := λu, ⟨ideal.quotient.mk I ↑u,
+  begin
+    simp [quot_submodule, submodule.mem_map],
+    exact ⟨↑u, u.prop, rfl⟩,
+  end⟩,
+  map_zero' := by simp only [←subtype.coe_inj, submodule.coe_zero, map_zero, submodule.coe_mk],
+  map_add' := λ u v, by simp only [←subtype.coe_inj, submodule.coe_add, map_add, add_mem_class.mk_add_mk] },
+end
+
+example [graded_ring 𝒜] : A →ₗ[ℤ] direct_sum ι (λ i, 𝒜 i) :=
+begin
+  let h1 := (direct_sum.decompose_alg_equiv 𝒜).to_linear_map,
+  let h2 := direct_sum.map (λ i, 
+  begin
+
+  end)
+end
+
+/-- The decomposition at the higher level -/
+def quot_decompose_laux [graded_ring 𝒜] :
+  A →ₗ[ℤ] direct_sum ι (λ (i : ι), ↥(quot_submodule 𝒜 I i)) := λ a,
+begin
+  refine (direct_sum.map _) (direct_sum.decompose 𝒜 a),
+  exact λ i, {
+  to_fun := λu, ⟨ideal.quotient.mk I ↑u,
+  begin
+    simp [quot_submodule, submodule.mem_map],
+    exact ⟨↑u, u.prop, rfl⟩,
+  end⟩,
+  map_zero' := by simp only [←subtype.coe_inj, submodule.coe_zero, map_zero, submodule.coe_mk],
+  map_add' := λ u v, by simp only [←subtype.coe_inj, submodule.coe_add, map_add, add_mem_class.mk_add_mk] },
+end
+
+def quot_decompose [graded_ring 𝒜] : A ⧸ I →[ℤ] direct_sum ι (λ (i : ι), ↥(quot_submodule 𝒜 I i)) := submodule.liftq I 
+(begin
+have := direct_sum.decompose 𝒜, 
+have := λ i, direct_sum.component ℤ ι (λ x, 𝒜 x) i,
+end) (sorry)
+
+
+example : decidable_eq (A ⧸ I) := 
+begin
+intros x y,
+
+end
+
+noncomputable
+def graded_quot_ring 
+[decidable_eq (A ⧸ I)]
+[graded_ring 𝒜] : graded_ring (quot_decompose 𝒜 I)
 
 -- variable (rel : A → A → Prop) 
 
@@ -228,19 +363,7 @@ def graded_quot_submonoid (𝒜 : ι → σ) : ι → add_submonoid (A ⧸ I) :=
 
 def graded_quot_submonoid' (𝒜 : ι → submodule ℤ A) : ι → add_submonoid (A ⧸ I) :=
 begin
-  haveI : semilinear_map_class (A →+* A ⧸ I) _ A (A ⧸ I) :=
-  { coe := λ f a, f a,
-    coe_injective' := λ f g hfg, 
-    begin
-      ext x,
-      rw function.funext_iff at hfg, exact hfg x, 
-    end,
-    map_add := map_add, 
-    map_smulₛₗ := λ f r x, 
-    begin 
-      sorry, 
-    end,},
-   sorry,
+  haveI : 
   exact λ i, submodule.map (ideal.quotient.mk I) (𝒜 i)
 end
 
