@@ -80,41 +80,37 @@ example {β γ : Type*} [add_comm_group β] [add_comm_group γ] (f : β →+ γ)
   map_smul' := λ r x, by simp only [eq_int_cast, int.cast_id, map_zsmul f r x] }
 
 -- I want this as a linear map, as well
-def direct_sum.component' {β : ι → Type* } [Π i, add_comm_monoid (β i)] (i : ι) :
+/- def direct_sum.component' {β : ι → Type* } [Π i, add_comm_monoid (β i)] (i : ι) :
   direct_sum ι β →ₗ[ℕ] β i := 
-direct_sum.component ℕ ι β i /- {
-to_fun := λ x, x i,
-map_zero' := direct_sum.zero_apply β i,
-map_add' := λ x y, direct_sum.add_apply  x y i, } -/
+direct_sum.component ℕ ι β i  -/
 
-lemma direct_sum.component'_eq {β : ι → Type* } [Π i, add_comm_monoid (β i)] 
+-- I think this is `direct_sum.apply_eq_component`
+/- lemma direct_sum.component'_eq {β : ι → Type* } [Π i, add_comm_monoid (β i)] 
 (x : direct_sum ι β) (i : ι):
-  direct_sum.component' i x = x i := rfl
+  direct_sum.component' i x = x i := rfl -/
 
-lemma direct_sum.eq_iff_component'_eq {β : ι → Type* } [Π i, add_comm_monoid (β i)]
+
+-- This is direct_sum.ext_iff (except that Lean doesn't know which ring it should use)
+/- lemma direct_sum.eq_iff_component'_eq {β : ι → Type* } [Π i, add_comm_monoid (β i)]
   (x y : direct_sum ι β) : x = y ↔  ∀ i, direct_sum.component' i x = direct_sum.component' i y :=
-by simp only [dfinsupp.ext_iff, direct_sum.component'_eq]
+by simp only [dfinsupp.ext_iff, direct_sum.component'_eq]  -/
 
 lemma direct_sum.mk_eq_sum' {β : ι → Type*} [Π i, add_comm_monoid (β i)]
   [Π (i : ι) (x : β i), decidable (x ≠ 0)] (s : finset ι) (f : Π i, β i) :
   direct_sum.mk β s (λ (i : ↥↑s), f i) = s.sum (λ i, direct_sum.of β i (f i)) := 
 begin
   ext i,
-  rw direct_sum.mk_apply,
-  rw ← direct_sum.component'_eq,  rw map_sum,
+  rw [direct_sum.mk_apply, dfinsupp.finset_sum_apply],
   split_ifs with hi hi,
   { rw finset.sum_eq_single_of_mem i hi,
-    { rw direct_sum.component'_eq, 
-      rw direct_sum.of_eq_same, refl, },
-    { intros j hj hij, 
-      rw direct_sum.component'_eq,
-      rw direct_sum.of_eq_of_ne,
-      exact hij, }, },
-  { apply symm, apply finset.sum_eq_zero, 
-    intros j hj,
-    rw direct_sum.component'_eq, 
-    rw direct_sum.of_eq_of_ne,
-    intro hij, apply hi, rw ← hij, exact hj, },
+    { rw [← direct_sum.lof_eq_of ℕ, direct_sum.lof_apply],
+      refl },
+    { intros j hj hij,
+      exact direct_sum.of_eq_of_ne _ _ _ _ hij }},
+  { apply symm,
+    apply finset.sum_eq_zero,
+    intros j hj, 
+    exact direct_sum.of_eq_of_ne _ _ _ _ (ne_of_mem_of_not_mem hj hi) },
 end
 
 lemma dfinsupp.mk_eq_sum {β : ι → Type*} [Π i, add_comm_monoid (β i)]
@@ -145,20 +141,17 @@ lemma direct_sum.mk_eq_sum {β : ι → Type*} [Π  i, add_comm_monoid (β i)]
     = s.sum (λ i, direct_sum.of β i (dite (i ∈ s) (λ hi, x ⟨i, hi⟩) (λ hi, 0) )) :=
 begin
   ext i,
-  conv_rhs { rw ← direct_sum.component'_eq, },
-  rw map_sum,
-  rw direct_sum.mk_apply,
+  rw [dfinsupp.finset_sum_apply, direct_sum.mk_apply],
   split_ifs with hi hi,
-  { rw finset.sum_eq_single i, rw direct_sum.component'_eq, 
-    simp only [direct_sum.of_eq_same, dif_pos hi],
-    intros j hjs hji,
-    rw direct_sum.component'_eq, rw direct_sum.of_eq_of_ne, exact hji,
-    intro his, rw direct_sum.component'_eq, rw direct_sum.of_eq_same,
-      rw dif_neg his, },
+  { rw finset.sum_eq_single i, 
+    { rw [direct_sum.of_eq_same, dif_pos hi] },
+    { intros j hjs hji,
+      exact direct_sum.of_eq_of_ne _ _ _ _ hji},
+    { intro his,
+      rw [direct_sum.of_eq_same, dif_neg his] }},
   { apply symm, apply finset.sum_eq_zero, 
     intros j hj, 
-    rw direct_sum.component'_eq, rw direct_sum.of_eq_of_ne,
-    intro hji, apply hi, rw ← hji, exact hj, },
+    rw direct_sum.of_eq_of_ne  _ _ _ _ (ne_of_mem_of_not_mem hj hi) },
 end
 
 lemma direct_sum.to_add_monoid_mk {β : ι → Type*} [Π  i, add_comm_monoid (β i)] {γ : Type*}
