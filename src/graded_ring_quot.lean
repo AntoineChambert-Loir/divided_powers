@@ -610,7 +610,7 @@ begin
   rw ← add_monoid_hom.ext_iff, 
   apply direct_sum.add_hom_ext,
   intros i y,
-simp only [add_monoid_hom.coe_comp, function.comp_app, linear_map.to_add_monoid_hom_coe, direct_sum.coe_add_monoid_hom_of,
+  simp only [add_monoid_hom.coe_comp, function.comp_app, linear_map.to_add_monoid_hom_coe, direct_sum.coe_add_monoid_hom_of,
   submodule.mkq_apply],
   rw direct_sum.map'_of,
   rw direct_sum.coe_add_monoid_hom_of,
@@ -621,9 +621,42 @@ simp only [add_monoid_hom.coe_comp, function.comp_app, linear_map.to_add_monoid_
 end,
   right_inv  := 
 begin
-  intro x,
-   
-  sorry,
+  intro x, 
+  simp only [←linear_map.to_add_monoid_hom_coe], 
+  rw ← add_monoid_hom.comp_apply,
+  conv_rhs {rw ← add_monoid_hom.id_apply _ x},
+  revert x,
+  rw ← add_monoid_hom.ext_iff,
+  apply direct_sum.add_hom_ext,
+  intros i y,
+  obtain ⟨x, hx, hxy⟩ := y.prop,
+
+  simp only [add_monoid_hom.coe_comp, linear_map.to_add_monoid_hom_coe, function.comp_app, direct_sum.coe_add_monoid_hom_of,
+  add_monoid_hom.id_apply],
+  rw quot_decompose,
+  simp only [linear_map.coe_comp, linear_equiv.coe_to_linear_map, function.comp_app],
+  rw ←hxy,  
+  have : ((submodule.quotient.restrict_scalars_equiv R I).symm) ((ideal.quotient.mkₐ R I) x) = submodule.quotient.mk x, 
+  refl, rw this, 
+  rw submodule.liftq_apply,
+  rw quot_decompose_laux,
+  simp only [linear_map.coe_comp, function.comp_app, alg_equiv.to_linear_map_apply, direct_sum.decompose_alg_equiv_apply],
+
+  change direct_sum.lmap' _ (direct_sum.decompose 𝒜 x) = _,
+  suffices : direct_sum.decompose 𝒜 x = direct_sum.lof R ι (λ i, 𝒜 i) i (⟨x, hx⟩ : 𝒜 i), 
+  rw this, 
+  rw direct_sum.lmap'_lof,
+  rw direct_sum.lof_eq_of, 
+  apply congr_arg2 _ rfl,
+  rw quot_comp_map,
+  simp only [ideal.quotient.mkₐ_eq_mk, submodule.coe_mk, linear_map.coe_mk],
+  rw [←subtype.coe_inj, subtype.coe_mk],
+  rw ←hxy, 
+  simp only [ideal.quotient.mkₐ_eq_mk], 
+
+  conv_lhs {rw ← subtype.coe_mk x hx },
+  rw direct_sum.decompose_coe,
+  rw direct_sum.lof_eq_of, 
 end }
 
 def graded_quot_alg [decidable_eq (A ⧸ I)] [graded_ring 𝒜] :
