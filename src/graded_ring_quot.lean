@@ -562,29 +562,28 @@ end
 def quot_decompose [graded_algebra 𝒜] (hI : I.is_homogeneous 𝒜) : 
 A ⧸ I →ₗ[R] direct_sum ι (λ (i : ι), ↥(quot_submodule R 𝒜 I i)) :=
 begin
-  refine linear_map.comp _ (submodule.quotient.restrict_scalars_equiv R I).symm.to_linear_map, 
-  exact ring_hom.id R,
-  exact ring_hom_comp_triple.ids,
-  apply submodule.liftq, 
-  exact quot_decompose_laux_ker R 𝒜 I hI,
+  apply @submodule.liftq R A _ _ _ (I.restrict_scalars R) R
+    (direct_sum ι (λ i, quot_submodule R 𝒜 I i) ) _ _ _ (ring_hom.id R) (quot_decompose_laux R 𝒜 I), 
+ -- without explicit arguments, it is too slow
+ -- apply submodule.liftq (I.restrict_scalars R) (quot_decompose_laux R 𝒜 I),
+  apply quot_decompose_laux_ker R 𝒜 I hI, 
 end 
 
 lemma quot_decompose_laux_apply_mk [graded_algebra 𝒜] (hI : I.is_homogeneous 𝒜) (a : A): 
 quot_decompose R 𝒜 I hI (ideal.quotient.mk I a) = quot_decompose_laux R 𝒜 I a := 
 begin
-  simp only [quot_decompose, linear_map.comp_apply],
-  simp,
-  have : ((submodule.quotient.restrict_scalars_equiv R I).symm) ((ideal.quotient.mk I) a) = submodule.quotient.mk a := rfl,
+  rw [quot_decompose],
+  have : ideal.quotient.mk I a = submodule.quotient.mk a := rfl,
   rw this, 
-  rw submodule.liftq_apply (I.restrict_scalars R) (quot_decompose_laux R 𝒜 I) a, 
+  -- with explicit arguments, it times out
+  -- exact submodule.liftq_apply (I.restrict_scalars R) (quot_decompose_laux R 𝒜 I) a, 
+  -- apply works 
+  apply submodule.liftq_apply, 
 end
 
-def quot_decomposition [graded_algebra 𝒜] (hI : I.is_homogeneous 𝒜) :
-  direct_sum.decomposition (quot_submodule R 𝒜 I) :=
-{ decompose' := quot_decompose R 𝒜 I hI,
-  left_inv   := 
+def quot_decomposition_left_inv [graded_algebra 𝒜] (hI : I.is_homogeneous 𝒜) : function.left_inverse 
+(direct_sum.coe_add_monoid_hom (quot_submodule R 𝒜 I)) (quot_decompose R 𝒜 I hI) := λ a, 
 begin
-  intro a, 
   obtain ⟨a, rfl⟩ := (ideal.quotient.mk I).is_surjective a, 
 
   rw quot_decompose_laux_apply_mk,
@@ -618,10 +617,11 @@ begin
   rw [quot_comp_map],
   simp only [ideal.quotient.mkₐ_eq_mk, linear_map.coe_mk, submodule.coe_mk],
   refl,
-end,
-  right_inv  := 
+end
+
+def quot_decomposition_right_inv [graded_algebra 𝒜] (hI : I.is_homogeneous 𝒜) : function.right_inverse 
+(direct_sum.coe_add_monoid_hom (quot_submodule R 𝒜 I)) (quot_decompose R 𝒜 I hI) := λ x, 
 begin
-  intro x, 
   simp only [←linear_map.to_add_monoid_hom_coe], 
   rw ← add_monoid_hom.comp_apply,
   conv_rhs {rw ← add_monoid_hom.id_apply _ x},
@@ -633,12 +633,10 @@ begin
 
   simp only [add_monoid_hom.coe_comp, linear_map.to_add_monoid_hom_coe, function.comp_app, direct_sum.coe_add_monoid_hom_of,
   add_monoid_hom.id_apply],
-  rw quot_decompose,
-  simp only [linear_map.coe_comp, linear_equiv.coe_to_linear_map, function.comp_app],
-  rw ←hxy,  
-  have : ((submodule.quotient.restrict_scalars_equiv R I).symm) ((ideal.quotient.mkₐ R I) x) = submodule.quotient.mk x, 
-  refl, rw this, 
-  rw submodule.liftq_apply,
+  rw ←hxy,
+  rw ideal.quotient.mkₐ_eq_mk,
+  rw quot_decompose_laux_apply_mk,
+
   rw quot_decompose_laux,
   simp only [linear_map.coe_comp, function.comp_app, alg_equiv.to_linear_map_apply, direct_sum.decompose_alg_equiv_apply],
 
@@ -657,7 +655,15 @@ begin
   conv_lhs {rw ← subtype.coe_mk x hx },
   rw direct_sum.decompose_coe,
   rw direct_sum.lof_eq_of, 
-end }
+end 
+
+
+def quot_decomposition [graded_algebra 𝒜] (hI : I.is_homogeneous 𝒜) :
+  direct_sum.decomposition (quot_submodule R 𝒜 I) :=
+{ decompose' := quot_decompose R 𝒜 I hI,
+  left_inv   := quot_decomposition_left_inv R 𝒜 I hI,
+  right_inv  := quot_decomposition_right_inv R 𝒜 I hI }
+  
 
 def graded_quot_alg [decidable_eq (A ⧸ I)] [graded_ring 𝒜] :
   graded_algebra (quot_submodule 𝒜 I) :=
