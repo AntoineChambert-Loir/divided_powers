@@ -687,7 +687,6 @@ by rw [quot_submodule, submodule.mem_map, ideal.quotient.mkₐ_eq_mk]
 
 /-- The quotient of a graded algebra by a homogeneous ideal, as a graded algebra -/
 def graded_quot_alg [graded_algebra 𝒜] 
--- [decidable_eq (A ⧸ I)]  
   (hI : I.is_homogeneous 𝒜) :
   graded_algebra (quot_submodule R 𝒜 I) :=
 { to_decomposition  := quot_decomposition R 𝒜 I hI,
