@@ -439,7 +439,9 @@ lemma direct_sum.map_apply' {β γ : ι → Type*}
   [Π (i : ι) (x : γ i), decidable (x ≠ 0)]
   {F : Π i, Type*} [Π i, add_monoid_hom_class (F i) (β i) (γ i)] 
   (h : Π i, F i) (x : direct_sum ι β) :
-   direct_sum.map h x = direct_sum.mk γ (x.support) (zoto h x) :=
+   direct_sum.map h x = direct_sum.mk γ (x.support) 
+   (zoto h x) :=
+   -- (λ i, (h i) (x i))  gives `unknown fresh 0._ ` error
 begin
   conv_lhs {rw ← direct_sum.sum_support_of β x, },
   rw map_sum,
@@ -478,8 +480,9 @@ section
 variables {σ : Type*} [set_like σ A] [add_submonoid_class σ A] 
 [submodule_class σ R A] 
 
+#check graded_algebra
 
-variables (ℬ : ι → σ) -- [hℬ : graded_algebra ℬ]
+variables (ℬ : ι → σ) 
 
 @[reducible]
 def graded_algebra' := @graded_ring _ A _ _ _ _ _ _ ℬ
@@ -488,7 +491,6 @@ variable [hℬ : graded_algebra' ℬ]
 
 end
 
-#check graded_algebra
 
 variables (𝒜 : ι → submodule R A)
 
@@ -702,6 +704,8 @@ def graded_quot_alg [graded_algebra 𝒜]
     end
     }}
 
+
+#exit
 -- variable (rel : A → A → Prop) 
 
 -- open_locale big_operators
