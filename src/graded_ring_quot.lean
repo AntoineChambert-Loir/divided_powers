@@ -474,6 +474,22 @@ variables {σ : Type*} [set_like σ A] [add_submonoid_class σ A]
 variable (𝒜 : ι → σ) [h𝒜 : graded_algebra 𝒜]
 -/
 
+section
+variables {σ : Type*} [set_like σ A] [add_submonoid_class σ A] 
+[submodule_class σ R A] 
+
+
+variables (ℬ : ι → σ) -- [hℬ : graded_algebra ℬ]
+
+@[reducible]
+def graded_algebra' := @graded_ring _ A _ _ _ _ _ _ ℬ
+
+variable [hℬ : graded_algebra' ℬ]
+
+end
+
+#check graded_algebra
+
 variables (𝒜 : ι → submodule R A)
 
 variables (I : ideal A) 
@@ -665,12 +681,27 @@ def quot_decomposition [graded_algebra 𝒜] (hI : I.is_homogeneous 𝒜) :
   right_inv  := quot_decomposition_right_inv R 𝒜 I hI }
   
 
-def graded_quot_alg [decidable_eq (A ⧸ I)] [graded_ring 𝒜] :
-  graded_algebra (quot_submodule 𝒜 I) :=
-{ to_decomposition  := quot_decomposition 𝒜 I,
+lemma mem_quot_submodule_iff (i : ι) (g : A ⧸ I):
+  g ∈ quot_submodule R 𝒜 I i ↔ ∃ (a : A), a ∈ 𝒜 i ∧ideal.quotient.mk I a = g   := 
+by rw [quot_submodule, submodule.mem_map, ideal.quotient.mkₐ_eq_mk]
+
+/-- The quotient of a graded algebra by a homogeneous ideal, as a graded algebra -/
+def graded_quot_alg [graded_algebra 𝒜] 
+-- [decidable_eq (A ⧸ I)]  
+  (hI : I.is_homogeneous 𝒜) :
+  graded_algebra (quot_submodule R 𝒜 I) :=
+{ to_decomposition  := quot_decomposition R 𝒜 I hI,
   to_graded_monoid  :=
   { one_mem := by rw [quot_submodule, submodule.mem_map]; exact ⟨1, set_like.one_mem_graded 𝒜, rfl⟩,
-    mul_mem := sorry }}
+    mul_mem := λ i j gi gj hgi hgj, 
+    begin
+    rw mem_quot_submodule_iff at hgi hgj ⊢,
+    obtain ⟨ai, hai, rfl⟩ := hgi,
+    obtain ⟨aj, haj, rfl⟩ := hgj,
+    exact ⟨ai * aj, set_like.mul_mem_graded hai haj,
+    map_mul _ _ _⟩,
+    end
+    }}
 
 -- variable (rel : A → A → Prop) 
 
