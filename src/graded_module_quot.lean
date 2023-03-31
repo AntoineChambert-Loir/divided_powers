@@ -104,6 +104,7 @@ section homogeneous_def
 
 variable [graded_module ℳ]
 
+variable {R}
 /- An `N : submodule R M` is homogeneous if for every `r ∈ N`, all homogeneous components
   of `r` are in `N`. -/
 def submodule.is_homogeneous [graded_module ℳ] (N : submodule R M): Prop :=
@@ -140,7 +141,7 @@ section homogeneous_core
 -- variables [set_like τ M]  (ℳ : ι → τ)
 
 variable (N : submodule R M)
-variable (R)
+variable {R}
 include M
 
 /-- For any `N : submodule R M`, not necessarily homogeneous, `N.homogeneous_core' ℳ`
@@ -149,10 +150,10 @@ def submodule.homogeneous_core' (N : submodule R M) : submodule R M :=
 submodule.span R (coe '' ((coe : subtype (is_homogeneous ℳ) → M) ⁻¹' N))
 
 
-lemma submodule.homogeneous_core'_mono : monotone (submodule.homogeneous_core' R ℳ) :=
+lemma submodule.homogeneous_core'_mono : monotone (submodule.homogeneous_core' ℳ) :=
 λ N P N_le_P, submodule.span_mono $ set.image_subset _ $ λ x, @N_le_P _
 
-lemma submodule.homogeneous_core'_le : N.homogeneous_core' R ℳ ≤ N :=
+lemma submodule.homogeneous_core'_le : N.homogeneous_core' ℳ ≤ N :=
 submodule.span_le.2 $ image_preimage_subset _ _
 
 end homogeneous_core
@@ -166,7 +167,7 @@ section is_homogeneous_submodule_defs
 variable [graded_module ℳ]
 
 variable (N : submodule R M)
-variable (R)
+variable {R}
 include M
 
 lemma submodule.is_homogeneous_iff_forall_subset :
@@ -196,74 +197,77 @@ begin
   { exact I.zero_mem },
 end -/
 
-#exit
-
--- From now on, unfinished 
-
 lemma submodule.is_homogeneous_span (s : set M) (h : ∀ x ∈ s, is_homogeneous ℳ x) :
   (submodule.span R s).is_homogeneous ℳ :=
 begin
   rintros i r hr,
-  rw [ideal.span, finsupp.span_eq_range_total] at hr,
-  rw linear_map.mem_range at hr,
-  obtain ⟨s, rfl⟩ := hr,
+  rw [finsupp.span_eq_range_total, linear_map.mem_range] at hr,
+  obtain ⟨f, rfl⟩ := hr,
   rw [finsupp.total_apply, finsupp.sum, decompose_sum, dfinsupp.finset_sum_apply,
     add_submonoid_class.coe_finset_sum],
-  refine ideal.sum_mem _ _,
-  rintros z hz1,
-  rw [smul_eq_mul],
-  refine ideal.mul_homogeneous_element_mem_of_mem 𝒜 (s z) z _ _ i,
-  { rcases z with ⟨z, hz2⟩,
-    apply h _ hz2, },
-  { exact ideal.subset_span z.2 },
+  refine submodule.sum_mem _ _,
+  rintros ⟨z, hz⟩ hz1,
+  simp only [decompose_smul, dfinsupp.coe_smul, pi.smul_apply, submodule.coe_smul_of_tower, subtype.coe_mk],
+  refine submodule.smul_mem _ _ _,
+  obtain ⟨j, hzj⟩ := h z hz, 
+  by_cases hij : i = j,
+  { rw hij, 
+    rw direct_sum.decompose_of_mem_same,
+    exact submodule.subset_span hz,
+    exact hzj },
+  { rw direct_sum.decompose_of_mem_ne ℳ hzj (ne.symm hij),
+    exact submodule.zero_mem _,  },
 end
 
-/--For any `I : ideal A`, not necessarily homogeneous, `I.homogeneous_core' 𝒜`
-is the largest homogeneous ideal of `A` contained in `I`.-/
-def ideal.homogeneous_core : homogeneous_ideal 𝒜 :=
-⟨ideal.homogeneous_core' 𝒜 I,
-  ideal.is_homogeneous_span _ _ (λ x h, by { rw [subtype.image_preimage_coe] at h, exact h.2 })⟩
+/--For any `N : submodule R M`, not necessarily homogeneous, `N.homogeneous_core' R ℳ`
+is the largest homogeneous submodule of `M` contained in `N`.-/
+def submodule.homogeneous_core : homogeneous_submodule ℳ :=
+⟨submodule.homogeneous_core' ℳ N,
+  submodule.is_homogeneous_span ℳ _ (λ x h,
+  by { rw [subtype.image_preimage_coe, mem_inter_iff, mem_coe] at h,exact h.2, })⟩
 
-lemma ideal.homogeneous_core_mono : monotone (ideal.homogeneous_core 𝒜) :=
-ideal.homogeneous_core'_mono 𝒜
+lemma submodule.homogeneous_core_mono : monotone (submodule.homogeneous_core ℳ) :=
+submodule.homogeneous_core'_mono ℳ
 
-lemma ideal.to_ideal_homogeneous_core_le : (I.homogeneous_core 𝒜).to_ideal ≤ I :=
-ideal.homogeneous_core'_le 𝒜 I
+lemma submodule.to_submodule_homogeneous_core_le : (N.homogeneous_core ℳ).to_submodule ≤ N :=
+submodule.homogeneous_core'_le ℳ N
 
-variables {𝒜 I}
+variables {ℳ N}
 
-lemma ideal.mem_homogeneous_core_of_is_homogeneous_of_mem {x : A}
-  (h : set_like.is_homogeneous 𝒜 x) (hmem : x ∈ I) : x ∈ I.homogeneous_core 𝒜 :=
-ideal.subset_span ⟨⟨x, h⟩, hmem, rfl⟩
+lemma submodule.mem_homogeneous_core_of_is_homogeneous_of_mem {x : M}
+  (h : set_like.is_homogeneous ℳ x) (hmem : x ∈ N) : x ∈ N.homogeneous_core ℳ :=
+submodule.subset_span ⟨⟨x, h⟩, hmem, rfl⟩
 
-lemma ideal.is_homogeneous.to_ideal_homogeneous_core_eq_self (h : I.is_homogeneous 𝒜) :
-  (I.homogeneous_core 𝒜).to_ideal = I :=
+lemma submodule.is_homogeneous.to_submodule_homogeneous_core_eq_self (h : N.is_homogeneous ℳ) :
+  (N.homogeneous_core ℳ).to_submodule = N :=
 begin
-  apply le_antisymm (I.homogeneous_core'_le 𝒜) _,
+  apply le_antisymm (N.homogeneous_core'_le ℳ) _,
   intros x hx,
   classical,
-  rw ←direct_sum.sum_support_decompose 𝒜 x,
-  exact ideal.sum_mem _ (λ j hj, ideal.subset_span ⟨⟨_, is_homogeneous_coe _⟩, h _ hx, rfl⟩)
+  rw ←direct_sum.sum_support_decompose ℳ x,
+  exact submodule.sum_mem _ (λ j hj, submodule.subset_span ⟨⟨_, is_homogeneous_coe _⟩, h _ hx, rfl⟩)
 end
 
-@[simp] lemma homogeneous_ideal.to_ideal_homogeneous_core_eq_self (I : homogeneous_ideal 𝒜) :
-  I.to_ideal.homogeneous_core 𝒜 = I :=
-by ext1; convert ideal.is_homogeneous.to_ideal_homogeneous_core_eq_self I.is_homogeneous
+@[simp] lemma homogeneous_submodule.to_ideal_homogeneous_core_eq_self (N : homogeneous_submodule ℳ) :
+  N.to_submodule.homogeneous_core ℳ = N :=
+by ext1; convert submodule.is_homogeneous.to_submodule_homogeneous_core_eq_self R N.is_homogeneous
 
-variables (𝒜 I)
+variables (ℳ N)
 
-lemma ideal.is_homogeneous.iff_eq : I.is_homogeneous 𝒜 ↔ (I.homogeneous_core 𝒜).to_ideal = I :=
-⟨ λ hI, hI.to_ideal_homogeneous_core_eq_self,
-  λ hI, hI ▸ (ideal.homogeneous_core 𝒜 I).2 ⟩
+lemma submodule.is_homogeneous.iff_eq : N.is_homogeneous ℳ ↔ (N.homogeneous_core ℳ).to_submodule = N :=
+⟨ λ hI, hI.to_submodule_homogeneous_core_eq_self,
+  λ hI, hI ▸ (submodule.homogeneous_core ℳ N).2 ⟩
 
-lemma ideal.is_homogeneous.iff_exists :
-  I.is_homogeneous 𝒜 ↔ ∃ (S : set (homogeneous_submonoid 𝒜)), I = ideal.span (coe '' S) :=
+def homogeneous_set : set M := {m : M | is_homogeneous ℳ m}
+
+lemma submodule.is_homogeneous.iff_exists :
+  N.is_homogeneous ℳ ↔ ∃ (S : set (homogeneous_set ℳ)), N = submodule.span R (coe '' S) :=
 begin
-  rw [ideal.is_homogeneous.iff_eq, eq_comm],
+  rw [submodule.is_homogeneous.iff_eq, eq_comm],
   exact ((set.image_preimage.compose (submodule.gi _ _).gc).exists_eq_l _).symm,
 end
 
-end is_homogeneous_ideal_defs
+end is_homogeneous_submodule_defs
 
 /-! ### Operations
 In this section, we show that `ideal.is_homogeneous` is preserved by various notations, then use
