@@ -147,57 +147,55 @@ variable {M}
 
 #check mk_alg_hom_rel
 
-example (R : Type*) [comm_ring R] (A : Type*) [comm_ring A] [algebra R A] (r : A → A → Prop) (a b : A) (h : r a b) :
-ideal.quotient.mkₐ R (ideal.of_rel r) a = ideal.quotient.mkₐ R (ideal.of_rel r) b :=
+lemma mk_quotient_eq_of_rel (R : Type*) [comm_ring R] {A : Type*} [comm_ring A] [algebra R A] {r : A → A → Prop} {a b : A} (h : r a b) :
+ideal.quotient.mk (ideal.of_rel r) a = ideal.quotient.mk (ideal.of_rel r) b :=
 begin
-  simp only [ideal.quotient.mkₐ_eq_mk],
   suffices : function.injective (ring_quot.ring_quot_equiv_ideal_quotient r).inv_fun,
   apply this, 
-  simp only [ideal_quotient_to_ring_quot_apply],
   exact mk_ring_hom_rel h,
   rw function.injective_iff_has_left_inverse, 
   use (ring_quot.ring_quot_equiv_ideal_quotient r).to_fun,
   exact (ring_quot.ring_quot_equiv_ideal_quotient r).right_inv,
 end
 
-example (R : Type*) [comm_ring R] (A : Type*) [comm_ring A] [algebra R A] (r : A → A → Prop) (a : A) :
-  ideal.quotient.mkₐ R (ideal.of_rel r) a 
+lemma ideal.quotient_mk_eq_ring_quot_apply (R : Type*) [comm_ring R] {A : Type*} [comm_ring A] [algebra R A] (r : A → A → Prop) (a : A) :
+  ideal.quotient.mk (ideal.of_rel r) a 
   = ring_quot.ring_quot_to_ideal_quotient r (mk_alg_hom R r a) :=
 begin
-simp only [ideal.quotient.mkₐ_eq_mk],
-
+  rw ← ring_quot.ring_quot_to_ideal_quotient_apply r a,
+  rw ← ring_quot.mk_alg_hom_coe R r,
+  refl,
 end
-
 
 example (a : mv_polynomial (ℕ × M) R) : ideal.quotient.mkₐ R (relI R M) a = ring_quot.ring_quot_to_ideal_quotient (rel R M) (mk_alg_hom R (rel R M) a) := 
 begin
 simp only [ideal.quotient.mkₐ_eq_mk],
-have := ring_quot.ring_quot_to_ideal_quotient_apply (rel R M) a,
-have that := ring_quot.mk_alg_hom_coe R (rel R M),
 dsimp only [relI],
-simp,
-have := ring_quot.ideal_quotient_to_ring_quot_apply (rel R M) a,
+rw ideal.quotient_mk_eq_ring_quot_apply R (rel R M),
 end
-
 
 /-- The canonical linear map `M →ₗ[R] divided_power_algebra R M`. -/
 def ι : M →ₗ[R] (divided_power_algebra R M) :=
 { to_fun := λ m, (ideal.quotient.mkₐ R _ (X (1, m))),
   map_add' := λ x y, by { 
-    rw ← map_add, 
-    have := mk_alg_hom_rel R rel.add,
-    -- rw [← map_add, mk_alg_hom_rel R rel.add],
+    rw [← map_add, ideal.quotient.mkₐ_eq_mk],
+    dsimp only [relI],
+    rw mk_quotient_eq_of_rel R rel.add, 
     simp only [sum_range_succ', sum_range_zero, zero_add, nat.sub_zero,
     nat.sub_self], 
     simp only [map_add, map_mul],
-    simp only [mk_alg_hom_rel R rel.zero],
-    simp only [map_one, one_mul, mul_one], },
+    simp only [mk_quotient_eq_of_rel R rel.zero],
+    simp only [map_one, one_mul, mul_one], 
+    apply_instance, },
   map_smul' := λ r x, by { 
-    rw [← map_smul, mk_alg_hom_rel R rel.smul, pow_one, map_smul],
-    simp only [ring_hom.id_apply, map_smul], } }
+    rw [← map_smul, ideal.quotient.mkₐ_eq_mk],
+    dsimp only [relI],
+    rw [mk_quotient_eq_of_rel R rel.smul], 
+    simp only [pow_one, ring_hom.id_apply],
+    apply_instance, } }
 
 /-- The canonical linear map `M →ₗ[R] divided_power_algebra' R M`. -/
-def ι : M →ₗ[R] (divided_power_algebra' R M) :=
+def ι' : M →ₗ[R] (divided_power_algebra' R M) :=
 { to_fun := λ m, (mk_alg_hom R _ (X (1, m))),
   map_add' := λ x y, by { 
     rw [← map_add, mk_alg_hom_rel R rel.add],
@@ -211,8 +209,10 @@ def ι : M →ₗ[R] (divided_power_algebra' R M) :=
     simp only [ring_hom.id_apply, map_smul], } }
 
 lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) :
-  mk_alg_hom R (rel R M) (X (1, m)) = ι R m := rfl
+  ideal.quotient.mkₐ R (relI R M) (X (1, m)) = ι R m := rfl
 
+lemma mk_alg_hom_mv_polynomial_ι'_eq_ι' (m : M) :
+  mk_alg_hom R (rel R M) (X (1, m)) = ι' R m := rfl
 
 variable {R}
 def degree (v : (ℕ × M) →₀ ℕ) : ℕ := finsum (λ x, (v x) * x.1)
