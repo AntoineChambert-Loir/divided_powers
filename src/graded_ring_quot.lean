@@ -1,6 +1,7 @@
 import algebra.module.linear_map
 -- import algebra.module.graded_module
 import ring_theory.graded_algebra.homogeneous_ideal
+import algebra.ring_quot
 import ring_theory.ideal.quotient
 import ring_theory.ideal.quotient_operations
 
@@ -494,7 +495,9 @@ end
 
 variables (𝒜 : ι → submodule R A)
 
-variables (I : ideal A) 
+section ideal 
+
+variable (I : ideal A) 
 
 -- variables [h𝒜 : graded_algebra 𝒜] (hI: ideal.is_homogeneous 𝒜 I)
 
@@ -703,6 +706,54 @@ def graded_quot_alg [graded_algebra 𝒜]
     map_mul _ _ _⟩,
     end
     }}
+
+end ideal
+
+section rel
+
+/- THIS SECTION IS A MESS
+ITS GOAL IS TO TRANSFER THE GRADED ALGEBRA STRUCTURE TO
+THE CASE WHERE THE QUOTIENT IS DEFINED VIA A RELATION 
+-/
+variable (r : A → A → Prop)
+
+variable {R}
+
+/-- A relation is homogeneous iff r a b implies that a and b 
+are homogeneous of the same degree -/
+def rel_is_homogeneous := 
+  ∀ (a b : A) (hab : r a b), ∃ i, a ∈ 𝒜 i ∧ b ∈ 𝒜 i 
+
+#check rel_is_homogeneous
+
+#check ring_quot.ring_quot_to_ideal_quotient r
+#check (ring_quot.mk_alg_hom R r)
+#check ring_quot.ideal_quotient_to_ring_quot r 
+
+example : A →ₐ[R] A ⧸ (ideal.of_rel r) := ideal.quotient.mkₐ R (ideal.of_rel r)
+
+example : ring_quot r →ₐ[R] A ⧸ ideal.of_rel r :=
+{ commutes' := λ s, begin
+simp, sorry,
+end,
+  .. ring_quot.ring_quot_to_ideal_quotient r
+}
+
+#check (ring_quot.mk_alg_hom R r)
+#check (ideal.quotient.mkₐ  R (ideal.of_rel r))
+
+example [decidable_eq (submodule R A)] (i : ι) : quot_submodule R 𝒜 (ideal.of_rel r) i = submodule.map ((ideal.quotient.mkₐ  R _).comp (ring_quot.mk_alg_hom R r)) i :=
+begin
+
+end
+
+def graded_quot_alg_rel [graded_algebra 𝒜] [decidable_eq (submodule R A)]
+  (hr : rel_is_homogeneous 𝒜 r) : graded_algebra 
+  (λ i, submodule.map (ring_quot.mk_alg_hom R r) i) :=
+  sorry
+
+end rel
+
 
 
 #exit
