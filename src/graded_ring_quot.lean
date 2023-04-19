@@ -724,23 +724,19 @@ are homogeneous of the same degree -/
 def rel_is_homogeneous := 
   ∀ (a b : A) (hab : r a b), ∃ i, a ∈ 𝒜 i ∧ b ∈ 𝒜 i 
 
-#check rel_is_homogeneous
-
-#check ring_quot.ring_quot_to_ideal_quotient r
-#check (ring_quot.mk_alg_hom R r)
-#check ring_quot.ideal_quotient_to_ring_quot r 
-
-example : A →ₐ[R] A ⧸ (ideal.of_rel r) := ideal.quotient.mkₐ R (ideal.of_rel r)
-
-example : ring_quot r →ₐ[R] A ⧸ ideal.of_rel r :=
-{ commutes' := λ s, begin
-simp, sorry,
+/-- Adding the alg_hom component to the natural ring_equiv -/
+def ring_quot_equiv_alg_ideal_quotient : ring_quot r ≃ₐ[R] A ⧸ ideal.of_rel r := { commutes' := λ s, 
+begin
+  rw [ring_equiv.to_fun_eq_coe,
+    ← alg_hom.commutes (ring_quot.mk_alg_hom R r), 
+    ← alg_hom.commutes (ideal.quotient.mkₐ R (ideal.of_rel r)),
+    ideal.quotient.mkₐ_eq_mk,
+    ← ring_quot.ring_quot_to_ideal_quotient_apply r _,
+    ←ring_quot.mk_alg_hom_coe R r],
+  refl,
 end,
-  .. ring_quot.ring_quot_to_ideal_quotient r
+  .. ring_quot.ring_quot_equiv_ideal_quotient  r
 }
-
-#check (ring_quot.mk_alg_hom R r)
-#check (ideal.quotient.mkₐ  R (ideal.of_rel r))
 
 example [decidable_eq (submodule R A)] (i : ι) : quot_submodule R 𝒜 (ideal.of_rel r) i = submodule.map ((ideal.quotient.mkₐ  R _).comp (ring_quot.mk_alg_hom R r)) i :=
 begin
