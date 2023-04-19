@@ -48,7 +48,11 @@ end divided_power_algebra
 /-- The divided power algebra of a module M is the quotient of the polynomial ring
 by the ring relation defined by divided_power_algebra.rel -/
 @[derive [inhabited, comm_ring, algebra R]]
-def divided_power_algebra := ring_quot (divided_power_algebra.rel R M)
+def divided_power_algebra' := ring_quot (divided_power_algebra.rel R M)
+
+@[derive [inhabited, comm_ring, algebra R]]
+def divided_power_algebra :=
+ (mv_polynomial (ℕ × M) R) ⧸ (divided_power_algebra.relI R M)
 
 namespace divided_power_algebra
 
@@ -99,18 +103,37 @@ begin
     apply is_weighted_homogeneous_X, },
 end
 
-def decompose : ℕ → submodule R (divided_power_algebra R M) := 
-  λ i, submodule.map (ring_quot.mk_alg_hom R (rel R M))
-    (weighted_homogeneous_submodule R (prod.fst) i)
+/-- The graded submodules of `divided_power_algebra R M` -/
+def decompose := quot_submodule R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) (divided_power_algebra.relI R M)
 
-def divided_power_g_algebra : graded_algebra (decompose R M):= { 
-to_decomposition  := { 
-  decompose' := sorry,
-  left_inv := sorry,
-  right_inv := sorry, },
-to_graded_monoid  := sorry, }
+/- 
+instance : decidable_eq (mv_polynomial (ℕ × M) R ⧸ relI R M) :=
+begin
+haveI : Π (a b : mv_polynomial (ℕ × M) R), decidable (ideal.quotient.ring_con (relI R M) a b ),
+intros a b,
+suffices : (ideal.quotient.ring_con (relI R M)) a b ↔ a - b ∈ (relI R M),
+rw this,
+
+apply quotient.decidable_eq,
+end -/
+
+open_locale classical
+
+
+/-- The canonical decomposition of `divided_power_algebra R M` -/
+def decomposition := quot_decomposition R 
+(weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) (divided_power_algebra.relI R M)
+(relI_is_homogeneous R M)
+
+
 
 end divided_power_algebra
+
+/-- The graded algebra structure on the divided power algebra-/
+def divided_power_galgebra : graded_algebra (divided_power_algebra.decompose R M) := 
+  graded_quot_alg R 
+    (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
+    (divided_power_algebra.relI R M) (divided_power_algebra.relI_is_homogeneous R M)
 
 -- PROBLEM : The following definition does not recognize that this is a graded structure on divided_power_algebra R M 
 
@@ -122,8 +145,59 @@ namespace divided_power_algebra
 
 variable {M}
 
+#check mk_alg_hom_rel
+
+example (R : Type*) [comm_ring R] (A : Type*) [comm_ring A] [algebra R A] (r : A → A → Prop) (a b : A) (h : r a b) :
+ideal.quotient.mkₐ R (ideal.of_rel r) a = ideal.quotient.mkₐ R (ideal.of_rel r) b :=
+begin
+  simp only [ideal.quotient.mkₐ_eq_mk],
+  suffices : function.injective (ring_quot.ring_quot_equiv_ideal_quotient r).inv_fun,
+  apply this, 
+  simp only [ideal_quotient_to_ring_quot_apply],
+  exact mk_ring_hom_rel h,
+  rw function.injective_iff_has_left_inverse, 
+  use (ring_quot.ring_quot_equiv_ideal_quotient r).to_fun,
+  exact (ring_quot.ring_quot_equiv_ideal_quotient r).right_inv,
+end
+
+example (R : Type*) [comm_ring R] (A : Type*) [comm_ring A] [algebra R A] (r : A → A → Prop) (a : A) :
+  ideal.quotient.mkₐ R (ideal.of_rel r) a 
+  = ring_quot.ring_quot_to_ideal_quotient r (mk_alg_hom R r a) :=
+begin
+simp only [ideal.quotient.mkₐ_eq_mk],
+
+end
+
+
+example (a : mv_polynomial (ℕ × M) R) : ideal.quotient.mkₐ R (relI R M) a = ring_quot.ring_quot_to_ideal_quotient (rel R M) (mk_alg_hom R (rel R M) a) := 
+begin
+simp only [ideal.quotient.mkₐ_eq_mk],
+have := ring_quot.ring_quot_to_ideal_quotient_apply (rel R M) a,
+have that := ring_quot.mk_alg_hom_coe R (rel R M),
+dsimp only [relI],
+simp,
+have := ring_quot.ideal_quotient_to_ring_quot_apply (rel R M) a,
+end
+
+
 /-- The canonical linear map `M →ₗ[R] divided_power_algebra R M`. -/
 def ι : M →ₗ[R] (divided_power_algebra R M) :=
+{ to_fun := λ m, (ideal.quotient.mkₐ R _ (X (1, m))),
+  map_add' := λ x y, by { 
+    rw ← map_add, 
+    have := mk_alg_hom_rel R rel.add,
+    -- rw [← map_add, mk_alg_hom_rel R rel.add],
+    simp only [sum_range_succ', sum_range_zero, zero_add, nat.sub_zero,
+    nat.sub_self], 
+    simp only [map_add, map_mul],
+    simp only [mk_alg_hom_rel R rel.zero],
+    simp only [map_one, one_mul, mul_one], },
+  map_smul' := λ r x, by { 
+    rw [← map_smul, mk_alg_hom_rel R rel.smul, pow_one, map_smul],
+    simp only [ring_hom.id_apply, map_smul], } }
+
+/-- The canonical linear map `M →ₗ[R] divided_power_algebra' R M`. -/
+def ι : M →ₗ[R] (divided_power_algebra' R M) :=
 { to_fun := λ m, (mk_alg_hom R _ (X (1, m))),
   map_add' := λ x y, by { 
     rw [← map_add, mk_alg_hom_rel R rel.add],
