@@ -153,6 +153,12 @@ def divided_power_algebra' := ring_quot (divided_power_algebra.rel R M)
 def divided_power_algebra :=
  (mv_polynomial (ℕ × M) R) ⧸ (divided_power_algebra.relI R M)
 
+/- example : divided_power_algebra R M :=
+begin
+  rw divided_power_algebra,
+  refine submodule.quotient.mk _,
+end -/
+
 namespace divided_power_algebra
 
 /- Note that also we don't know yet that `divided_power_algebra R M`
@@ -331,16 +337,8 @@ submodule.span R
 -- instance : module R (direct_sum ℕ (λ (i : ℕ), ↥(grade R M i))) := infer_instance
 
 lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 := begin
-
-end
-
-example : (1 : divided_power_algebra R M) ∈ grade R M 0 :=
-begin
-  use 1,
-  split,
-  simp only [set_like.mem_coe, mem_weighted_homogeneous_submodule],
-  apply is_weighted_homogeneous_one,
-  refl,
+  refine ⟨1, _, rfl⟩,
+  simp only [set_like.mem_coe, mem_weighted_homogeneous_submodule, is_weighted_homogeneous_one], 
 end
 
 /-
@@ -715,16 +713,17 @@ def is_aug_ideal (R : Type*) [comm_ring R] (I : ideal R) : Prop :=
 lemma aug_ideal_is_aug_ideal : is_aug_ideal (divided_power_algebra R M) (aug_ideal R M) :=
 sorry
 
+
 variables (x : M) (n : ℕ)
 
 /-- Lemma 2 of Roby 65. -/
 lemma on_dp_algebra_unique (h h' : divided_powers (aug_ideal R M))
-  (h1 : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = mk_alg_hom R _ (X (n, x)))
-  (h1' : ∀ (x : M) (n : ℕ), h'.dpow n (ι R x) = mk_alg_hom R _ (X (n, x))) : 
-  h = h' := sorry
+  (h1 : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x)))
+  (h1' : ∀ (x : M) (n : ℕ), h'.dpow n (ι R x) = submodule.quotient.mk (X (n, x))) : 
+  h = h' := sorry  
 
 def cond_D : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
-  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = mk_alg_hom R _ (X (n, x))
+  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x))
 
 end
 
