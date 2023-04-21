@@ -56,6 +56,8 @@ instance {A : Type*} [comm_ring A] (I : ideal A) :
   has_coe_to_fun (divided_powers I) (λ _, ℕ → A → A) :=
 ⟨λ hI, hI.dpow⟩
 
+lemma coe_to_fun_apply {A : Type*} [comm_ring A] (I : ideal A) (hI : divided_powers I) (n : ℕ) (a : A): hI n a = hI.dpow n a := rfl 
+
 structure pd_ring (A : Type*) extends comm_ring A := 
 (pd_ideal : ideal A)
 (divided_powers : divided_powers pd_ideal)
@@ -63,6 +65,7 @@ structure pd_ring (A : Type*) extends comm_ring A :=
 end divided_powers_definition
 
 namespace divided_powers
+
 
 section basic_lemmas
 

@@ -175,7 +175,37 @@ noncomputable def divided_powers {n : ℕ} (hn_fac : is_unit ((n-1).factorial : 
   dpow_mul  := λ m k x hx, dpow_mul hn_fac hnI m k hx,
   dpow_comp := λ m k hk x hx, dpow_comp hn_fac hnI m hk hx }
 
+
 end of_invertible_factorial
+
+namespace of_square_zero
+
+variables {A : Type*} [comm_ring A] {I : ideal A} (hI2 : I^2 = 0)
+
+noncomputable def divided_powers  :
+  divided_powers I := of_invertible_factorial.divided_powers (by simp) hI2
+
+/- -- Keep ?
+lemma dpow_one (a : A) [decidable (a ∈ I)]:
+  (divided_powers hI2) 1 a = ite (a ∈ I) a 0 :=
+begin
+  split_ifs with ha,
+  exact dpow_one _ ha,
+  exact dpow_null _ ha, 
+end -/
+
+lemma dpow_of_two_le {n : ℕ} (hn : 2 ≤ n) (a : A) : 
+  (divided_powers hI2) n a = 0 := 
+begin
+  dsimp [divided_powers, of_invertible_factorial.divided_powers, of_invertible_factorial.dpow], 
+  rw coe_to_fun_apply,
+  simp only,
+  split_ifs with ha, convert mul_zero _,
+  exact ideal.mem_pow_eq_zero 2 n hI2 hn ha,
+  refl,
+end
+
+end of_square_zero
 
 -- Instead of 1.2.1, I formalize example 2 from [BO], Section 3.
 namespace rat_algebra
