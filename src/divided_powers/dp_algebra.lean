@@ -18,63 +18,75 @@ noncomputable theory
 /-! 
 The divided power algebra of a module -/
 
-open finset mv_polynomial ring_quot
+open finset mv_polynomial ring_quot direct_sum
+
+namespace mv_polynomial
+
+/-- `mv_polynomial.eval₂ (algebra_map R S) g` as an `R`-algebra homomorphism. -/
+def eval₂_alg_hom {R S σ : Type*} [comm_semiring R] [comm_semiring S] [algebra R S] (g : σ → S) :
+  mv_polynomial σ R →ₐ[R] S := 
+{ commutes' := λ r, by rw [ring_hom.to_fun_eq_coe, coe_eval₂_hom, algebra_map_eq, eval₂_C], 
+  .. mv_polynomial.eval₂_hom (algebra_map R S) g }
+
+@[simp] lemma eval₂_alg_hom_apply {R S σ : Type*} [comm_semiring R] [comm_semiring S] [algebra R S]
+  (g : σ → S) (P : mv_polynomial σ R) : 
+  eval₂_alg_hom g P = eval₂_hom (algebra_map R S) g P := rfl
+
+end mv_polynomial
 
 section ideals_and_rel
 
-lemma mk_quotient_eq_of_rel (R : Type*) [comm_ring R] {A : Type*} [comm_ring A] [algebra R A] {r : A → A → Prop} {a b : A} (h : r a b) :
-ideal.quotient.mk (ideal.of_rel r) a = ideal.quotient.mk (ideal.of_rel r) b :=
+-- R and the algebra instance are not used
+/- lemma quotient_mk_eq_of_rel (R : Type*) [comm_ring R] {A : Type*} [comm_ring A] [algebra R A]  
+  {r : A → A → Prop} {a b : A} (h : r a b) : -/
+lemma quotient_mk_eq_of_rel {A : Type*} [comm_ring A] {r : A → A → Prop} {a b : A} (h : r a b) :
+  ideal.quotient.mk (ideal.of_rel r) a = ideal.quotient.mk (ideal.of_rel r) b :=
 begin
   suffices : function.injective (ring_quot.ring_quot_equiv_ideal_quotient r).inv_fun,
-  apply this, 
-  exact mk_ring_hom_rel h,
-  rw function.injective_iff_has_left_inverse, 
-  use (ring_quot.ring_quot_equiv_ideal_quotient r).to_fun,
-  exact (ring_quot.ring_quot_equiv_ideal_quotient r).right_inv,
+  { apply this, 
+    exact mk_ring_hom_rel h },
+  exact function.injective_iff_has_left_inverse.mpr ⟨(ring_quot_equiv_ideal_quotient r).to_fun,
+    (ring_quot_equiv_ideal_quotient r).right_inv⟩,
 end
 
-lemma ideal.quotient_mk_eq_ring_quot_apply (R : Type*) [comm_ring R] {A : Type*} [comm_ring A] [algebra R A] (r : A → A → Prop) (a : A) :
-  ideal.quotient.mk (ideal.of_rel r) a 
-  = ring_quot.ring_quot_to_ideal_quotient r (mk_alg_hom R r a) :=
-begin
-  rw ← ring_quot.ring_quot_to_ideal_quotient_apply r a,
-  rw ← ring_quot.mk_alg_hom_coe R r,
-  refl,
-end
+lemma ideal.quotient_mk_eq_ring_quot_apply (R : Type*) [comm_ring R] {A : Type*} [comm_ring A]
+  [algebra R A] (r : A → A → Prop) (a : A) :
+  ideal.quotient.mk (ideal.of_rel r) a = ring_quot_to_ideal_quotient r (mk_alg_hom R r a) :=
+by rw [← ring_quot_to_ideal_quotient_apply r a, ← mk_alg_hom_coe R r];  refl
 
 end ideals_and_rel
 
 section graded_algebra
 
-variables {R : Type*} [comm_ring R] [decidable_eq R] 
+variables {R : Type*} [comm_ring R] --[decidable_eq R] -- The linter complains about this instance
 variables {A : Type*} [comm_ring A] [algebra R A]
 variables {ι : Type*} [decidable_eq ι][add_comm_monoid ι]
 variables (𝒜 : ι → submodule R A) [graded_algebra 𝒜]
 
-def galgA : graded_algebra 𝒜 := infer_instance 
+--def galgA : graded_algebra 𝒜 := infer_instance 
+--def decompose : A → direct_sum ι (λ i, 𝒜 i) := (galgA 𝒜).to_decomposition.decompose' 
 
-def decompose : A → direct_sum ι (λ i, 𝒜 i) := (galgA 𝒜).to_decomposition.decompose' 
-
-example : has_lift_t (𝒜 0) A := infer_instance
+-- This definition is not used (at least in this file)
+/- The canonical map from the graded algebra `A` to the direct sum `⊕ 𝒜 i`. -/
+/- def decompose : A → direct_sum ι (λ i, 𝒜 i) := 
+(@graded_ring.to_decomposition ι A (submodule R A) _ _ _ _ _ 𝒜 _).decompose'
+ -/
+--example : has_lift_t (𝒜 0) A := infer_instance
 --{ lift := λ x, x.val }
 
-instance : has_one ↥(𝒜 0) := ⟨⟨1, (galgA 𝒜).to_graded_monoid.one_mem⟩⟩
+--instance : has_one ↥(𝒜 0) := ⟨⟨1, (galgA 𝒜).to_graded_monoid.one_mem⟩⟩
+instance : has_one ↥(𝒜 0) := 
+⟨⟨1, (@graded_ring.to_graded_monoid ι A (submodule R A) _ _ _ _ _ 𝒜 _).one_mem⟩⟩
 
 instance : has_mul ↥(𝒜 0) := 
-{ mul := λ x y, ⟨x * y, 
-  begin
-    convert set_like.mul_mem_graded x.2 y.2, 
-    simp only [add_zero],
-  end⟩ }
+⟨λ x y, ⟨x * y, by convert set_like.mul_mem_graded x.2 y.2; rw [add_zero]⟩⟩
 
-lemma grade_zero_coe_mul (x y : 𝒜 0) : 
-  (↑(x * y) : A) = x * y := rfl 
+lemma grade_zero_coe_mul (x y : 𝒜 0) : (↑(x * y) : A) = x * y := rfl 
 
-@[simp] lemma grade_zero_val_mul (x y : 𝒜 0) :
-  (x * y).val = x.val * y.val := rfl
+@[simp] lemma grade_zero_val_mul (x y : 𝒜 0) : (x * y).val = x.val * y.val := rfl
 
-lemma grade_zero_coe_smul (r : R) (x : 𝒜 0) : 
-  (↑(r • x) : A) = r • x := rfl 
+@[nolint unused_arguments] -- I don't understand why the linter complains here
+lemma grade_zero_coe_smul (r : R) (x : 𝒜 0) :  (↑(r • x) : A) = r • x := rfl 
 
 @[simp] lemma grade_zero_coe_one: (↑(1 : 𝒜 0) : A) = 1 := rfl
 
@@ -94,61 +106,62 @@ instance grade_zero_comm_ring : comm_ring ↥(𝒜 0) := {
   one_mul       := λ x, by  ext; rw [grade_zero_coe_mul, grade_zero_coe_one, one_mul],
   mul_one       := λ x, by  ext; rw [grade_zero_coe_mul, grade_zero_coe_one, mul_one],
   left_distrib  := λ x y z, 
-  by ext; simp only [submodule.coe_add, grade_zero_coe_mul, left_distrib],
+    by ext; simp only [submodule.coe_add, grade_zero_coe_mul, left_distrib],
   right_distrib := λ x y z, 
     by ext; simp only [submodule.coe_add, grade_zero_coe_mul, right_distrib],
   mul_comm      := λ x y, by ext; simp only [grade_zero_coe_mul, mul_comm],
-  ..(infer_instance : add_comm_group (𝒜 0)), }
+  ..(infer_instance : add_comm_group (𝒜 0)) }
 
-example : semiring ↥(𝒜 0) := ring.to_semiring
+--example : semiring ↥(𝒜 0) := ring.to_semiring
 
-example (a : R) : algebra_map R A a = a • 1 := 
-algebra.algebra_map_eq_smul_one a
+--example (a : R) : algebra_map R A a = a • 1 := algebra.algebra_map_eq_smul_one a
 
 instance grade_zero_algebra : algebra R ↥(𝒜 0) := algebra.of_module'
-(λ r x, begin rw ← subtype.coe_inj, 
-simp only [grade_zero_coe_mul, grade_zero_coe_smul, grade_zero_coe_one, algebra.smul_mul_assoc, one_mul], end)
-(λ r x, begin rw ← subtype.coe_inj, 
-simp only [grade_zero_coe_mul, grade_zero_coe_smul, grade_zero_coe_one, algebra.mul_smul_comm, mul_one],  end)
+  (λ r x, by ext; simp only [grade_zero_coe_mul, grade_zero_coe_smul, grade_zero_coe_one, 
+    algebra.smul_mul_assoc, one_mul])
+  (λ r x, by ext; simp only [grade_zero_coe_mul, grade_zero_coe_smul, grade_zero_coe_one, 
+    algebra.mul_smul_comm, mul_one])
 
 
-def proj (i) : A →ₗ[R] (𝒜 i) := {
-to_fun := λ a, (direct_sum.decompose 𝒜 a) i,
-map_add' := λ a b, by simp only [direct_sum.decompose_add, direct_sum.add_apply],
-map_smul' := λ r a, by simp only [direct_sum.decompose_smul, dfinsupp.coe_smul, pi.smul_apply, ring_hom.id_apply], }
-
+/-- The projection from `A` to the degree `i` component `𝒜 i`, as an `R`-linear map. -/
+def proj (i : ι) : A →ₗ[R] (𝒜 i) :=
+{ to_fun    := λ a, decompose 𝒜 a i,
+  map_add'  := λ a b, by rw [decompose_add, add_apply],
+  map_smul' := λ r a, by rw [decompose_smul, dfinsupp.coe_smul, pi.smul_apply, ring_hom.id_apply] }
 
 end graded_algebra
 section
 
-variables (R : Type*) [comm_ring R] [decidable_eq R] 
-
-variables (M : Type*) [decidable_eq M] [add_comm_group M] [module R M]
+/-- The linter complains about these decidable_eq instances. For now I have moved them to later
+in the file, but I think more changes will be necessary. -/
+variables (R : Type*) [comm_ring R] /- [decidable_eq R] -/ 
+variables (M : Type*) /- [decidable_eq M] -/ [add_comm_group M] [module R M]
 
 namespace divided_power_algebra
 
-/-- The type coding the basic relations that will give rise to 
-the divided power algebra. 
-The class of X (n, a) will be equal to dpow n a, with a ∈ M. --/
+/-- The type coding the basic relations that will give rise to the divided power algebra. 
+  The class of X (n, a) will be equal to dpow n a, with a ∈ M. --/
 inductive rel : mv_polynomial (ℕ × M) R → mv_polynomial (ℕ × M) R → Prop
 -- force `ι` to be linear and creates the divided powers
 | zero {a : M} : rel (X (0, a)) 1
 | smul {r : R} {n : ℕ} {a : M} : rel (X (n, r • a)) (r^n • X (n, a))
 | mul {m n : ℕ} {a : M} : rel (X (m, a) * X (n, a)) ((nat.choose (m + n) m) • X (m + n, a))
 | add {n : ℕ} {a b : M} : rel (X (n, a+b)) 
-  (finset.sum (range (n + 1)) (λ k, (X (k, a) * X (n - k, b))))
+    (finset.sum (range (n + 1)) (λ k, (X (k, a) * X (n - k, b))))
 
 /-- The ideal of mv_polynomial (ℕ × M) R generated by rel -/
-def relI : ideal (mv_polynomial (ℕ × M) R) := 
-ideal.of_rel (rel R M)
+def relI : ideal (mv_polynomial (ℕ × M) R) := ideal.of_rel (rel R M)
 
 end divided_power_algebra
 
+-- Unused now
+/- The divided power algebra of a module M is the quotient of the polynomial ring
+by the ring relation defined by divided_power_algebra.rel -/
+/- @[derive [inhabited, comm_ring, algebra R]]
+def divided_power_algebra' := ring_quot (divided_power_algebra.rel R M) -/
+
 /-- The divided power algebra of a module M is the quotient of the polynomial ring
 by the ring relation defined by divided_power_algebra.rel -/
-@[derive [inhabited, comm_ring, algebra R]]
-def divided_power_algebra' := ring_quot (divided_power_algebra.rel R M)
-
 @[derive [inhabited, comm_ring, algebra R]]
 def divided_power_algebra :=
  (mv_polynomial (ℕ × M) R) ⧸ (divided_power_algebra.relI R M)
@@ -164,7 +177,58 @@ namespace divided_power_algebra
 /- Note that also we don't know yet that `divided_power_algebra R M`
 has divided powers, it has a kind of universal property for morphisms to a ring with divided_powers -/
 
+open mv_polynomial
+
+variables {R M}
+
+lemma eval₂_alg_hom_eval_eq {A : Type*} [comm_ring A] [algebra R A] {I : ideal A}
+  (hI : divided_powers I) (φ : M →ₗ[R] A) (n : ℕ) (m : M) :
+  @eval₂_alg_hom R A (ℕ × M) _ _ _(λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)) (X (n, m)) = 
+  hI.dpow n (φ m) := 
+by simp only [eval₂_alg_hom_apply, ring_hom.to_fun_eq_coe, coe_eval₂_hom, alg_hom.coe_mk, eval₂_X]
+
+lemma eval₂_alg_hom_eq_zero_of_rel {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} 
+  (hI : divided_powers I) {φ : M →ₗ[R] A} (hφ : ∀ m, φ m ∈ I) {x : mv_polynomial (ℕ × M) R} 
+  (hx : x ∈ relI R M) : eval₂_alg_hom (λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)) x = 0 :=
+begin
+  set f : mv_polynomial (ℕ × M) R →ₐ[R] A := 
+  eval₂_alg_hom (λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)) with hf,
+  suffices : relI R M ≤ ring_hom.ker f, 
+  rw ← ring_hom.mem_ker, 
+  exact this hx,  
+  dsimp only [relI, ideal.of_rel], 
+  rw submodule.span_le,
+  rintros x ⟨a, b, hx, hab⟩,
+  rw ← eq_sub_iff_add_eq at hab, rw hab,
+  simp only [set_like.mem_coe, ring_hom.mem_ker, map_sub, sub_eq_zero],
+  induction hx with m r n m n p m n u v,
+  { rw [eval₂_alg_hom_eval_eq hI φ, hI.dpow_zero (hφ m), map_one], },
+  { simp only [eval₂_alg_hom_eval_eq hI φ, map_smul], 
+    simp only [← algebra_map_smul A, smul_eq_mul A],
+    rw hI.dpow_smul n (hφ m), 
+    simp only [map_pow], },
+  { simp only [map_mul, map_nsmul, eval₂_alg_hom_eval_eq hI φ], 
+    rw hI.dpow_mul n p (hφ m), 
+    rw nsmul_eq_mul, },
+  { simp only [map_sum, eval₂_alg_hom_eval_eq hI φ, map_add],
+    rw hI.dpow_add n (hφ u) (hφ v), 
+    apply congr_arg2 _ rfl,
+    ext k,
+    simp only [map_mul, eval₂_alg_hom_eval_eq hI φ] },
+end
+
+variables (R M)
+/- I have taken the proofs out of the definition (Kevin always tells me that definitions in
+  tactic mode are a bad idea, because the generated term is sometimes too complicated to
+  work with). -/
 /-- The “universal” property of divided_power_algebra -/
+def lift (A : Type*) [comm_ring A] [algebra R A] (I : ideal A) (hI : divided_powers I)
+  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : divided_power_algebra R M →ₐ[R] A :=
+ideal.quotient.liftₐ _ 
+  (@eval₂_alg_hom R A (ℕ × M) _ _ _(λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)))
+  (λ x hx, eval₂_alg_hom_eq_zero_of_rel hI hφ hx)
+
+/- 
 def lift (A : Type*) [comm_ring A] [algebra R A]
   (I : ideal A) (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : 
   divided_power_algebra R M →ₐ[R] A :=
@@ -174,11 +238,11 @@ begin
   suffices f_eval_eq : ∀ (n : ℕ) (m : M),
      f (X (n, m)) = hI.dpow n (φ m),
   apply ideal.quotient.liftₐ _ f,  
-  suffices : relI R M ≤ ring_hom.ker f, 
+  {suffices : relI R M ≤ ring_hom.ker f, 
   intros x hx,
   rw ← ring_hom.mem_ker, 
   exact this hx,  
-  dsimp only [relI, ideal.of_rel], 
+  {dsimp only [relI, ideal.of_rel], 
   rw submodule.span_le,
   rintros x ⟨a, b, hx, hab⟩,
   rw ← eq_sub_iff_add_eq at hab, rw hab,
@@ -196,22 +260,21 @@ begin
     rw hI.dpow_add n (hφ u) (hφ v), 
     apply congr_arg2 _ rfl,
     ext k,
-    simp only [map_mul, f_eval_eq], },
-  intros n m,
-  simp only [ring_hom.to_fun_eq_coe, coe_eval₂_hom, alg_hom.coe_mk, eval₂_X],
-end
+    simp only [map_mul, f_eval_eq], }}},
+  { intros n m,
+    simp only [ring_hom.to_fun_eq_coe, coe_eval₂_hom, alg_hom.coe_mk, eval₂_X]},
+end -/
 
-lemma lift_eq (A : Type*) [comm_ring A] [algebra R A]
-  (I : ideal A) (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
+
+lemma lift_eq (A : Type*) [comm_ring A] [algebra R A] (I : ideal A) (hI : divided_powers I) 
+  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
   lift R M A I hI φ hφ (ideal.quotient.mkₐ R (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
-begin
-  dsimp only [lift],
-  simp only [ring_hom.to_fun_eq_coe, coe_eval₂_hom, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply,
-    ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom, alg_hom.coe_mk, eval₂_X],
-end
+by simp only [lift, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom,
+  eval₂_alg_hom_apply, eval₂_hom_X']
 
+variables [decidable_eq R] [decidable_eq M]
 
-instance : graded_algebra (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) := weighted_graded_algebra _ _
+instance  : graded_algebra (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) := weighted_graded_algebra _ _
 
 lemma relI_is_homogeneous : (relI R M).is_homogeneous ((weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ))) :=
 begin
@@ -280,6 +343,8 @@ def decomposition := quot_decomposition R
 
 end divided_power_algebra
 
+variables [decidable_eq R] [decidable_eq M]
+
 /-- The graded algebra structure on the divided power algebra-/
 def divided_power_galgebra : graded_algebra (divided_power_algebra.grade R M) := 
   graded_quot_alg R 
@@ -303,19 +368,17 @@ def ι : M →ₗ[R] (divided_power_algebra R M) :=
   map_add' := λ x y, by { 
     rw [← map_add, ideal.quotient.mkₐ_eq_mk],
     dsimp only [relI],
-    rw mk_quotient_eq_of_rel R rel.add, 
+    rw quotient_mk_eq_of_rel rel.add, 
     simp only [sum_range_succ', sum_range_zero, zero_add, nat.sub_zero,
     nat.sub_self], 
     simp only [map_add, map_mul],
-    simp only [mk_quotient_eq_of_rel R rel.zero],
-    simp only [map_one, one_mul, mul_one], 
-    apply_instance, },
+    simp only [quotient_mk_eq_of_rel rel.zero],
+    simp only [map_one, one_mul, mul_one], },
   map_smul' := λ r x, by { 
     rw [← map_smul, ideal.quotient.mkₐ_eq_mk],
     dsimp only [relI],
-    rw [mk_quotient_eq_of_rel R rel.smul], 
-    simp only [pow_one, ring_hom.id_apply],
-    apply_instance, } }
+    rw [quotient_mk_eq_of_rel rel.smul], 
+    simp only [pow_one, ring_hom.id_apply] }}
 
 lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) :
   ideal.quotient.mkₐ R (relI R M) (X (1, m)) = ι R m := rfl
@@ -808,3 +871,6 @@ In general, x ^ [n]  for dpow n x ?
 -/
 
 end divided_power_algebra
+
+
+--#lint
