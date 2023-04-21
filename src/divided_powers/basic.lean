@@ -333,7 +333,7 @@ lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : i
 rfl
 
 /- Roby65, corollary after proposition 3 -/
-example {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A} (hS : ideal.span S = I) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
+lemma dp_uniqueness {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A} (hS : ideal.span S = I) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
 begin
   suffices : I.map (ring_hom.id A) ≤ I, 
   let pd_id := pd_morphism_from_gens hI hI' hS this _,
@@ -343,11 +343,12 @@ begin
   suffices pd_id_id : ∀ (x : A), pd_id.to_ring_hom x = x,
   simp only [pd_id_id] at this,  exact this.symm, 
   { intro x,refl, },
-  sorry,
-  sorry,
-  sorry,
+  { rw [hI.dpow_null ha, hI'.dpow_null ha], },
+  { rintros ⟨a, ha⟩ n, 
+    simp only [subtype.coe_mk, ring_hom.id_apply],
+    exact hdp n a ha, },
+  { simp only [ideal.map_id, le_refl], },
 end
-
 
 -- For the moment, the notation does not work
 -- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
