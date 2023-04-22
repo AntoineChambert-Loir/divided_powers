@@ -333,6 +333,8 @@ lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : i
 rfl
 
 /- Roby65, corollary after proposition 3 -/
+/-- Uniqueness of a divided powers given its values
+on a generating set -/
 lemma dp_uniqueness {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A} (hS : ideal.span S = I) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
 begin
   suffices : I.map (ring_hom.id A) ≤ I, 
@@ -349,6 +351,9 @@ begin
     exact hdp n a ha, },
   { simp only [ideal.map_id, le_refl], },
 end
+
+/- TODO : The set of elements where two divided
+powers coincide is the largest ideal which is a sub-pd-ideal in both -/
 
 -- For the moment, the notation does not work
 -- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
