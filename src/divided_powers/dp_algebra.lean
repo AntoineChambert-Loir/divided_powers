@@ -9,6 +9,7 @@ import ring_theory.graded_algebra.basic
 import ring_theory.tensor_product
 
 import divided_powers.basic
+import divided_powers.rat_algebra
 import divided_powers.ideal_add
 import ..weighted_homogeneous -- Modified version of PR #17855
 import ..graded_ring_quot -- Quotients of graded rings
@@ -181,11 +182,14 @@ open mv_polynomial
 
 variables {R M}
 
+-- These two lemmas really belong to some other place
+-- because they use of the definition of the ideal relI or divided powers
 lemma eval₂_alg_hom_eval_eq {A : Type*} [comm_ring A] [algebra R A] {I : ideal A}
   (hI : divided_powers I) (φ : M →ₗ[R] A) (n : ℕ) (m : M) :
   @eval₂_alg_hom R A (ℕ × M) _ _ _(λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)) (X (n, m)) = 
   hI.dpow n (φ m) := 
 by simp only [eval₂_alg_hom_apply, ring_hom.to_fun_eq_coe, coe_eval₂_hom, alg_hom.coe_mk, eval₂_X]
+
 
 lemma eval₂_alg_hom_eq_zero_of_rel {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} 
   (hI : divided_powers I) {φ : M →ₗ[R] A} (hφ : ∀ m, φ m ∈ I) {x : mv_polynomial (ℕ × M) R} 
@@ -202,7 +206,7 @@ begin
   rw ← eq_sub_iff_add_eq at hab, rw hab,
   simp only [set_like.mem_coe, ring_hom.mem_ker, map_sub, sub_eq_zero],
   induction hx with m r n m n p m n u v,
-  { rw [eval₂_alg_hom_eval_eq hI φ, hI.dpow_zero (hφ m), map_one], },
+  { rw [eval₂_alg_hom_eval_eq hI, hI.dpow_zero (hφ m), map_one], },
   { simp only [eval₂_alg_hom_eval_eq hI φ, map_smul], 
     simp only [← algebra_map_smul A, smul_eq_mul A],
     rw hI.dpow_smul n (hφ m), 
@@ -222,7 +226,7 @@ variables (R M)
   tactic mode are a bad idea, because the generated term is sometimes too complicated to
   work with). -/
 /-- The “universal” property of divided_power_algebra -/
-def lift (A : Type*) [comm_ring A] [algebra R A] (I : ideal A) (hI : divided_powers I)
+def lift {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I)
   (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : divided_power_algebra R M →ₐ[R] A :=
 ideal.quotient.liftₐ _ 
   (@eval₂_alg_hom R A (ℕ × M) _ _ _(λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)))
@@ -265,10 +269,15 @@ begin
     simp only [ring_hom.to_fun_eq_coe, coe_eval₂_hom, alg_hom.coe_mk, eval₂_X]},
 end -/
 
-
-lemma lift_eq (A : Type*) [comm_ring A] [algebra R A] (I : ideal A) (hI : divided_powers I) 
+lemma lift_eq (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
   (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
-  lift R M A I hI φ hφ (ideal.quotient.mkₐ R (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
+  lift R M hI φ hφ (ideal.quotient.mk (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
+by simp only [lift, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom,
+  eval₂_alg_hom_apply, eval₂_hom_X']
+
+lemma lift_eqₐ (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
+  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
+  lift R M hI φ hφ (ideal.quotient.mkₐ R (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
 by simp only [lift, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom,
   eval₂_alg_hom_apply, eval₂_hom_X']
 
@@ -382,6 +391,20 @@ def ι : M →ₗ[R] (divided_power_algebra R M) :=
 
 lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) :
   ideal.quotient.mkₐ R (relI R M) (X (1, m)) = ι R m := rfl
+
+@[simp]
+theorem ι_comp_lift {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) :
+  (lift R M hI φ hφ).to_linear_map.comp (ι R) = φ :=
+begin
+  ext,
+  simp only [linear_map.coe_comp, function.comp_app, alg_hom.to_linear_map_apply, ← mk_alg_hom_mv_polynomial_ι_eq_ι, lift_eqₐ],
+  exact hI.dpow_one (hφ x),
+end
+
+@[simp]
+theorem lift_ι_apply {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ: ∀ m, φ m ∈ I) (x) :
+  lift R M hI φ hφ (ι R x) = φ x :=
+by { conv_rhs {rw ← ι_comp_lift R hI φ hφ,},refl, }
 
 variable {R}
 def degree (v : (ℕ × M) →₀ ℕ) : ℕ := finsum (λ x, (v x) * x.1)
@@ -734,6 +757,80 @@ instance : add_submonoid_class (submodule R (mv_polynomial (ℕ × M) R ⧸ relI
 def proj' (n : ℕ) : divided_power_algebra R M →ₗ[R] grade R M n := 
 proj (grade R M) n
 
+-- variables {R M}
+def algebra_map_inv : divided_power_algebra R M →ₐ[R] R :=
+lift R M (divided_powers.of_square_zero.divided_powers (by rw [ideal.zero_eq_bot, pow_two, ideal.bot_mul])) (0 : M →ₗ[R] R) (λ m, by simp only [linear_map.zero_apply, ideal.zero_eq_bot, ideal.mem_bot])
+
+-- variables (M) 
+lemma algebra_map_left_inverse :
+  function.left_inverse (algebra_map_inv R M) (algebra_map R (divided_power_algebra R M)) := λ m, by simp only [alg_hom.commutes, algebra.id.map_eq_id, ring_hom.id_apply]
+
+@[simp] lemma algebra_map_inj (x y : R) :
+  algebra_map R (divided_power_algebra R M) x = algebra_map R (divided_power_algebra R M) y ↔ x = y :=
+(algebra_map_left_inverse R M).injective.eq_iff
+
+@[simp] lemma algebra_map_eq_zero_iff (x : R) : algebra_map R (divided_power_algebra R M) x = 0 ↔ x = 0 :=
+map_eq_zero_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
+
+@[simp] lemma algebra_map_eq_one_iff (x : R) : algebra_map R (divided_power_algebra R M) x = 1 ↔ x = 1 :=
+map_eq_one_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
+
+variables [module Rᵐᵒᵖ M] [is_central_scalar R M]
+
+-- variable (R)
+def triv_sq_zero_ext.ideal : ideal (triv_sq_zero_ext R M) 
+  := ring_hom.ker (triv_sq_zero_ext.fst_hom R R M)
+
+lemma triv_sq_zero_ext.mem_ideal_iff_inr : 
+  ∀ (x : triv_sq_zero_ext R M),
+  (x ∈ triv_sq_zero_ext.ideal R M ↔ x = triv_sq_zero_ext.inr x.snd) :=
+begin
+  rintro ⟨r,m⟩,
+  simp only [triv_sq_zero_ext.ideal, ring_hom.mem_ker, triv_sq_zero_ext.fst_hom_apply, triv_sq_zero_ext.fst_mk],
+  split,
+  intro hr, rw hr, refl, 
+  intro hrm,
+  rw [← triv_sq_zero_ext.fst_mk r m, hrm, triv_sq_zero_ext.fst_inr],
+end
+
+lemma triv_sq_zero_ext.mem_ideal_iff_exists : ∀ (x : triv_sq_zero_ext R M),
+  (x ∈ triv_sq_zero_ext.ideal R M ↔ ∃ (m : M), x = triv_sq_zero_ext.inr m) :=
+begin
+  rintro ⟨r,m⟩,
+  simp only [triv_sq_zero_ext.ideal, ring_hom.mem_ker, triv_sq_zero_ext.fst_hom_apply, triv_sq_zero_ext.fst_mk],
+  split,
+  intro hr, rw hr, use m, refl,
+  rintro ⟨n,hn⟩,
+  rw [← triv_sq_zero_ext.fst_mk r m, hn, triv_sq_zero_ext.fst_inr],
+end
+
+def triv_sq_zero_ext.square_zero : (triv_sq_zero_ext.ideal R M) ^2 = 0 := 
+begin
+  rw [pow_two, ideal.zero_eq_bot, eq_bot_iff, ideal.mul_le],
+  simp only [triv_sq_zero_ext.mem_ideal_iff_inr],
+  rintros x hx y hy, 
+  rw [hx, hy, ideal.mem_bot, triv_sq_zero_ext.inr_mul_inr],
+end
+
+/-- The canonical map from `divided_power_algebra R M` into `triv_sq_zero_ext R M` that sends
+`divided_power_algebra.ι` to `triv_sq_zero_ext.inr`. -/
+def to_triv_sq_zero_ext :
+  divided_power_algebra R M →ₐ[R] triv_sq_zero_ext R M :=
+begin
+  apply lift R M 
+    (divided_powers.of_square_zero.divided_powers (triv_sq_zero_ext.square_zero R M) : divided_powers (triv_sq_zero_ext.ideal R M))
+    (triv_sq_zero_ext.inr_hom R M), 
+  intro m,
+  rw triv_sq_zero_ext.mem_ideal_iff_exists, use m, refl,
+end
+
+@[simp] lemma to_triv_sq_zero_ext_ι (x : M) :
+   to_triv_sq_zero_ext R M (ι R x) = triv_sq_zero_ext.inr x :=
+begin
+  apply lift_ι_apply,
+end
+
+/- 
 /- R → grade R M 0 is isomorphism -/
 def ring_equiv_degree_zero : ring_equiv R (grade R M 0) := 
 { to_fun    := (proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M)),
@@ -763,27 +860,199 @@ def linear_equiv_degree_one : linear_equiv (ring_hom.id R) M (grade R M 1) :=
   map_smul' := sorry,
   inv_fun   := sorry,
   left_inv  := sorry,
-  right_inv := sorry }
-
-def aug_ideal : ideal (divided_power_algebra R M) := (proj_0_ring_hom R M).ker
+  right_inv := sorry } -/
 
 section
 
-def is_aug_ideal (R : Type*) [comm_ring R] (I : ideal R) : Prop :=
-∃ g : R⧸I →+* R, (ideal.quotient.mk I) ∘ g = id
+/-- An ideal J of a commutative ring A is an augmentation ideal
+if ideal.quotient.mk J has a right inverse which is a ring_hom -/
+def is_augmentation_ideal (A : Type*) [comm_ring A] (J : ideal A) : Prop :=
+∃ g : A⧸J →+* A, (ideal.quotient.mk J) ∘ g = id
+
+/-- The augmentation ideal in the divided_power_algebra -/
+def aug_ideal : ideal (divided_power_algebra R M) := ring_hom.ker (algebra_map_inv R M)
 
 /- We prove that the augmentation is an augmentation ideal, namely there is a section -/
-lemma aug_ideal_is_aug_ideal : is_aug_ideal (divided_power_algebra R M) (aug_ideal R M) :=
-sorry
+lemma aug_ideal_is_augmentation_ideal : is_augmentation_ideal (divided_power_algebra R M) (aug_ideal R M) :=
+begin
+  rw is_augmentation_ideal,
+  let g := ideal.ker_lift_alg (algebra_map_inv R M),
+  let g1 := algebra_map R (divided_power_algebra R M ⧸ aug_ideal R M),
+  use (algebra_map R (divided_power_algebra R M)).comp g.to_ring_hom, 
+  ext x, 
+  simp only [ideal.ker_lift_alg_to_ring_hom, ring_hom.coe_comp, function.comp_app, ideal.quotient.mk_algebra_map, id.def],
+  suffices : function.right_inverse g g1, 
+  exact this x, 
+  apply function.right_inverse_of_injective_of_left_inverse,
+  exact ring_hom.ker_lift_injective _,
+  intro r, simp only [alg_hom_class.commutes, algebra.id.map_eq_id, ring_hom.id_apply],
+end 
 
+/- THE FOLLOWING LINES AIM AT PROVING THAT THE AUGMENTATION IDEAL
+IS GENERATED BY X(n,m) for n > 0 
+FOR THE MOMENT, I CAN'T CONCLUDE. 
+ROBY MENTIONS IT WITHOUT PROOF  -/
+example (c : R) : (algebra_map_inv R M) ((ideal.quotient.mkₐ R (relI R M)) (C c)) = c :=
+begin
+rw ←mv_polynomial.algebra_map_eq , 
+simp only [alg_hom_class.commutes, algebra.id.map_eq_id, ring_hom.id_apply], 
+end
+
+-- X (n,m) -> 0 si n > 0
+example (n : ℕ) (m : M) (hn : 0 < n): 
+  algebra_map_inv R M (ideal.quotient.mkₐ R _ (X(n,m))) = 0 := 
+begin
+  rw [algebra_map_inv, lift_eqₐ R M, linear_map.zero_apply, divided_powers.dpow_eval_zero],
+  exact ne_of_gt hn,
+end
+
+-- X (0,m) -> 1
+example (m : M) : 
+  algebra_map_inv R M (ideal.quotient.mkₐ R _ (X(0,m))) = 1 := 
+begin
+  rw [algebra_map_inv, lift_eqₐ R M, linear_map.zero_apply],
+  rw divided_powers.dpow_zero,
+  rw ideal.mem_bot,
+end
+
+lemma algebra_map_inv_apply (nm : ℕ × M) : algebra_map_inv R M (ideal.quotient.mkₐ R _ (X (nm))) = ite (nm.1 = 0) 1 0 :=
+begin
+  dsimp [algebra_map_inv, lift], 
+  simp only [eval₂_X],
+  by_cases h : nm.1 = 0,
+  { rw [if_pos h, h],
+    rw divided_powers.dpow_zero _ _,
+    rw ideal.mem_bot,},
+  { rw [if_neg h], 
+    rw divided_powers.dpow_eval_zero, 
+    exact ne_of_gt hn }
+end
+
+lemma algebra_map_inv_of_monomial (q : ℕ × M →₀ ℕ) (c : R) :
+  algebra_map_inv R M 
+    (ideal.quotient.mkₐ R _ (monomial q c)) = 
+    ite (∀ (x : ℕ × M), x ∈q.support → x.1 = 0) c 0 := 
+begin
+  rw mv_polynomial.monomial_eq , 
+  simp only [map_mul],
+  rw ←mv_polynomial.algebra_map_eq , 
+  simp only [alg_hom_class.commutes, algebra.id.map_eq_id, ring_hom.id_apply], 
+
+  rw finsupp.prod, simp only [map_prod],
+  simp_rw [map_pow, algebra_map_inv_apply, ite_pow, one_pow],
+
+  split_ifs,
+  { convert mul_one c,
+    apply finset.prod_eq_one,
+    intros x hx, 
+    rw if_pos (h x hx), },
+  { convert mul_zero c,
+    push_neg at h,
+    obtain ⟨a, haq, ha'⟩ := h,
+    rw finset.prod_eq_zero haq,
+    rw if_neg ha', 
+    apply zero_pow, 
+    simpa only [finsupp.mem_support_iff, ← zero_lt_iff] using haq, },
+end
+
+lemma algebra_map_inv_mkₐ (f : mv_polynomial (ℕ × M) R) : 
+  algebra_map_inv R M (ideal.quotient.mkₐ R _ f) =  
+(filter (λ (x : ℕ × M →₀ ℕ), ∀ (x_1 : ℕ × M), x_1 ∈ x.support → x_1.fst = 0) f.support).sum
+  (λ (x : ℕ × M →₀ ℕ), coeff x f) :=
+begin
+  conv_lhs { rw f.as_sum, },
+  rw [map_sum (ideal.quotient.mkₐ R _)],
+  rw map_sum,
+  have h : ∀ (x : ℕ × M →₀ ℕ), x ∈ f.support →  _ = ite _ (coeff x f) 0,
+  intros q hq, exact algebra_map_inv_of_monomial R M q (coeff q f), 
+  rw finset.sum_congr rfl h,
+  rw finset.sum_ite , 
+  convert add_zero _,
+  apply finset.sum_eq_zero,
+  intros x hx, 
+  refl,
+end
+
+open_locale classical
+
+lemma aug_ideal_eq_span : ideal.span (set.image (λ nx, submodule.quotient.mk (X (nx))) { nx : ℕ × M | 0 < nx.1 }) = aug_ideal R M := 
+begin
+  apply le_antisymm,
+  { rw ideal.span_le, 
+    intros f,
+    simp only [ideal.quotient.mk_eq_mk, set.mem_image, set.mem_set_of_eq, prod.exists, exists_and_distrib_left, set_like.mem_coe,
+  forall_exists_index, and_imp],
+    intros n hn m,
+    intro hf, 
+    rw ← hf,
+    simp only [aug_ideal, ring_hom.mem_ker, algebra_map_inv, lift_eq, linear_map.zero_apply],
+    rw divided_powers.dpow_eval_zero,
+    exact ne_of_gt hn, },
+  { intros f, 
+    obtain ⟨g, rfl⟩ := ideal.quotient.mk_surjective f,
+    rw [aug_ideal, ring_hom.mem_ker],
+    rw ← ideal.quotient.mkₐ_eq_mk R _,
+    intro hg, 
+    let hg' := hg, 
+    rw algebra_map_inv_mkₐ at hg',
+    let g0 := (filter (λ (x : ℕ × M →₀ ℕ), ∀ (x_1 : ℕ × M), x_1 ∈ x.support → x_1.fst = 0) g.support).sum
+  (λ (x : ℕ × M →₀ ℕ), monomial x (coeff x g)),
+  
+    let g1 := (filter (λ (x : ℕ × M →₀ ℕ), ∃ (x_1 : ℕ × M), x_1 ∈ x.support ∧ x_1.fst > 0) g.support).sum
+  (λ (x : ℕ × M →₀ ℕ), monomial x (coeff x g)),
+
+have hg_eq_g0_plus_g1 : g = g0 + g1,
+    { ext x,
+      rw coeff_add, rw coeff_sum, rw coeff_sum,
+      rw ← finset.sum_union,
+      rw finset.sum_eq_single x, 
+      rw coeff_monomial,
+      rw if_pos rfl,
+      { intros q hq hqx, 
+        rw coeff_monomial, rw if_neg, exact hqx, },
+      { intro hx, 
+        -- simp only [not_mem_union, mem_filter] at hx,
+        -- push_neg at hx, 
+        rw [coeff_monomial, if_pos rfl, ← not_mem_support_iff],
+        intro hx', apply hx, 
+        simp only [mem_union, mem_filter], 
+        rw ← and_or_distrib_left, 
+        apply and.intro hx', 
+        rw or_iff_not_imp_left, push_neg,
+        intro h, 
+        obtain ⟨a, ha, ha'⟩ := h,
+        use a, apply and.intro ha, exact zero_lt_iff.mpr ha', },
+      { rw finset.disjoint_filter, 
+        intros y hy, push_neg, 
+        intros h a ha, rw h a ha, } },
+have : (ideal.quotient.mkₐ R (relI R M)) g0 = 0,
+
+
+    sorry,
+  },
+end
+
+/- * * * * * * -/
 
 variables (x : M) (n : ℕ)
 
+/- THIS DOES NOT WORK EITHER, MAYBE I DID SOMETHING WRONG… -/
 /-- Lemma 2 of Roby 65. -/
 lemma on_dp_algebra_unique (h h' : divided_powers (aug_ideal R M))
   (h1 : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x)))
   (h1' : ∀ (x : M) (n : ℕ), h'.dpow n (ι R x) = submodule.quotient.mk (X (n, x))) : 
-  h = h' := sorry  
+  h = h' := 
+begin
+  apply divided_powers.dp_uniqueness,
+  exact (aug_ideal_eq_span R M),
+  intros n f,
+  rw set.mem_image, 
+  rintro ⟨⟨q, m⟩, hq, rfl⟩,
+  simp only [set.mem_set_of_eq] at hq,
+
+  sorry  
+end
+
 
 def cond_D : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
   ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x))
