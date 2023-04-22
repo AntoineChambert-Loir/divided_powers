@@ -506,7 +506,7 @@ lemma divided_powers_quot_unique (hquot : _root_.divided_powers (I.map (ideal.qu
 begin
   obtain ⟨a, ha, hax⟩ := 
   (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hx,
-  rw [← hax, hm.dpow_comp n a ha, divided_powers_dpow_quot_apply, dpow_eq hI hIJ ha],
+  rw [← hax, hm.2 n a ha, divided_powers_dpow_quot_apply, dpow_eq hI hIJ ha],
 end
 
 end quot
