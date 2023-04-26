@@ -153,6 +153,76 @@ lemma coe_def (J : sub_pd_ideal hI) : (J : ideal A) = J.carrier := rfl
 
 @[simp] lemma mem_carrier {s : sub_pd_ideal hI} {x : A} : x ∈ s.carrier ↔ x ∈ s := iff.rfl
 
+
+/- TODO : The set of elements where two divided
+powers coincide is the largest ideal which is a sub-pd-ideal in both -/
+
+def pd_equalizer {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) : ideal A := {
+carrier := { a ∈ I | ∀ (n : ℕ), hI.dpow n a = hI'.dpow n a },
+add_mem' := λ a b ha hb, 
+begin
+  simp only [set.mem_sep_iff, set_like.mem_coe] at ha hb ⊢,
+  apply and.intro (ideal.add_mem I ha.1 hb.1),
+  intro n,
+  rw [hI.dpow_add n ha.1 hb.1, hI'.dpow_add n ha.1 hb.1] ,
+  apply finset.sum_congr rfl,
+  intros k hk,
+  exact congr_arg2 (*) (ha.2 k) (hb.2 (n - k)),
+end,
+zero_mem' := 
+begin
+  simp only [set.mem_sep_iff, set_like.mem_coe],
+  apply and.intro (ideal.zero_mem I),
+  intro n,
+  by_cases hn : n = 0,
+  rw [hn, hI.dpow_zero (zero_mem I), hI'.dpow_zero (zero_mem I)], 
+  rw [hI.dpow_eval_zero hn, hI'.dpow_eval_zero hn],
+end,
+smul_mem' := λ a x hx,
+begin
+  simp only [set.mem_sep_iff, set_like.mem_coe] at hx ⊢,
+  simp only [algebra.id.smul_eq_mul],
+  split,
+  refine ideal.mul_mem_left I a hx.1,
+  intro n,
+  rw hI.dpow_smul n hx.1,rw hI'.dpow_smul n hx.1,
+  rw hx.2, 
+end, }
+
+lemma mem_pd_equalizer_iff {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) {x : A}: x ∈ pd_equalizer hI hI' 
+↔ x ∈ I ∧   ∀ (n : ℕ), hI.dpow n x = hI'.dpow n x := 
+by simp only [pd_equalizer, submodule.mem_mk, set.mem_sep_iff, set_like.mem_coe]
+
+lemma pd_equalizer_is_pd_ideal_left {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) :
+  is_sub_pd_ideal hI (pd_equalizer hI hI') :=
+begin
+  apply is_sub_pd_ideal.mk,
+  { intros x hx, 
+    rw mem_pd_equalizer_iff at hx,
+    exact hx.1, },
+  { intros n hn x hx,
+    rw mem_pd_equalizer_iff at hx ⊢,
+    split,
+    apply hI.dpow_mem hn hx.1,
+    intro m,
+    rw [hI.dpow_comp m hn hx.1, hx.2, hx.2, hI'.dpow_comp m hn hx.1], }
+end
+
+lemma pd_equalizer_is_pd_ideal_right {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) :
+  is_sub_pd_ideal hI' (pd_equalizer hI hI') :=
+begin
+  apply is_sub_pd_ideal.mk,
+  { intros x hx, 
+    rw mem_pd_equalizer_iff at hx,
+    exact hx.1, },
+  { intros n hn x hx,
+    rw mem_pd_equalizer_iff at hx ⊢,
+    split,
+    apply hI'.dpow_mem hn hx.1,
+    intro m,
+    rw [← hx.2, hI.dpow_comp m hn hx.1, hx.2, hx.2, hI'.dpow_comp m hn hx.1], }
+end
+
 /-- If there is a pd-structure on I(A/J) such that the quotient map is 
    a pd-morphism, then J ⊓ I is a sub-pd-ideal of I -/
 def inter_quot (J : ideal A) (hJ : divided_powers (I.map (ideal.quotient.mk J)))
@@ -170,6 +240,27 @@ def inter_quot (J : ideal A) (hJ : divided_powers (I.map (ideal.quotient.mk J)))
     rw [hφ, ideal.quotient.eq_zero_iff_mem], 
     exact haJ, 
   end }
+
+
+lemma le_equalizer_of_pd_morphism {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) {B : Type*} [comm_ring B]
+  (f : A →+* B)
+  {K : ideal B} (hI_le_K : ideal.map f I  ≤ K) 
+  (hK hK' : divided_powers K) 
+  (hIK : is_pd_morphism hI hK f)
+  (hIK' : is_pd_morphism hI hK' f) :
+  ideal.map f I ≤ sub_pd_ideal.pd_equalizer hK hK' :=
+begin
+  rw ideal.map, rw ideal.span_le, 
+  rintros b ⟨a, ha, rfl⟩,
+  simp only [set_like.mem_coe] at ha ⊢,
+  rw sub_pd_ideal.mem_pd_equalizer_iff, 
+  split,
+  apply hI_le_K, exact ideal.mem_map_of_mem f ha, 
+  simp only [is_pd_morphism, ideal.map_id, ring_hom.id_apply] at hIK hIK',
+  intro n,  
+  rw [hIK.2 n a ha, hIK'.2 n a ha], 
+end
+
 
 /-- If J is an ideal of A, then J ⬝ I is a sub-pd-ideal of I. (Berthelot, 1.6.1 (i)) -/
 def prod (J : ideal A) : sub_pd_ideal hI  :=

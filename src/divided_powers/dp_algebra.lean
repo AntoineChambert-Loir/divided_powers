@@ -10,6 +10,7 @@ import ring_theory.tensor_product
 import data.mv_polynomial.supported
 
 import divided_powers.basic
+import divided_powers.sub_pd_ideal
 import divided_powers.rat_algebra
 import divided_powers.ideal_add
 import ..weighted_homogeneous -- Modified version of PR #17855
@@ -279,8 +280,9 @@ by simp only [lift, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_ho
 lemma lift_eqₐ (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
   (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
   lift R M hI φ hφ (ideal.quotient.mkₐ R (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
-by simp only [lift, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom,
-  eval₂_alg_hom_apply, eval₂_hom_X']
+by simp only [ideal.quotient.mkₐ_eq_mk, lift_eq]
+
+--by simp only [lift, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom, eval₂_alg_hom_apply, eval₂_hom_X']
 
 variables [decidable_eq R] [decidable_eq M]
 
@@ -1211,15 +1213,35 @@ def i_2 : S →ₐ R ⊗[A] S := algebra.tensor_product.include_right
 variables {R S} (I J)
 def K : ideal (R ⊗[A] S) := (I.map (i_1 A R S)) ⊔ (J.map (i_2 A R S))
 
+
+
 namespace divided_powers
 
 variables {I J}
 /- Lemma 1 : uniqueness of the dp structure on R ⊗ S for I + J -/
 lemma on_tensor_product_unique (hK hK' : divided_powers (K A I J))
-  (hi_1 : is_pd_morphism hI hK (i_1 A R S)) (hi_1' : is_pd_morphism hI hK' (i_1 A R S))
-  (hi_2 : is_pd_morphism hJ hK (i_2 A R S)) (hi_2' : is_pd_morphism hJ hK' (i_2 A R S)) : 
+  (hIK : is_pd_morphism hI hK (i_1 A R S)) 
+  (hIK' : is_pd_morphism hI hK' (i_1 A R S))
+  (hJK : is_pd_morphism hJ hK (i_2 A R S)) 
+  (hJK' : is_pd_morphism hJ hK' (i_2 A R S)) : 
   hK = hK' :=
-sorry
+begin
+  apply eq_of_eq_on_ideal,
+  intros n x hx,
+  suffices : x ∈ sub_pd_ideal.pd_equalizer hK hK',  
+  rw sub_pd_ideal.mem_pd_equalizer_iff at this,
+  exact this.2 n,
+  suffices : K A I J ≤ sub_pd_ideal.pd_equalizer hK hK',
+  apply this, exact hx,
+  dsimp only [K], rw sup_le_iff,
+  split, 
+  apply sub_pd_ideal.le_equalizer_of_pd_morphism hI (i_1 A R S).to_ring_hom
+  _ hK hK' hIK hIK',
+  refine le_sup_left,
+  apply sub_pd_ideal.le_equalizer_of_pd_morphism hJ (i_2 A R S).to_ring_hom
+  _ hK hK' hJK hJK',
+  refine le_sup_right,
+end
 
 def cond_T : Prop :=
 ∃ hK : divided_powers (K A I J), 

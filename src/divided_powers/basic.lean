@@ -352,8 +352,6 @@ begin
   { simp only [ideal.map_id, le_refl], },
 end
 
-/- TODO : The set of elements where two divided
-powers coincide is the largest ideal which is a sub-pd-ideal in both -/
 
 -- For the moment, the notation does not work
 -- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
