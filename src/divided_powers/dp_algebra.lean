@@ -183,7 +183,7 @@ has divided powers, it has a kind of universal property for morphisms to a ring 
 open mv_polynomial
 
 variables {R M}
-
+/-  TO BE DELETED 
 -- These two lemmas really belong to some other place
 -- because they use of the definition of the ideal relI or divided powers
 lemma eval₂_alg_hom_eval_eq {A : Type*} [comm_ring A] [algebra R A] {I : ideal A}
@@ -222,18 +222,135 @@ begin
     ext k,
     simp only [map_mul, eval₂_alg_hom_eval_eq hI φ] },
 end
+ -/
+
+variable (R)
+def dp (n : ℕ) (m : M) : divided_power_algebra R M :=
+ideal.quotient.mk (relI R M) (X (⟨n, m⟩))
+
+
+lemma dp_zero (m : M) : dp R 0 m = 1 :=
+begin
+  dsimp [dp], 
+  rw ← map_one (ideal.quotient.mk _),  
+  rw ideal.quotient.eq,
+  rw relI,
+  rw ideal.of_rel,
+  apply submodule.subset_span,
+  simp,
+  use X(0,m), use 1,
+  split,
+  exact rel.zero,
+  simp,
+end
 
 variables (R M)
 /- I have taken the proofs out of the definition (Kevin always tells me that definitions in
   tactic mode are a bad idea, because the generated term is sometimes too complicated to
   work with). -/
+
+/- General purpose lifting lemma -/
+lemma lift_rel_le_ker {A : Type*} [comm_ring A] [algebra R A]
+  (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1)
+  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
+  (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
+  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))):
+  relI R M ≤ ring_hom.ker (@eval₂_alg_hom R A (ℕ × M) _ _ _ f) := 
+begin
+  dsimp only [relI, ideal.of_rel], 
+  rw submodule.span_le,
+  rintros x ⟨a, b, hx, hab⟩,
+  rw ← eq_sub_iff_add_eq at hab, rw hab,
+  simp only [set_like.mem_coe, ring_hom.mem_ker, map_sub, sub_eq_zero],
+  induction hx with m r n m n p m n u v,
+
+  simp only [hf_zero, eval₂_alg_hom_apply, eval₂_hom_X', eval₂_X, coe_eval₂_hom, eval₂_one, eq_self_iff_true], 
+
+  rw map_smul,
+  simp only [eval₂_alg_hom_apply, eval₂_hom_X', hf_smul],
+
+  rw map_nsmul, rw map_mul, 
+  simp only [eval₂_alg_hom_apply, eval₂_hom_X', nsmul_eq_mul, hf_mul],
+
+  rw map_sum,
+  simp only [eval₂_alg_hom_apply, coe_eval₂_hom, eval₂_mul, eval₂_X, hf_add],
+end
+
+/-- General purpose universal property of `divided_power_algebra R M` -/
+def lift_aux {A : Type*} [comm_ring A] [algebra R A]
+  (f : ℕ × M → A) 
+  (hf_zero : ∀ m, f (0, m) = 1) 
+  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
+  (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
+  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) : divided_power_algebra R M →ₐ[R] A :=
+ideal.quotient.liftₐ (relI R M) (@eval₂_alg_hom R A (ℕ × M) _ _ _ f) (lift_rel_le_ker R M f hf_zero hf_smul hf_mul hf_add) 
+
+lemma lift_aux_eq {A : Type*} [comm_ring A] [algebra R A]
+  (f : ℕ × M → A) 
+  (hf_zero : ∀ m, f (0, m) = 1) 
+  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
+  (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
+  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) (n : ℕ) (m : M) :
+  lift_aux R M f hf_zero hf_smul hf_mul hf_add 
+  (ideal.quotient.mkₐ R (relI R M) (X (⟨n, m⟩))) = f (⟨n, m⟩) :=
+by simp only [lift_aux, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom,
+  eval₂_alg_hom_apply, eval₂_hom_X']
+
 /-- The “universal” property of divided_power_algebra -/
+def lift -- {S : Type*} [comm_ring S] [algebra R S] 
+  {A : Type*} [comm_ring A] [algebra R A] 
+  -- [algebra S A] [is_scalar_tower R S A]
+  {I : ideal A} (hI : divided_powers I)
+  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : divided_power_algebra R M →ₐ[R] A :=
+lift_aux R M (λ nm, hI.dpow nm.1 (φ nm.2)) 
+(λ m, hI.dpow_zero (hφ m)) 
+(λ n r m, by rw [linear_map.map_smulₛₗ, ring_hom.id_apply,
+← algebra_map_smul A r (φ m), smul_eq_mul, 
+hI.dpow_smul n (hφ m), ← smul_eq_mul, ← map_pow, algebra_map_smul]) 
+(λ n p m, by rw [hI.dpow_mul n p (hφ m), ← nsmul_eq_mul]) 
+(λ n u v, by rw [map_add, hI.dpow_add n (hφ u) (hφ v)]) 
+
+/- Now given f : M →ₗ[R] N, I want to define 
+ divided_power_algebra R M →+* divided_power_algebra S N 
+ that maps X(n,m) to X(n, f m),
+ but the instances don't work…
+ -/
+instance divided_power_algebra.algebra' (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] : algebra R (divided_power_algebra S N) :=
+ring_hom.to_algebra (ring_hom.comp (algebra_map S (divided_power_algebra S N)) (algebra_map R S))
+
+example (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] : is_scalar_tower R S (divided_power_algebra S N) := is_scalar_tower.of_algebra_map_eq (congr_fun rfl)
+
+lemma lift'_rel_le_ker (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] (f : M →ₗ[R] N) :
+relI R M ≤ ring_hom.ker (@eval₂_alg_hom R (divided_power_algebra S N) (ℕ × M) _ _ _ (λ nm, dp S nm.1 (f nm.2))) := 
+begin
+  dsimp only [relI, ideal.of_rel], 
+  rw submodule.span_le,
+  rintros x ⟨a, b, hx, hab⟩,
+  rw ← eq_sub_iff_add_eq at hab, rw hab,
+  simp only [set_like.mem_coe, ring_hom.mem_ker, map_sub, sub_eq_zero],
+  induction hx with m r n m n p m n u v,
+
+  simp [dp, rel.zero],
+
+end
+
+
+set_option trace.class_instances false
+
+def lift' (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] (f : M →ₗ[R] N) : divided_power_algebra R M →ₐ[R] divided_power_algebra S N := 
+ ideal.quotient.liftₐ (relI R M) (@eval₂_alg_hom R (divided_power_algebra S N) (ℕ × M) _ _ _ (λ nm, dp S nm.1 (f nm.2))) (lift'_rel_le_ker S f)
+
+
+#check lift' 
+
+
+/- /-- The “universal” property of divided_power_algebra -/
 def lift {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I)
   (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : divided_power_algebra R M →ₐ[R] A :=
 ideal.quotient.liftₐ _ 
   (@eval₂_alg_hom R A (ℕ × M) _ _ _(λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)))
   (λ x hx, eval₂_alg_hom_eq_zero_of_rel hI hφ hx)
-
+ -/
 /- 
 def lift (A : Type*) [comm_ring A] [algebra R A]
   (I : ideal A) (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : 
@@ -271,18 +388,20 @@ begin
     simp only [ring_hom.to_fun_eq_coe, coe_eval₂_hom, alg_hom.coe_mk, eval₂_X]},
 end -/
 
-lemma lift_eq (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
-  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
-  lift R M hI φ hφ (ideal.quotient.mk (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
-by simp only [lift, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom,
-  eval₂_alg_hom_apply, eval₂_hom_X']
-
 lemma lift_eqₐ (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
   (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
   lift R M hI φ hφ (ideal.quotient.mkₐ R (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
-by simp only [ideal.quotient.mkₐ_eq_mk, lift_eq]
+by  rw [lift, lift_aux_eq]
 
---by simp only [lift, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom, eval₂_alg_hom_apply, eval₂_hom_X']
+lemma lift_eq (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
+  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
+  lift R M hI φ hφ (ideal.quotient.mk (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
+by rw [← ideal.quotient.mkₐ_eq_mk R, lift_eqₐ]
+
+example {S : Type*} [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module S N]: algebra R (divided_power_algebra S N) := begin
+refine ring_hom.to_algebra _,
+apply ring_hom.comp (algebra_map S (divided_power_algebra S N)) (algebra_map R S) ,
+end
 
 variables [decidable_eq R] [decidable_eq M]
 
