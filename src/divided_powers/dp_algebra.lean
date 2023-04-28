@@ -169,11 +169,11 @@ by the ring relation defined by divided_power_algebra.rel -/
 def divided_power_algebra :=
  (mv_polynomial (ℕ × M) R) ⧸ (divided_power_algebra.relI R M)
 
-/- example : divided_power_algebra R M :=
-begin
-  rw divided_power_algebra,
-  refine submodule.quotient.mk _,
-end -/
+lemma divided_power_algebra.algebra' (k : Type*) [comm_ring k] [algebra k R] [module k M][is_scalar_tower k R M] : algebra k (divided_power_algebra R M) :=
+ring_hom.to_algebra (ring_hom.comp (algebra_map R (divided_power_algebra R M)) (algebra_map k R))
+
+/-  {k : Type*} [comm_ring k] [algebra k R] [module k M] [is_scalar_tower k R M] 
+[algebra k (divided_power_algebra R M)] [is_scalar_tower k R (divided_power_algebra R M)] -/
 
 namespace divided_power_algebra
 
@@ -293,7 +293,7 @@ def lift_aux {A : Type*} [comm_ring A] [algebra R A]
   (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
   (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
   (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) : divided_power_algebra R M →ₐ[R] A :=
-ideal.quotient.liftₐ (relI R M) (@eval₂_alg_hom R A (ℕ × M) _ _ _ f) (lift_rel_le_ker R M f hf_zero hf_smul hf_mul hf_add) 
+ideal.quotient.liftₐ (relI R M) (@eval₂_alg_hom R A (ℕ × M) _ _ _ f) (lift_rel_le_ker R M f hf_zero hf_smul hf_mul hf_add)
 
 lemma lift_aux_eq {A : Type*} [comm_ring A] [algebra R A]
   (f : ℕ × M → A) 
@@ -335,10 +335,6 @@ by rw [← ideal.quotient.mkₐ_eq_mk R, lift_eqₐ]
  that maps X(n,m) to X(n, f m),
  but the instances don't work…
  -/
-instance divided_power_algebra.algebra' (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] : algebra R (divided_power_algebra S N) :=
-ring_hom.to_algebra (ring_hom.comp (algebra_map S (divided_power_algebra S N)) (algebra_map R S))
-
-example (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] : is_scalar_tower R S (divided_power_algebra S N) := is_scalar_tower.of_algebra_map_eq (congr_fun rfl)
 
 lemma ideal.quotient.rel_le_ker {R : Type*} [comm_ring R] {S : Type*} [comm_ring S] (I : ideal R) {r : R → R → Prop} (hr : I = ideal.of_rel r) (f : R →+* S)
   (hf : ∀ (a b : R), r a b → f a = f b) : 
@@ -354,7 +350,10 @@ def ideal.quotient.lift_rel {R : Type*} [comm_ring R] {S : Type*} [comm_ring S] 
   (hf : ∀ (a b : R), r a b → f a = f b) : R ⧸ I →+* S :=
 ideal.quotient.lift I f (ideal.quotient.rel_le_ker I hr f hf)
 
-lemma lift'_rel_le_ker (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] (f : M →ₗ[R] N) :
+lemma lift'_rel_le_ker (S : Type*) [comm_ring S] [algebra R S] 
+  {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
+  [algebra R (divided_power_algebra S N)] [is_scalar_tower R S (divided_power_algebra S N)]
+  (f : M →ₗ[R] N) :
 relI R M ≤ ring_hom.ker (@eval₂_alg_hom R (divided_power_algebra S N) (ℕ × M) _ _ _ (λ nm, dp S nm.1 (f nm.2))) := 
 begin
   dsimp only [relI],
@@ -370,6 +369,7 @@ begin
   apply sub_mem_rel_of_rel, exact rel.zero,
 
   simp only [eval₂_X, linear_map.map_smulₛₗ, ring_hom.id_apply],
+
   sorry,
 
   simp [map_smul],
