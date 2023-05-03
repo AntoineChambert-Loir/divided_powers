@@ -27,19 +27,31 @@ open finset mv_polynomial ring_quot direct_sum
 
 namespace mv_polynomial
 
+variables {R S σ : Type*} [comm_semiring R] [comm_semiring S] 
+
+@[simp] lemma eval₂_hom.smul (f : R →+* S) (g : σ → S) (r : R) (P : mv_polynomial σ R) :
+  eval₂_hom f g (r • P) = f r • eval₂_hom f g P := 
+by simp only [smul_eq_C_mul, coe_eval₂_hom, eval₂_mul, eval₂_C, algebra.id.smul_eq_mul]
+
+variables [algebra R S]
+
+variable (R)
 /-- `mv_polynomial.eval₂ (algebra_map R S) g` as an `R`-algebra homomorphism. -/
-def eval₂_alg_hom {R S σ : Type*} [comm_semiring R] [comm_semiring S] [algebra R S] (g : σ → S) :
+def eval₂_alg_hom  (g : σ → S) :
   mv_polynomial σ R →ₐ[R] S := 
 { commutes' := λ r, by rw [ring_hom.to_fun_eq_coe, coe_eval₂_hom, algebra_map_eq, eval₂_C], 
   .. mv_polynomial.eval₂_hom (algebra_map R S) g }
 
-@[simp] lemma eval₂_alg_hom_apply {R S σ : Type*} [comm_semiring R] [comm_semiring S] [algebra R S]
-  (g : σ → S) (P : mv_polynomial σ R) : 
-  eval₂_alg_hom g P = eval₂_hom (algebra_map R S) g P := rfl
+variable {R}
+lemma eval₂_alg_hom_apply (g : σ → S) (P : mv_polynomial σ R) :
+  eval₂_alg_hom R g P = eval₂_hom (algebra_map R S) g P := rfl
 
-@[simp] lemma eval₂_hom.smul {R S σ : Type*} [comm_semiring R] [comm_semiring S]  (f : R →+* S) (g : σ → S) (r : R) (P : mv_polynomial σ R) :
-  eval₂_hom f g (r • P) = f r • eval₂_hom f g P := 
-by simp only [smul_eq_C_mul, coe_eval₂_hom, eval₂_mul, eval₂_C, algebra.id.smul_eq_mul]
+@[simp] lemma coe_eval₂_alg_hom (g : σ → S) :
+  ⇑(eval₂_alg_hom R g) = eval₂ (algebra_map R S) g := rfl
+
+@[simp] lemma eval₂_alg_hom_X' (g : σ → S) (i : σ) :
+  eval₂_alg_hom R g ((X i : mv_polynomial σ R)) = g i := 
+eval₂_X (algebra_map R S)  g i
 
 end mv_polynomial
 
@@ -244,33 +256,25 @@ lemma lift_rel_le_ker {A : Type*} [comm_ring A] [algebra R A]
   (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))):
   relI R M ≤ ring_hom.ker (@eval₂_alg_hom R A (ℕ × M) _ _ _ f) := 
 begin
-  dsimp only [relI, ideal.of_rel], 
-  rw submodule.span_le,
+  rw [relI, ideal.of_rel, submodule.span_le],
   rintros x ⟨a, b, hx, hab⟩,
-  rw ← eq_sub_iff_add_eq at hab, rw hab,
-  simp only [set_like.mem_coe, ring_hom.mem_ker, map_sub, sub_eq_zero],
+  rw [eq_sub_iff_add_eq.mpr hab, set_like.mem_coe, ring_hom.mem_ker, map_sub, sub_eq_zero],
   induction hx with m r n m n p m n u v,
-
-  simp only [hf_zero, eval₂_alg_hom_apply, eval₂_hom_X', eval₂_X, coe_eval₂_hom, eval₂_one, eq_self_iff_true], 
-
-  rw map_smul,
-  simp only [eval₂_alg_hom_apply, eval₂_hom_X', hf_smul],
-
-  rw map_nsmul, rw map_mul, 
-  simp only [eval₂_alg_hom_apply, eval₂_hom_X', nsmul_eq_mul, hf_mul],
-
-  rw map_sum,
-  simp only [eval₂_alg_hom_apply, coe_eval₂_hom, eval₂_mul, eval₂_X, hf_add],
+  { rw [eval₂_alg_hom_X', map_one, hf_zero] },
+  { simp only [eval₂_alg_hom_X', alg_hom.map_smul, hf_smul] },
+  { simp only [map_mul, eval₂_alg_hom_X', nsmul_eq_mul, map_nat_cast, hf_mul] },
+  { simp only [coe_eval₂_alg_hom, eval₂_X, eval₂_sum, eval₂_mul, hf_add] },
 end
 
 /-- General purpose universal property of `divided_power_algebra R M` -/
-def lift_aux {A : Type*} [comm_ring A] [algebra R A]
-  (f : ℕ × M → A) 
-  (hf_zero : ∀ m, f (0, m) = 1) 
+def lift_aux {A : Type*} [comm_ring A] [algebra R A] (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1) 
   (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
   (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
-  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) : divided_power_algebra R M →ₐ[R] A :=
-ideal.quotient.liftₐ (relI R M) (@eval₂_alg_hom R A (ℕ × M) _ _ _ f) (lift_rel_le_ker R M f hf_zero hf_smul hf_mul hf_add)
+  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = 
+    (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) : 
+  divided_power_algebra R M →ₐ[R] A :=
+ideal.quotient.liftₐ (relI R M) (@eval₂_alg_hom R A (ℕ × M) _ _ _ f)
+  (lift_rel_le_ker R M f hf_zero hf_smul hf_mul hf_add)
 
 lemma lift_aux_eq {A : Type*} [comm_ring A] [algebra R A]
   (f : ℕ × M → A) 
@@ -281,8 +285,8 @@ lemma lift_aux_eq {A : Type*} [comm_ring A] [algebra R A]
   lift_aux R M f hf_zero hf_smul hf_mul hf_add 
   (ideal.quotient.mkₐ R (relI R M) p) = 
   eval₂ (algebra_map R A) f p :=
-by simp only [lift_aux, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom,
-  eval₂_alg_hom_apply, coe_eval₂_hom]
+by simp only [lift_aux, ideal.quotient.mkₐ_eq_mk, ideal.quotient.liftₐ_apply, 
+  ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom, coe_eval₂_alg_hom]
 
 lemma lift_aux_eq_X {A : Type*} [comm_ring A] [algebra R A]
   (f : ℕ × M → A) 
@@ -364,12 +368,9 @@ begin
   induction hab with m r n m n p m n u v,
   { simp only [coe_eval₂_hom, eval₂_X, eval₂_one],
     rw dp_zero,  },
-  { simp only [← eval₂_alg_hom_apply],
-    rw map_smul,
+  { conv_rhs {rw [← eval₂_alg_hom_apply, map_smul],},
     simp only [eval₂_alg_hom_apply, eval₂_hom_X', linear_map.map_smul],
-    rw ← algebra_map_smul S r,
-    rw ← algebra_map_smul S (r ^ n),  
-    rw [dp_smul, map_pow],
+    rw [← algebra_map_smul S r, ← algebra_map_smul S (r ^ n), dp_smul, map_pow],
     apply_instance, apply_instance, },
   { simp only [coe_eval₂_hom, eval₂_mul, eval₂_X, nsmul_eq_mul], 
     simp only [mv_polynomial.eval₂_eq_eval_map, map_nat_cast, ← nsmul_eq_mul],
@@ -392,7 +393,8 @@ lemma lift'_eq (S : Type*) [comm_ring S] [algebra R S]
   (f : M →ₗ[R] N) (p : mv_polynomial (ℕ × M) R) :
   lift' R S f (ideal.quotient.mk (relI R M) p) = 
   eval₂ (algebra_map R (divided_power_algebra S N)) (λ nm : ℕ × M, dp S nm.1 (f nm.2)) p := 
-by rw [lift', ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom, eval₂_alg_hom_apply, coe_eval₂_hom]
+by simp only [lift', ideal.quotient.liftₐ_apply, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom, 
+  coe_eval₂_alg_hom]
 
 lemma lift'_eqₐ (S : Type*) [comm_ring S] [algebra R S] 
   {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
