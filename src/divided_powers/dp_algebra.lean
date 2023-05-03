@@ -97,7 +97,47 @@ end ideal
 
 end ideals_and_rel
 
-open ideal ideal.quotient
+namespace triv_sq_zero_ext
+
+variables (R M : Type*) [comm_semiring R] [add_comm_monoid M] [module R M] [module Rᵐᵒᵖ M]
+  [is_central_scalar R M]
+
+def ker_ideal : ideal (triv_sq_zero_ext R M) := ring_hom.ker (fst_hom R R M)
+
+lemma mem_ker_ideal_iff_inr (x : triv_sq_zero_ext R M) :
+  (x ∈ ker_ideal R M ↔ x = inr x.snd) :=
+begin
+  obtain ⟨r,m⟩ := x,
+  simp only [ker_ideal, ring_hom.mem_ker, fst_hom_apply, fst_mk],
+  split,
+  intro hr, 
+  rw hr, refl, 
+  intro hrm,
+  rw [← fst_mk r m, hrm, fst_inr],
+end
+
+lemma mem_ker_ideal_iff_exists : ∀ (x : triv_sq_zero_ext R M),
+  (x ∈ ker_ideal R M ↔ ∃ (m : M), x = inr m) :=
+begin
+  rintro ⟨r,m⟩,
+  simp only [ker_ideal, ring_hom.mem_ker, fst_hom_apply, fst_mk],
+  split,
+  intro hr, rw hr, use m, refl,
+  rintro ⟨n,hn⟩,
+  rw [← fst_mk r m, hn, fst_inr],
+end
+
+lemma square_zero : (ker_ideal R M) ^ 2 = 0 := 
+begin
+  rw [pow_two, zero_eq_bot, eq_bot_iff, mul_le],
+  simp only [mem_ker_ideal_iff_inr],
+  rintros x hx y hy, 
+  rw [hx, hy, mem_bot, inr_mul_inr],
+end
+
+end triv_sq_zero_ext
+
+open ideal ideal.quotient triv_sq_zero_ext
 
 section graded_algebra
 
@@ -971,67 +1011,7 @@ begin
         simp only [monomial_zero', aeval_C, algebra.id.map_eq_id, ring_hom.id_apply, hf'], }, }, },
 end
 
-end grade_zero
-
-
-section grade_one
-
-variables [module Rᵐᵒᵖ M] [is_central_scalar R M]
-
-variable (R)
-def triv_sq_zero_ext.ideal : ideal (triv_sq_zero_ext R M) 
-  := ring_hom.ker (triv_sq_zero_ext.fst_hom R R M)
-
-lemma triv_sq_zero_ext.mem_ideal_iff_inr : 
-  ∀ (x : triv_sq_zero_ext R M),
-  (x ∈ triv_sq_zero_ext.ideal R M ↔ x = triv_sq_zero_ext.inr x.snd) :=
-begin
-  rintro ⟨r,m⟩,
-  simp only [triv_sq_zero_ext.ideal, ring_hom.mem_ker, triv_sq_zero_ext.fst_hom_apply, triv_sq_zero_ext.fst_mk],
-  split,
-  intro hr, rw hr, refl, 
-  intro hrm,
-  rw [← triv_sq_zero_ext.fst_mk r m, hrm, triv_sq_zero_ext.fst_inr],
-end
-
-lemma triv_sq_zero_ext.mem_ideal_iff_exists : ∀ (x : triv_sq_zero_ext R M),
-  (x ∈ triv_sq_zero_ext.ideal R M ↔ ∃ (m : M), x = triv_sq_zero_ext.inr m) :=
-begin
-  rintro ⟨r,m⟩,
-  simp only [triv_sq_zero_ext.ideal, ring_hom.mem_ker, triv_sq_zero_ext.fst_hom_apply, triv_sq_zero_ext.fst_mk],
-  split,
-  intro hr, rw hr, use m, refl,
-  rintro ⟨n,hn⟩,
-  rw [← triv_sq_zero_ext.fst_mk r m, hn, triv_sq_zero_ext.fst_inr],
-end
-
-def triv_sq_zero_ext.square_zero : (triv_sq_zero_ext.ideal R M) ^2 = 0 := 
-begin
-  rw [pow_two, zero_eq_bot, eq_bot_iff, mul_le],
-  simp only [triv_sq_zero_ext.mem_ideal_iff_inr],
-  rintros x hx y hy, 
-  rw [hx, hy, mem_bot, triv_sq_zero_ext.inr_mul_inr],
-end
-
-/-- The canonical map from `divided_power_algebra R M` into `triv_sq_zero_ext R M` that sends
-`divided_power_algebra.ι` to `triv_sq_zero_ext.inr`. -/
-def to_triv_sq_zero_ext :
-  divided_power_algebra R M →ₐ[R] triv_sq_zero_ext R M :=
-begin
-  apply lift R M 
-    (divided_powers.of_square_zero.divided_powers (triv_sq_zero_ext.square_zero R M) : divided_powers (triv_sq_zero_ext.ideal R M))
-    (triv_sq_zero_ext.inr_hom R M), 
-  intro m,
-  rw triv_sq_zero_ext.mem_ideal_iff_exists, use m, refl,
-end
-
-@[simp] lemma to_triv_sq_zero_ext_ι (x : M) :
-   to_triv_sq_zero_ext R M (ι R x) = triv_sq_zero_ext.inr x :=
-begin
-  apply lift_ι_apply,
-end
-
-/- 
+/-
 /- R → grade R M 0 is isomorphism -/
 def ring_equiv_degree_zero : ring_equiv R (grade R M 0) := 
 { to_fun    := (proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M)),
@@ -1052,7 +1032,25 @@ def proj_0_ring_hom : ring_hom (divided_power_algebra R M) R :=
   map_mul'  := sorry,
   map_zero' := sorry,
   map_add'  := sorry }
+-/
 
+end grade_zero
+
+section grade_one
+
+variable (R)
+/-- The canonical map from `divided_power_algebra R M` into `triv_sq_zero_ext R M` that sends
+`divided_power_algebra.ι` to `triv_sq_zero_ext.inr`. -/
+def to_triv_sq_zero_ext [module Rᵐᵒᵖ M] [is_central_scalar R M] :
+  divided_power_algebra R M →ₐ[R] triv_sq_zero_ext R M :=
+lift R M (divided_powers.of_square_zero.divided_powers (triv_sq_zero_ext.square_zero R M) :
+  divided_powers (ker_ideal R M)) (inr_hom R M) (λ m, (mem_ker_ideal_iff_exists R M _).mpr ⟨m, rfl⟩)
+
+@[simp] lemma to_triv_sq_zero_ext_ι [module Rᵐᵒᵖ M] [is_central_scalar R M] (x : M) :
+   to_triv_sq_zero_ext R M (ι R x) = inr x :=
+lift_ι_apply R _ _ _ x
+
+/- 
 
 /- ι : M → grade R M 1 is isomorphism -/
 def linear_equiv_degree_one : linear_equiv (ring_hom.id R) M (grade R M 1) :=
