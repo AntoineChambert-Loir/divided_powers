@@ -321,20 +321,19 @@ by rw [← mkₐ_eq_mk R, lift_eqₐ_X]
 end lift
 
 
-/- Now given an R-algebra S, an S-module N and f : M →ₗ[R] N,
-we define 
- divided_power_algebra R M →ₐ[R] divided_power_algebra S N 
- that maps X(n,m) to X(n, f m)
- -/
+
+
+section lift'
 
 variables {M}
-lemma lift'_rel_le_ker (S : Type*) [comm_ring S] [algebra R S] 
-  {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
-  [algebra R (divided_power_algebra S N)] [is_scalar_tower R S (divided_power_algebra S N)]
-  (f : M →ₗ[R] N) :
-relI R M ≤ ring_hom.ker (@eval₂_alg_hom R _ (ℕ × M) _ _ _ (λ nm, dp S nm.1 (f nm.2))) := 
+
+variables (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N]
+  [module S N] [is_scalar_tower R S N] [algebra R (divided_power_algebra S N)]
+  [is_scalar_tower R S (divided_power_algebra S N)] (f : M →ₗ[R] N) 
+
+lemma lift'_rel_le_ker :
+  relI R M ≤ ring_hom.ker (@eval₂_alg_hom R _ (ℕ × M) _ _ _ (λ nm, dp S nm.1 (f nm.2))) := 
 begin
-  dsimp only [relI],
   apply rel_le_ker (relI R M) rfl,
   intros a b hab,
   induction hab with m r n m n p m n u v,
@@ -351,29 +350,22 @@ begin
     rw dp_add, },
 end
 
-/-- The functoriality map between divided power algebras associated
-with a linear map of the underlying modules -/
-def lift' (S : Type*) [comm_ring S] [algebra R S] 
-  {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
-  [algebra R (divided_power_algebra S N)] [is_scalar_tower R S (divided_power_algebra S N)]
-  (f : M →ₗ[R] N) : divided_power_algebra R M →ₐ[R] divided_power_algebra S N := 
+/-- The functoriality map between divided power algebras associated with a linear map of the
+  underlying modules. Given an `R`-algebra `S`, an `S`-module `N` and `f : M →ₗ[R] N`, this is the
+  map `divided_power_algebra R M →ₐ[R] divided_power_algebra S N` that maps `X(n,m)` to `X(n, f m)`.
+-/
+def lift' : divided_power_algebra R M →ₐ[R] divided_power_algebra S N := 
 liftₐ (relI R M) _ (lift'_rel_le_ker R S f)
 
-lemma lift'_eq (S : Type*) [comm_ring S] [algebra R S] 
-  {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
-  [algebra R (divided_power_algebra S N)] [is_scalar_tower R S (divided_power_algebra S N)]
-  (f : M →ₗ[R] N) (p : mv_polynomial (ℕ × M) R) :
-  lift' R S f (mk (relI R M) p) = 
+lemma lift'_eq (p : mv_polynomial (ℕ × M) R) : lift' R S f (mk (relI R M) p) = 
   eval₂ (algebra_map R (divided_power_algebra S N)) (λ nm : ℕ × M, dp S nm.1 (f nm.2)) p := 
 by simp only [lift', liftₐ_apply, lift_mk, alg_hom.coe_to_ring_hom, coe_eval₂_alg_hom]
 
-lemma lift'_eqₐ (S : Type*) [comm_ring S] [algebra R S] 
-  {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
-  [algebra R (divided_power_algebra S N)] [is_scalar_tower R S (divided_power_algebra S N)]
-  (f : M →ₗ[R] N) (p : mv_polynomial (ℕ × M) R) :
-  lift' R S f (mkₐ R (relI R M) p) = 
+lemma lift'_eqₐ (p : mv_polynomial (ℕ × M) R) : lift' R S f (mkₐ R (relI R M) p) = 
   eval₂ (algebra_map R (divided_power_algebra S N)) (λ nm : ℕ × M, dp S nm.1 (f nm.2)) p := 
 by rw [mkₐ_eq_mk, lift'_eq]
+
+end lift'
 
 end functoriality
 
