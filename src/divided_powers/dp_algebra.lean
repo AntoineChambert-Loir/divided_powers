@@ -101,7 +101,7 @@ open ideal ideal.quotient
 
 section graded_algebra
 
-variables {R : Type*} [comm_ring R] --[decidable_eq R] -- The linter complains about this instance
+variables {R : Type*} [comm_ring R]
 variables {A : Type*} [comm_ring A] [algebra R A]
 variables {ι : Type*} [decidable_eq ι][add_comm_monoid ι]
 variables (𝒜 : ι → submodule R A) [graded_algebra 𝒜]
@@ -158,10 +158,13 @@ def proj (i : ι) : A →ₗ[R] (𝒜 i) :=
 end graded_algebra
 section
 
-/-- The linter complains about these decidable_eq instances. For now I have moved them to later
-in the file, but I think more changes will be necessary. -/
-variables (R : Type*) [comm_ring R] /- [decidable_eq R] -/ 
-variables (M : Type*) /- [decidable_eq M] -/ [add_comm_group M] [module R M]
+variables (R M : Type*) [comm_ring R]
+
+instance [decidable_eq R] [decidable_eq M] :
+  graded_algebra (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) := 
+weighted_graded_algebra _ _
+
+variables [add_comm_group M] [module R M]
 
 namespace divided_power_algebra
 
@@ -369,13 +372,12 @@ end lift'
 
 end functoriality
 
-variables [decidable_eq R] [decidable_eq M]
+section decidable_eq
 
-variable (M)
+variables (M) [decidable_eq R] [decidable_eq M]
 
-instance  : graded_algebra (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) := weighted_graded_algebra _ _
-
-lemma relI_is_homogeneous : (relI R M).is_homogeneous ((weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ))) :=
+lemma relI_is_homogeneous : 
+  (relI R M).is_homogeneous ((weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ))) :=
 begin
   dsimp only [relI, of_rel],
   apply is_homogeneous_span,
@@ -422,23 +424,23 @@ def grade := quot_submodule R (weighted_homogeneous_submodule R (prod.fst : ℕ 
   (divided_power_algebra.relI R M)
 
 /-- The canonical decomposition of `divided_power_algebra R M` -/
-def decomposition := quot_decomposition R 
-  (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) (divided_power_algebra.relI R M)
-  (relI_is_homogeneous R M)
+def decomposition := quot_decomposition R  (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
+  (divided_power_algebra.relI R M) (relI_is_homogeneous R M)
+
+end decidable_eq
 
 end divided_power_algebra
 
-variables [decidable_eq R] [decidable_eq M]
-
 /-- The graded algebra structure on the divided power algebra-/
-def divided_power_galgebra : graded_algebra (divided_power_algebra.grade R M) := 
-  graded_quot_alg R 
-    (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
-    (divided_power_algebra.relI R M) (divided_power_algebra.relI_is_homogeneous R M)
+def divided_power_galgebra [decidable_eq R] [decidable_eq M] :
+  graded_algebra (divided_power_algebra.grade R M) := 
+graded_quot_alg R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
+  (divided_power_algebra.relI R M) (divided_power_algebra.relI_is_homogeneous R M)
 
-lemma mv_polynomial.vars_X_subset {R : Type*} {σ : Type*} [decidable_eq σ] (n : σ) [comm_semiring R] :
+lemma mv_polynomial.vars_X_subset {R : Type*} {σ : Type*} (n : σ) [comm_semiring R] :
   (mv_polynomial.X n : mv_polynomial σ R).vars ⊆ {n} := 
 begin
+  classical,
   rw X,
   intro u,
   rw mem_vars, 
@@ -457,7 +459,7 @@ namespace divided_power_algebra
 variable {M}
 
 lemma surjective_of_supported : function.surjective 
-  ((mkₐ R (relI R M)).comp (subalgebra.val (mv_polynomial.supported R {nm : ℕ ×M | 0 < nm.1 }))) := 
+  ((mkₐ R (relI R M)).comp (subalgebra.val (mv_polynomial.supported R {nm : ℕ × M | 0 < nm.1 }))) := 
 begin
   intro f, 
   obtain ⟨p',hp'⟩ := mk_surjective f,
@@ -536,6 +538,10 @@ submodule.span R
   { u : divided_power_algebra R M | ∃ p : mv_polynomial (ℕ × M) R,
     (is_homogeneous_of_degree p n ∧ mkₐ R (relI R M) p = u) }
 
+section decidable_eq
+
+variables [decidable_eq R] [decidable_eq M]
+
 lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 := begin
   refine ⟨1, _, rfl⟩,
   simp only [set_like.mem_coe, mem_weighted_homogeneous_submodule, is_weighted_homogeneous_one], 
@@ -551,9 +557,11 @@ def decompose : divided_power_algebra R M → direct_sum ℕ (λ (i : ℕ), ↥(
 (divided_power_galgebra R M).to_decomposition.decompose'
 
 /- graded_algebra (grade R M )-/
-instance : graded_algebra (divided_power_algebra.grade R M) := divided_power_galgebra R M
+instance : graded_algebra (divided_power_algebra.grade R M) := 
+divided_power_galgebra R M
 
-example : algebra R (grade R M 0) := infer_instance
+
+end decidable_eq
 
 def galg_hom.is_homogeneous {ι : Type*} [add_comm_monoid ι] [decidable_eq ι]
   {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ι → submodule R A) [graded_algebra 𝒜]
@@ -562,10 +570,11 @@ def galg_hom.is_homogeneous {ι : Type*} [add_comm_monoid ι] [decidable_eq ι]
 
 lemma finsupp.prod.mem_grade {A : Type*} [comm_ring A] [algebra R A] 
   (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜] 
-  {σ : Type*} [decidable_eq σ] (c : σ →₀ ℕ) (f : σ → A) (d : σ → ℕ)
+  {σ : Type*} (c : σ →₀ ℕ) (f : σ → A) (d : σ → ℕ)
   (hc : ∀ s ∈ c.support, f s ∈ 𝒜 (d s)): 
   c.prod (λ s e, (f s) ^ e) ∈ 𝒜 (c.sum (λ s e, e * d s)) := 
 begin
+  classical,
   rw finsupp.prod, rw finsupp.sum,
   let p : finset σ → Prop := λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i * d i))),
 
@@ -589,6 +598,16 @@ begin
   exact subset_rfl,
 end
 
+variable {R}
+def has_graded_dpow {A : Type*} [comm_ring A] [algebra R A] 
+  (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜]
+  {I : ideal A} (hI : divided_powers I) := ∀ (a : A) (ha : a ∈ I) 
+  (i : ℕ) (hai : a ∈ 𝒜 i) (n : ℕ),  hI.dpow n a ∈ 𝒜 (n • i)
+
+
+section decidable_eq
+
+variables (R) [decidable_eq R] [decidable_eq M]
 
 lemma lift_aux_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] 
   (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜]
@@ -626,10 +645,6 @@ begin
 end
 
 variable {R}
-def has_graded_dpow {A : Type*} [comm_ring A] [algebra R A] 
-  (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜]
-  {I : ideal A} (hI : divided_powers I) := ∀ (a : A) (ha : a ∈ I) 
-  (i : ℕ) (hai : a ∈ 𝒜 i) (n : ℕ),  hI.dpow n a ∈ 𝒜 (n • i)
   
 lemma lift_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] 
   (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜]
@@ -646,7 +661,7 @@ begin
   simpa only [algebra.id.smul_eq_mul, mul_one] using hI' (φ m) (hφ m) 1 (hφ' m) n,
 end
 
-lemma lift'_is_homogeneous 
+lemma lift'_is_homogeneous
   {N : Type*} [decidable_eq N] [add_comm_group N] [module R N] 
   (f : M →ₗ[R] N) :
   galg_hom.is_homogeneous R (divided_power_algebra.grade R M) (divided_power_algebra.grade R N) (lift' R R f) := 
@@ -669,10 +684,14 @@ end
 /- We need the projections (divided_power_algebra R M) → grade R M n ,
 more generally for graded algebras -/
 
-instance : add_submonoid_class (submodule R (mv_polynomial (ℕ × M) R ⧸ relI R M)) (divided_power_algebra R M) := submodule.add_submonoid_class
-
 def proj' (n : ℕ) : divided_power_algebra R M →ₗ[R] grade R M n := 
 proj (grade R M) n
+
+end decidable_eq 
+
+instance : add_submonoid_class (submodule R (mv_polynomial (ℕ × M) R ⧸ relI R M))
+  (divided_power_algebra R M) := 
+submodule.add_submonoid_class
 
 section grade_zero
 
@@ -864,6 +883,7 @@ end -/
 lemma aug_ideal_eq_span : 
   span (set.image (λ nm, mk _ (X nm)) { nm : ℕ × M | 0 < nm.1 }) = aug_ideal R M := 
 begin
+  classical,
   apply le_antisymm,
   { rw span_le, 
     intros f,
@@ -1175,4 +1195,4 @@ In general, x ^ [n]  for dpow n x ?
 end divided_power_algebra
 
 
--- #lint
+#lint
