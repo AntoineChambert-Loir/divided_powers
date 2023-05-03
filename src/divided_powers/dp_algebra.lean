@@ -227,15 +227,14 @@ begin
 end
 
 lemma dp_add (n : ℕ) (x y : M) : dp R n (x + y) = 
-(range (n+1)).sum (λ k, dp R k x * dp R (n - k) y) := 
+  (range (n+1)).sum (λ k, dp R k x * dp R (n - k) y) := 
 begin
   simp only [dp, mkₐ_eq_mk, ← _root_.map_mul, ← map_sum, ideal.quotient.eq], 
   exact sub_mem_rel_of_rel rel.add,
 end
 
 lemma unique_on_dp {A : Type*} [comm_ring A] [algebra R A]
-  {f g : divided_power_algebra R M →ₐ[R] A} 
-  (h : ∀ n m, f (dp R n m) = g (dp R n m)) :
+  {f g : divided_power_algebra R M →ₐ[R] A} (h : ∀ n m, f (dp R n m) = g (dp R n m)) :
   f = g := 
 begin
   rw fun_like.ext'_iff,
@@ -248,12 +247,15 @@ section functoriality
 
 variables (R M)
 
+section lift
+
+variables {A : Type*} [comm_ring A] [algebra R A]
+
 /- General purpose lifting lemma -/
-lemma lift_rel_le_ker {A : Type*} [comm_ring A] [algebra R A]
-  (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1)
-  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
-  (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
-  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))):
+lemma lift_rel_le_ker (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1)
+  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f ⟨n, r • m⟩ = r ^ n • f(⟨n, m⟩)) 
+  (hf_mul : ∀ n p m, f ⟨n, m⟩ * f ⟨p, m⟩ = ((n + p).choose n) • f ⟨n + p, m⟩)
+  (hf_add : ∀ n u v, f ⟨n, u + v⟩ = (range (n + 1)).sum (λ (x : ℕ), f ⟨x, u⟩ * f ⟨n - x, v⟩)) :
   relI R M ≤ ring_hom.ker (@eval₂_alg_hom R A (ℕ × M) _ _ _ f) := 
 begin
   rw [relI, of_rel, submodule.span_le],
@@ -267,77 +269,63 @@ begin
 end
 
 /-- General purpose universal property of `divided_power_algebra R M` -/
-def lift_aux {A : Type*} [comm_ring A] [algebra R A] (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1) 
-  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
-  (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
-  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = 
-    (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) : 
+def lift_aux (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1) 
+  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f ⟨n, r • m⟩ = r ^ n • f(⟨n, m⟩)) 
+  (hf_mul : ∀ n p m, f ⟨n, m⟩ * f ⟨p, m⟩ = ((n + p).choose n) • f ⟨n + p, m⟩)
+  (hf_add : ∀ n u v, f ⟨n, u + v⟩ = (range (n + 1)).sum (λ (x : ℕ), f ⟨x, u⟩ * f ⟨n - x, v⟩)) : 
   divided_power_algebra R M →ₐ[R] A :=
-liftₐ (relI R M) (@eval₂_alg_hom R A (ℕ × M) _ _ _ f)
-  (lift_rel_le_ker R M f hf_zero hf_smul hf_mul hf_add)
+liftₐ (relI R M) (eval₂_alg_hom R f) (lift_rel_le_ker R M f hf_zero hf_smul hf_mul hf_add)
 
-lemma lift_aux_eq {A : Type*} [comm_ring A] [algebra R A]
-  (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1) 
-  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
-  (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
-  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) 
+lemma lift_aux_eq (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1) 
+  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f ⟨n, r • m⟩ = r ^ n • f(⟨n, m⟩)) 
+  (hf_mul : ∀ n p m, f ⟨n, m⟩ * f ⟨p, m⟩ = ((n + p).choose n) • f ⟨n + p, m⟩)
+  (hf_add : ∀ n u v, f ⟨n, u + v⟩ = (range (n + 1)).sum (λ (x : ℕ), f ⟨x, u⟩ * f ⟨n - x, v⟩)) 
   (p : mv_polynomial (ℕ × M) R) :
   lift_aux R M f hf_zero hf_smul hf_mul hf_add (mkₐ R (relI R M) p) = eval₂ (algebra_map R A) f p :=
 by simp only [lift_aux, mkₐ_eq_mk, liftₐ_apply, lift_mk, alg_hom.coe_to_ring_hom, coe_eval₂_alg_hom]
 
-lemma lift_aux_eq_X {A : Type*} [comm_ring A] [algebra R A] (f : ℕ × M → A) 
-  (hf_zero : ∀ m, f (0, m) = 1) 
-  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
-  (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
-  (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) 
+lemma lift_aux_eq_X (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1) 
+  (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f ⟨n, r • m⟩ = r ^ n • f(⟨n, m⟩)) 
+  (hf_mul : ∀ n p m, f ⟨n, m⟩ * f ⟨p, m⟩ = ((n + p).choose n) • f ⟨n + p, m⟩)
+  (hf_add : ∀ n u v, f ⟨n, u + v⟩ = (range (n + 1)).sum (λ (x : ℕ), f ⟨x, u⟩ * f ⟨n - x, v⟩))  
   (n : ℕ) (m : M) :
-  lift_aux R M f hf_zero hf_smul hf_mul hf_add (mkₐ R (relI R M) (X (⟨n, m⟩))) = f (⟨n, m⟩) :=
+  lift_aux R M f hf_zero hf_smul hf_mul hf_add (mkₐ R (relI R M) (X (⟨n, m⟩))) = f ⟨n, m⟩ :=
 by rw [lift_aux_eq, eval₂_X]
 
+variables {I : ideal A} (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I)
 
 /-- The “universal” property of divided_power_algebra -/
-def lift
-  {A : Type*} [comm_ring A] [algebra R A] 
-  {I : ideal A} (hI : divided_powers I)
-  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : divided_power_algebra R M →ₐ[R] A :=
-lift_aux R M (λ nm, hI.dpow nm.1 (φ nm.2)) 
-(λ m, hI.dpow_zero (hφ m)) 
-(λ n r m, by rw [linear_map.map_smulₛₗ, ring_hom.id_apply,
-← algebra_map_smul A r (φ m), smul_eq_mul, 
-hI.dpow_smul n (hφ m), ← smul_eq_mul, ← map_pow, algebra_map_smul]) 
-(λ n p m, by rw [hI.dpow_mul n p (hφ m), ← nsmul_eq_mul]) 
-(λ n u v, by rw [map_add, hI.dpow_add n (hφ u) (hφ v)]) 
+def lift  : divided_power_algebra R M →ₐ[R] A :=
+lift_aux R M (λ nm, hI.dpow nm.1 (φ nm.2)) (λ m, hI.dpow_zero (hφ m)) 
+  (λ n r m, by rw [linear_map.map_smulₛₗ, ring_hom.id_apply, ← algebra_map_smul A r (φ m),
+    smul_eq_mul, hI.dpow_smul n (hφ m), ← smul_eq_mul, ← map_pow, algebra_map_smul]) 
+  (λ n p m, by rw [hI.dpow_mul n p (hφ m), ← nsmul_eq_mul]) 
+  (λ n u v, by rw [map_add, hI.dpow_add n (hφ u) (hφ v)]) 
 
-
-lemma lift_eqₐ (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
-  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (p : mv_polynomial (ℕ × M) R) :
-  lift R M hI φ hφ (mkₐ R (relI R M) p) = 
+lemma lift_eqₐ (p : mv_polynomial (ℕ × M) R) : lift R M hI φ hφ (mkₐ R (relI R M) p) = 
   eval₂ (algebra_map R A) (λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)) p :=
 by rw [lift, lift_aux_eq]
 
-lemma lift_eq (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
-  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (p : mv_polynomial (ℕ × M) R) :
-  lift R M hI φ hφ (mk (relI R M) p) = 
+lemma lift_eq (p : mv_polynomial (ℕ × M) R) : lift R M hI φ hφ (mk (relI R M) p) = 
   eval₂ (algebra_map R A) (λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)) p :=
 by rw [← mkₐ_eq_mk R, lift_eqₐ]
 
-lemma lift_eqₐ_X (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
-  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
+lemma lift_eqₐ_X (n : ℕ) (m : M) :
   lift R M hI φ hφ (mkₐ R (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
 by rw [lift, lift_aux_eq_X]
 
-lemma lift_eq_X (A : Type*) [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
-  (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (n : ℕ) (m : M) :
+lemma lift_eq_X (n : ℕ) (m : M) :
   lift R M hI φ hφ (mk (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
 by rw [← mkₐ_eq_mk R, lift_eqₐ_X]
+
+end lift
+
 
 /- Now given an R-algebra S, an S-module N and f : M →ₗ[R] N,
 we define 
  divided_power_algebra R M →ₐ[R] divided_power_algebra S N 
  that maps X(n,m) to X(n, f m)
  -/
-
-
 
 variables {M}
 lemma lift'_rel_le_ker (S : Type*) [comm_ring S] [algebra R S] 
