@@ -92,6 +92,7 @@ def lift_rel  (I : ideal R) {r : R → R → Prop} (hr : I = of_rel r) (f : R �
 lift I f (rel_le_ker I hr f hf)
 
 end quotient
+
 end ideal
 
 end ideals_and_rel
@@ -148,7 +149,6 @@ instance grade_zero_algebra : algebra R ↥(𝒜 0) := algebra.of_module'
   (λ r x, by ext; simp only [grade_zero_coe_mul, grade_zero_coe_smul, grade_zero_coe_one, 
     algebra.mul_smul_comm, mul_one])
 
-
 /-- The projection from `A` to the degree `i` component `𝒜 i`, as an `R`-linear map. -/
 def proj (i : ι) : A →ₗ[R] (𝒜 i) :=
 { to_fun    := λ a, decompose 𝒜 a i,
@@ -183,11 +183,8 @@ end divided_power_algebra
 /-- The divided power algebra of a module M is the quotient of the polynomial ring
 by the ring relation defined by divided_power_algebra.rel -/
 @[derive [inhabited, comm_ring, algebra R]]
-def divided_power_algebra :=
+def divided_power_algebra : Type* :=
  (mv_polynomial (ℕ × M) R) ⧸ (divided_power_algebra.relI R M)
-
-lemma divided_power_algebra.algebra' (k : Type*) [comm_ring k] [algebra k R] [module k M][is_scalar_tower k R M] : algebra k (divided_power_algebra R M) :=
-ring_hom.to_algebra (ring_hom.comp (algebra_map R (divided_power_algebra R M)) (algebra_map k R))
 
 namespace divided_power_algebra
 
@@ -196,74 +193,53 @@ has divided powers, it has a kind of universal property for morphisms to a ring 
 
 open mv_polynomial
 
+/-- If `R` is a `k`-algebra, then `divided_power_algebra R M` inherits a `k`-algebra structure. -/
+def algebra' (k : Type*) [comm_ring k] [algebra k R] : 
+  algebra k (divided_power_algebra R M) :=
+ring_hom.to_algebra (ring_hom.comp (algebra_map R (divided_power_algebra R M)) (algebra_map k R))
+
 variables {R M}
 
-lemma sub_mem_rel_of_rel (a b) (h : rel R M a b):  a - b ∈ relI R M :=
-begin
-  rw relI, rw of_rel,
-  apply submodule.subset_span,
-  simp only [exists_prop, set.mem_set_of_eq],
-  use a, use b, apply and.intro h, simp only [sub_add_cancel], 
-end
+lemma sub_mem_rel_of_rel {a b : mv_polynomial (ℕ × M) R} (h : rel R M a b):  a - b ∈ relI R M :=
+submodule.subset_span ⟨a, b, h, by rw [sub_add_cancel]⟩
 
 variable (R)
+/-- `dp R n m` is the equivalence class of `X (⟨n, m⟩)` in `divided_power_algebra R M`. -/
 def dp (n : ℕ) (m : M) : divided_power_algebra R M :=
 mkₐ R (relI R M) (X (⟨n, m⟩))
 
 lemma dp_zero (m : M) : dp R 0 m = 1 :=
 begin
-  dsimp [dp], 
-  rw ← map_one (ideal.quotient.mk _),  
-  rw ideal.quotient.eq,
-  rw relI,
-  rw of_rel,
-  apply submodule.subset_span,
-  simp,
-  use X(0,m), use 1,
-  split,
-  exact rel.zero,
-  simp,
+  rw [dp, mkₐ_eq_mk, ← map_one (ideal.quotient.mk (relI R M)), ideal.quotient.eq],
+  exact submodule.subset_span ⟨X(0,m), 1, rel.zero, by rw sub_add_cancel⟩
 end
 
 lemma dp_smul (r : R) (n  : ℕ) (m : M) : dp R n (r • m) = r ^ n • dp R n m :=
 begin
-  dsimp [dp],
-  rw ← mkₐ_eq_mk R, 
-  rw ← map_smul, 
-  rw mkₐ_eq_mk R, 
-  rw ideal.quotient.eq, 
-  apply sub_mem_rel_of_rel,
-  exact rel.smul,
+  rw [dp, dp, ← map_smul, mkₐ_eq_mk R, ideal.quotient.eq], 
+  exact sub_mem_rel_of_rel rel.smul,
 end
 
 lemma dp_mul (n p : ℕ) (m : M) : dp R n m * dp R p m = (n + p).choose n • dp R (n + p) m :=
 begin
-  dsimp [dp],
-  rw ← _root_.map_mul, 
-  rw ← map_nsmul, 
-  rw ideal.quotient.eq, 
-  apply sub_mem_rel_of_rel,
-  exact rel.mul,
+  simp only [dp, mkₐ_eq_mk, ← _root_.map_mul, ← map_nsmul, ideal.quotient.eq], 
+  exact sub_mem_rel_of_rel rel.mul,
 end
 
 lemma dp_add (n : ℕ) (x y : M) : dp R n (x + y) = 
 (range (n+1)).sum (λ k, dp R k x * dp R (n - k) y) := 
 begin
-  dsimp [dp],
-  simp_rw ← _root_.map_mul, rw ←map_sum,  
-  rw ideal.quotient.eq, 
-  apply sub_mem_rel_of_rel,
-  exact rel.add,
+  simp only [dp, mkₐ_eq_mk, ← _root_.map_mul, ← map_sum, ideal.quotient.eq], 
+  exact sub_mem_rel_of_rel rel.add,
 end
 
-lemma unique_on_dp {A : Type*} [comm_ring A] [module R A] [algebra R A]
+lemma unique_on_dp {A : Type*} [comm_ring A] [algebra R A]
   {f g : divided_power_algebra R M →ₐ[R] A} 
   (h : ∀ n m, f (dp R n m) = g (dp R n m)) :
   f = g := 
 begin
   rw fun_like.ext'_iff,
-  apply function.surjective.injective_comp_right
-    (quotient.mkₐ_surjective R (relI R M)),
+  apply function.surjective.injective_comp_right (quotient.mkₐ_surjective R (relI R M)),
   simp only [←  alg_hom.coe_comp, ← fun_like.ext'_iff], 
   exact mv_polynomial.alg_hom_ext (λ ⟨n, m⟩, h n m),
 end
