@@ -333,9 +333,9 @@ lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : i
 rfl
 
 /- Roby65, corollary after proposition 3 -/
-/-- Uniqueness of a divided powers given its values
-on a generating set -/
-lemma dp_uniqueness {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A} (hS : ideal.span S = I) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
+/-- Uniqueness of a divided powers given its values on a generating set -/
+lemma dp_uniqueness {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A}
+  (hS : ideal.span S = I) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
 begin
   suffices : I.map (ring_hom.id A) ≤ I, 
   let pd_id := pd_morphism_from_gens hI hI' hS this _,
