@@ -111,9 +111,17 @@ def divided_powers_of_dpow_exp (I : ideal A) (ε : I → power_series A)
 variable (hI : divided_powers I)
 
 /- Rewriting lemmas -/
-lemma dpow_smul' (n : ℕ) {a : A} {x : A} (hx : x ∈ I) :
+lemma dpow_smul' (n : ℕ) (a : A) {x : A} (hx : x ∈ I) :
   hI.dpow n (a • x) = (a ^ n) • (hI.dpow n x) :=
 by simp only [smul_eq_mul, hI.dpow_smul, hx]
+
+lemma dpow_smul_right (n : ℕ) {a : A} (ha : a ∈ I) (x : A) :
+  hI.dpow n (a * x) = (hI.dpow n a) * (x ^ n) :=
+by rw [mul_comm, hI.dpow_smul n ha, mul_comm]
+
+lemma dpow_smul_right' (n : ℕ) {a : A} (ha : a ∈ I) (x : A) :
+  hI.dpow n (a • x) = (hI.dpow n a) • (x ^ n) :=
+by rw [smul_eq_mul, hI.dpow_smul_right n ha, smul_eq_mul]
 
 lemma factorial_mul_dpow_eq_pow (n : ℕ) (x : A) (hx : x ∈ I) :
   (n.factorial : A) * (hI.dpow n x) = x^n :=
