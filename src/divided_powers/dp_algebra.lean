@@ -214,13 +214,19 @@ def proj (i : ι) : A →ₗ[R] (𝒜 i) :=
 end graded_algebra
 section
 
-variables (R M : Type*) [comm_ring R]
+variables {R M : Type*} [comm_ring R]
 
 instance [decidable_eq R] [decidable_eq M] :
   graded_algebra (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) := 
 weighted_graded_algebra _ _
 
-variables [add_comm_group M] [module R M]
+variable {R}
+def degree (v : (ℕ × M) →₀ ℕ) : ℕ := finsum (λ x, (v x) * x.1)
+
+def is_homogeneous_of_degree (p : mv_polynomial (ℕ × M) R) (n : ℕ) : Prop :=
+∀ v ∈ p.support, degree v = n 
+
+variables (R M) [add_comm_group M] [module R M]
 
 namespace divided_power_algebra
 
@@ -582,13 +588,9 @@ end
   lift R M hI φ hφ (ι R x) = φ x :=
 by { conv_rhs {rw ← ι_comp_lift R hI φ hφ,},refl, }
 
-variable {R}
-def degree (v : (ℕ × M) →₀ ℕ) : ℕ := finsum (λ x, (v x) * x.1)
 
-def is_homogeneous_of_degree (p : mv_polynomial (ℕ × M) R) (n : ℕ) : Prop :=
-∀ v ∈ p.support, degree v = n 
 
-variables (R M)
+variables (M)
 
 section decidable_eq
 
@@ -617,15 +619,15 @@ divided_power_galgebra R M
 
 end decidable_eq
 
-def galg_hom.is_homogeneous {ι : Type*} [add_comm_monoid ι] [decidable_eq ι]
-  {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ι → submodule R A) [graded_algebra 𝒜]
-  {B : Type*} [comm_ring B] [algebra R B] (ℬ : ι → submodule R B) [graded_algebra ℬ] 
-  (f : A →ₐ[R] B):= ∀ i a, a ∈ 𝒜 i → f a ∈ ℬ i 
+def galg_hom.is_homogeneous {ι : Type*} /- [add_comm_monoid ι] [decidable_eq ι] -/
+  {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ι → submodule R A) /- [graded_algebra 𝒜] -/
+  {B : Type*} [comm_ring B] [algebra R B] (ℬ : ι → submodule R B) /- [graded_algebra ℬ]  -/
+  (f : A →ₐ[R] B):= 
+∀ i a, a ∈ 𝒜 i → f a ∈ ℬ i
 
-lemma finsupp.prod.mem_grade {A : Type*} [comm_ring A] [algebra R A] 
-  (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜] 
-  {σ : Type*} (c : σ →₀ ℕ) (f : σ → A) (d : σ → ℕ)
-  (hc : ∀ s ∈ c.support, f s ∈ 𝒜 (d s)): 
+lemma finsupp.prod.mem_grade {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ → submodule R A)
+  [graded_algebra 𝒜] {σ : Type*} (c : σ →₀ ℕ) (f : σ → A) (d : σ → ℕ)
+  (hc : ∀ s ∈ c.support, f s ∈ 𝒜 (d s)) : 
   c.prod (λ s e, (f s) ^ e) ∈ 𝒜 (c.sum (λ s e, e * d s)) := 
 begin
   classical,
@@ -654,11 +656,10 @@ begin
 end
 
 variable {R}
-def has_graded_dpow {A : Type*} [comm_ring A] [algebra R A] 
-  (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜]
-  {I : ideal A} (hI : divided_powers I) := ∀ (a : A) (ha : a ∈ I) 
-  (i : ℕ) (hai : a ∈ 𝒜 i) (n : ℕ),  hI.dpow n a ∈ 𝒜 (n • i)
-
+/-  [graded_algebra 𝒜] --not used in this def -/
+def has_graded_dpow {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ → submodule R A)
+  {I : ideal A} (hI : divided_powers I) := 
+∀ (a : A) (ha : a ∈ I) (i : ℕ) (hai : a ∈ 𝒜 i) (n : ℕ), hI.dpow n a ∈ 𝒜 (n • i)
 
 section decidable_eq
 
@@ -965,16 +966,12 @@ begin
       exact ⟨c,⟨mem_support_iff.mp hc, hnm⟩⟩ }}, 
 end
 
-#exit
-
 lemma right_inv' [decidable_eq R] [decidable_eq M] (x : R) :
   (algebra_map_inv R M) (((proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M))) x).val = x :=
 begin  
   rw proj'_zero_comp_algebra_map,
   exact algebra_map_left_inverse R M x,
 end
-
-.
 
 lemma left_inv' [decidable_eq R] [decidable_eq M] (x : grade R M 0) :
   ((proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M))) ((algebra_map_inv R M) x.val) = x :=
@@ -984,7 +981,6 @@ begin
   conv_rhs { rw [← subtype.val_eq_coe, ← direct_sum.decompose_of_mem_same _ x.2] },
   rw algebra_map_right_inv_of_degree_zero R M x,
 end
-
 
 /- grade R M 0 → R is isomorphism -/
 noncomputable! def ring_equiv_degree_zero [decidable_eq R] [decidable_eq M] :
@@ -1119,11 +1115,12 @@ def cond_T : Prop :=
 
 section free
 
-def cond_T_free [hR_free : module.free A R] [hS_free : module.free A S] : Prop :=
+-- hR_free, hS_free are not used for the def (they might be needed at lemmas about cond_T_free)
+def cond_T_free /- [hR_free : module.free A R] [hS_free : module.free A S]  -/: Prop :=
 ∃ hK : divided_powers (K A I J), 
   is_pd_morphism hI hK (i_1 A R S) ∧ is_pd_morphism hJ hK (i_2 A R S)
 
-def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] [algebra A R]
+def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] /- [algebra A R] not used -/
   {I : ideal R} (hI : divided_powers I) : Prop := 
 ∃ (T : Type*) [comm_ring T], by exactI ∃ [algebra A T], by exactI ∃ [module.free A T]
   {J : ideal T} (hJ : divided_powers J) (f : pd_morphism hI hJ), 
