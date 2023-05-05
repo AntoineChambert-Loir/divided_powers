@@ -1079,34 +1079,28 @@ def i_2 : S →ₐ R ⊗[A] S := algebra.tensor_product.include_right
 variables {R S} (I J)
 def K : ideal (R ⊗[A] S) := (I.map (i_1 A R S)) ⊔ (J.map (i_2 A R S))
 
-
-
 namespace divided_powers
 
 variables {I J}
 /- Lemma 1 : uniqueness of the dp structure on R ⊗ S for I + J -/
 lemma on_tensor_product_unique (hK hK' : divided_powers (K A I J))
-  (hIK : is_pd_morphism hI hK (i_1 A R S)) 
-  (hIK' : is_pd_morphism hI hK' (i_1 A R S))
-  (hJK : is_pd_morphism hJ hK (i_2 A R S)) 
-  (hJK' : is_pd_morphism hJ hK' (i_2 A R S)) : 
+  (hIK : is_pd_morphism hI hK (i_1 A R S)) (hIK' : is_pd_morphism hI hK' (i_1 A R S))
+  (hJK : is_pd_morphism hJ hK (i_2 A R S)) (hJK' : is_pd_morphism hJ hK' (i_2 A R S)) : 
   hK = hK' :=
 begin
   apply eq_of_eq_on_ideal,
   intros n x hx,
   suffices : x ∈ sub_pd_ideal.pd_equalizer hK hK',  
-  rw sub_pd_ideal.mem_pd_equalizer_iff at this,
-  exact this.2 n,
-  suffices : K A I J ≤ sub_pd_ideal.pd_equalizer hK hK',
-  apply this, exact hx,
-  dsimp only [K], rw sup_le_iff,
-  split, 
+  { exact ((sub_pd_ideal.mem_pd_equalizer_iff _ _).mp this).2 n,},
+  suffices h_ss : K A I J ≤ sub_pd_ideal.pd_equalizer hK hK',
+  { exact h_ss hx },
+  dsimp only [K], 
+  rw sup_le_iff,
+  split,
   apply sub_pd_ideal.le_equalizer_of_pd_morphism hI (i_1 A R S).to_ring_hom
-  _ hK hK' hIK hIK',
-  refine le_sup_left,
+    le_sup_left hK hK' hIK hIK',
   apply sub_pd_ideal.le_equalizer_of_pd_morphism hJ (i_2 A R S).to_ring_hom
-  _ hK hK' hJK hJK',
-  refine le_sup_right,
+    le_sup_right hK hK' hJK hJK',
 end
 
 def cond_T : Prop :=
@@ -1159,6 +1153,3 @@ In general, x ^ [n]  for dpow n x ?
 -/
 
 end divided_power_algebra
-
-
-#lint
