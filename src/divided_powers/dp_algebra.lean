@@ -267,6 +267,13 @@ variable (R)
 def dp (n : ℕ) (m : M) : divided_power_algebra R M :=
 mkₐ R (relI R M) (X (⟨n, m⟩))
 
+lemma dp_eq_mkₐ (n : ℕ) (m : M) : dp R n m = (mkₐ R (relI R M)) (X ⟨n, m⟩) := rfl
+
+lemma dp_eq_mk (n : ℕ) (m : M) : dp R n m = (mk (relI R M)) (X (⟨n, m⟩ : ℕ × M)) :=
+by rw [dp, mkₐ_eq_mk]
+
+ -- { rw [dp, mkₐ_eq_mk, prod.mk.eta] },
+
 lemma dp_zero (m : M) : dp R 0 m = 1 :=
 begin
   rw [dp, mkₐ_eq_mk, ← map_one (ideal.quotient.mk (relI R M)), ideal.quotient.eq],
@@ -810,19 +817,63 @@ map_eq_zero_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
   algebra_map R (divided_power_algebra R M) x = 1 ↔ x = 1 :=
 map_eq_one_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
 
+.
+
+
+lemma mkₐ_eq_aeval {C : Type*} [comm_ring C] {D : Type*} (I : ideal (mv_polynomial D C)) :
+  (ideal.quotient.mkₐ C I) = aeval (λ (d : D), ideal.quotient.mk I (X d)) :=
+begin
+  ext d, simp only [mkₐ_eq_mk, aeval_X],
+end
+
+lemma mk_eq_eval₂ {C : Type*} [comm_ring C] {D : Type*} (I : ideal (mv_polynomial D C)) :
+  (ideal.quotient.mk I).to_fun  = eval₂ (algebra_map C ((mv_polynomial D C)⧸ I)) 
+  (λ (d : D), ideal.quotient.mk I (X d)) :=
+begin
+
+  sorry
+end
+
 lemma algebra_map_right_inv_of_degree_zero [decidable_eq R] [decidable_eq M] (x : grade R M 0) :
   (algebra_map R (divided_power_algebra R M)) ((algebra_map_inv R M) x.1) = x.1 := 
 begin
-  rw algebra.algebra_map_eq_smul_one,
-  simp only [algebra_map_inv],
-  /-
-  rw [lift, lift_aux_eq], -/
-  /- simp only [algebra_map_inv, subtype.val_eq_coe],
-  rw [lift, lift_aux, liftₐ_apply],
-  simp only [linear_map.zero_apply],
-  rw [mv_polynomial.eval₂_alg_hom_apply],
-   sorry -/
-  sorry
+  have hx := x.2,
+  simp only [grade, quot_submodule] at hx,
+  simp only [subtype.val_eq_coe, submodule.mem_map, mem_weighted_homogeneous_submodule, 
+    mkₐ_eq_mk] at hx,
+  obtain ⟨y, hy0, hyx⟩ := hx,
+  rw subtype.val_eq_coe, rw ← hyx, rw ← mkₐ_eq_mk R _,
+  rw algebra_map_inv_eq,
+  rw mkₐ_eq_aeval,
+  simp only [map_aeval, algebra.id.map_eq_id, ring_hom_comp_triple.comp_eq, 
+  ring_hom.map_ite_zero_one, coe_eval₂_hom],
+  rw aeval_def,
+  rw mv_polynomial.as_sum y,
+  rw eval₂_sum, rw eval₂_sum,
+  rw finset.sum_congr rfl,
+  intros exp hexp,
+   have h : ∀ (nm : ℕ × M), nm ∈ exp.support → nm.fst = 0,
+   { intros nm hnm, 
+     simp only [is_weighted_homogeneous, ne.def] at hy0,
+     rw mem_support_iff at hexp,
+     specialize hy0 hexp,
+     rw weighted_degree' at hy0,
+     rw finsupp.total_apply at hy0,
+     rw finsupp.sum at hy0,
+     rw finset.sum_eq_zero_iff at hy0,
+     specialize hy0 nm hnm,
+     simp only [finsupp.mem_support_iff, ne.def] at hnm,
+     simp only [algebra.id.smul_eq_mul, nat.mul_eq_zero] at hy0,
+     exact or.resolve_left hy0 hnm, },
+  rw eval₂_monomial, rw eval₂_monomial,
+  apply congr_arg,
+  rw finsupp.prod_congr,
+  intros nm hnm,
+  rw if_neg,
+  simp only [one_pow],
+  rw [← @prod.mk.eta _ _ nm, ← dp_eq_mk],
+  rw h nm hnm, rw dp_zero, rw one_pow,
+  { rw [h nm hnm], simp only [not_lt_zero', not_false_iff] },
 end
 
 /-- An ideal J of a commutative ring A is an augmentation ideal
@@ -1012,7 +1063,7 @@ lift R M (divided_powers.of_square_zero.divided_powers (triv_sq_zero_ext.square_
 lift_ι_apply R _ _ _ x
 
 /- 
-
+-- Use descriptio of augmentation ideal
 /- ι : M → grade R M 1 is isomorphism -/
 def linear_equiv_degree_one : linear_equiv (ring_hom.id R) M (grade R M 1) :=
 { to_fun    := (proj' R M 1) ∘ ι R,
