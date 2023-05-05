@@ -915,6 +915,32 @@ end
 
 -- Q : if algebra map has a section, is the kernel an augmentation ideal?
 
+lemma coeff_zero_of_mem_aug_ideal {f : mv_polynomial (ℕ × M) R}
+  (hf : f ∈ supported R {nm : ℕ × M | 0 < nm.fst}) (hf0 : (mk (relI R M)) f ∈ aug_ideal R M) : 
+  coeff 0 f = 0 :=
+begin
+  rw [aug_ideal, ring_hom.mem_ker] at hf0,
+  rw [← hf0, ← mkₐ_eq_mk R _, algebra_map_inv_eq R M, eq_comm],
+  conv_lhs { rw [mv_polynomial.as_sum f, map_sum] },
+  convert @finset.sum_eq_single _ _ _ (f.support) _ 0 _ _,
+  { rw [monomial_zero', aeval_C, algebra.id.map_eq_id, ring_hom.id_apply], },
+  { intros b hb hb0,
+    rw [aeval_monomial, algebra.id.map_eq_id, ring_hom.id_apply],
+    convert mul_zero _,
+    obtain ⟨i, hi⟩ := finsupp.support_nonempty_iff.mpr hb0,  
+    rw finsupp.prod, 
+    apply finset.prod_eq_zero hi,
+    have hi' : 0 < i.fst,
+    { apply mem_supported.mp hf,
+      rw [finset.mem_coe, mem_vars],
+      exact ⟨b, ⟨hb, hi⟩⟩ },
+    rw if_pos hi',
+    exact zero_pow (zero_lt_iff.mpr (finsupp.mem_support_iff.mp hi)) },
+  { intro hf',
+    rw [monomial_zero', aeval_C, algebra.id.map_eq_id, ring_hom.id_apply,
+      ← not_mem_support_iff.mp hf'] }
+end  
+
 lemma aug_ideal_eq_span : 
   span (set.image (λ nm, mk _ (X nm)) { nm : ℕ × M | 0 < nm.1 }) = aug_ideal R M := 
 begin
@@ -925,88 +951,39 @@ begin
     simp only [mk_eq_mk, set.mem_image, set.mem_set_of_eq, prod.exists, exists_and_distrib_left, 
       set_like.mem_coe, forall_exists_index, and_imp],
     intros n hn m hf, 
-    rw ← hf,
-    simp only [aug_ideal, ring_hom.mem_ker, algebra_map_inv, lift_eq, linear_map.zero_apply],
-    rw eval₂_X,
-    rw divided_powers.dpow_eval_zero,
-    exact ne_of_gt hn, },
-  { intros f0, 
+    rw [← hf, aug_ideal, ring_hom.mem_ker, algebra_map_inv, lift_eq],
+    simp_rw linear_map.zero_apply,
+    rw [eval₂_X, divided_powers.dpow_eval_zero _ (ne_of_gt hn)] },
+  { intros f0 hf0,
     obtain ⟨⟨f, hf⟩, rfl⟩ := divided_power_algebra.surjective_of_supported R f0,
-    intro hf0,
+    have hf0' : coeff 0 f = 0 := coeff_zero_of_mem_aug_ideal R M hf hf0,
     simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, 
-      set_like.coe_mk] at hf0 ⊢, -- rw subtype.coe_mk at hf0 ⊢,
-    rw set.image_comp, 
-    rw ← map_span (mk (relI R M)),
-    apply ideal.mem_map_of_mem,
-    suffices : coeff 0 f = 0,
-    rw mv_polynomial.as_sum f,
-    refine sum_mem _ _,
+      set_like.coe_mk] at hf0 ⊢,
+    rw [set.image_comp, ← map_span (mk (relI R M)), mv_polynomial.as_sum f],
+    apply ideal.mem_map_of_mem _ (sum_mem _ _),
     intros c hc, 
-    rw [mv_polynomial.mem_supported] at hf,
-    -- since the coeff c f is nonzero by hc, this is inoccuous
-    rw mv_polynomial.monomial_eq,
+    rw [mv_polynomial.monomial_eq, finsupp.prod],
     refine mul_mem_left _ _ _,
-    rw finsupp.prod,
-    suffices that : ↑(c.support) ⊆ {nm : ℕ × M | 0 < nm.fst},
-    by_cases hc0 : c.support.nonempty,
-    { obtain ⟨nm, hnm⟩ := hc0, 
-      rw finset.prod_eq_mul_prod_diff_singleton hnm,
-      refine mul_mem_right _ _ _ ,
-  --     rw finsupp.mem_support_iff at hnm,
-      obtain ⟨k, hk⟩ := nat.exists_eq_succ_of_ne_zero (finsupp.mem_support_iff.mp hnm),
-      rw [hk, pow_succ],
-      refine mul_mem_right _ _ _ ,
-      apply subset_span, 
-      use nm, 
-      refine and.intro _ rfl,
-      simp only [set.mem_set_of_eq],
-      apply that,
-      simp only [mem_coe], 
-      exact hnm, }, 
-    { -- cas où c.support est vide : c = 0 ; contradiction
-      simp only [not_nonempty_iff_eq_empty, finsupp.support_eq_empty] at hc0,
-      exfalso,
-      rw hc0 at hc, simp only [mem_support_iff, ne.def] at hc, 
-      exact hc this, },
-
-    { -- that 
+    suffices supp_ss : ↑(c.support) ⊆ {nm : ℕ × M | 0 < nm.fst},
+    { by_cases hc0 : c.support.nonempty,
+      { obtain ⟨nm, hnm⟩ := hc0,
+        rw finset.prod_eq_mul_prod_diff_singleton hnm,
+        apply mul_mem_right _ _ 
+          (pow_mem_of_mem _ _ _ (nat.pos_of_ne_zero (finsupp.mem_support_iff.mp hnm))),
+        exact subset_span ⟨nm, ⟨(supp_ss hnm), rfl⟩⟩ }, 
+      { -- cas où c.support est vide : c = 0 ; contradiction
+        rw [not_nonempty_iff_eq_empty, finsupp.support_eq_empty] at hc0,
+        rw hc0 at hc, 
+        exact absurd hf0' (mem_support_iff.mp hc) }},
+    { -- supp_ss
       intros nm hnm, 
-      apply hf, 
-      simp only [mv_polynomial.mem_vars, mem_coe, mem_support_iff, ne.def, finsupp.mem_support_iff, 
-        exists_prop],
-      simp only [mem_coe, finsupp.mem_support_iff, ne.def] at hnm,
-      simp only [mem_support_iff, ne.def] at hc, 
-      exact ⟨c,⟨hc, hnm⟩⟩, },
-
-    { -- this
-      rw [aug_ideal, ring_hom.mem_ker] at hf0,
-      rw ← hf0, 
-      rw [← mkₐ_eq_mk R _, algebra_map_inv_eq R M],
-      conv_rhs { rw mv_polynomial.as_sum f, },
-      apply symm,
-      rw map_sum,
-      
-      convert @finset.sum_eq_single _ _ _ (f.support) _ 0 _ _,
-      { -- constant term 
-        simp only [monomial_zero', aeval_C, algebra.id.map_eq_id, ring_hom.id_apply], },
-      { intros b hb hb0,
-        simp only [mv_polynomial.aeval_monomial, algebra.id.map_eq_id, ring_hom.id_apply],
-        convert mul_zero _,
-        rw ←finsupp.support_nonempty_iff  at hb0,
-        obtain ⟨i, hi⟩ := hb0,  
-        rw finsupp.prod, 
-        apply finset.prod_eq_zero hi,
-        rw if_pos,
-        exact zero_pow (zero_lt_iff.mpr (finsupp.mem_support_iff.mp hi)),
-        rw mv_polynomial.mem_supported at hf,
-        apply hf,
-        rw finset.mem_coe,
-        rw mv_polynomial.mem_vars, 
-        exact ⟨b, ⟨hb, hi⟩⟩, },
-      { intro hf', 
-        simp only [not_mem_support_iff] at hf',
-        simp only [monomial_zero', aeval_C, algebra.id.map_eq_id, ring_hom.id_apply, hf'], }, }, },
+      apply mv_polynomial.mem_supported.mp hf, 
+      simp only [mem_vars, mem_coe, mem_support_iff, ne.def, finsupp.mem_support_iff, exists_prop],
+      rw [mem_coe, finsupp.mem_support_iff] at hnm,
+      exact ⟨c,⟨mem_support_iff.mp hc, hnm⟩⟩ }}, 
 end
+
+#exit
 
 lemma right_inv' [decidable_eq R] [decidable_eq M] (x : R) :
   (algebra_map_inv R M) (((proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M))) x).val = x :=
