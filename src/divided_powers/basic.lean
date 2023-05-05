@@ -38,8 +38,6 @@ doi: https://doi.org/10.24033/asens.1148
 section divided_powers_definition
 
 
-
-
 /-- The divided power structure on an ideal I of a commutative ring A -/
 @[ext] structure divided_powers {A : Type*} [comm_ring A] (I : ideal A) := 
 (dpow : ℕ → A → A)
@@ -54,6 +52,17 @@ section divided_powers_definition
 (dpow_comp : ∀ m {n} (hn : n ≠ 0) {x} (hx : x ∈ I),
   dpow m (dpow n x) = (mchoose m n) * dpow (m * n) x)
 
+instance  {A : Type*} [comm_ring A] [decidable_eq A] : inhabited (divided_powers (⊥ : ideal A)) :=
+⟨{ dpow     := sorry,
+  dpow_null := sorry,
+  dpow_zero := sorry,
+  dpow_one  := sorry,
+  dpow_mem  := sorry,
+  dpow_add  := sorry,
+  dpow_smul := sorry,
+  dpow_mul  := sorry,
+  dpow_comp := sorry }⟩
+
 instance {A : Type*} [comm_ring A] (I : ideal A) :
   has_coe_to_fun (divided_powers I) (λ _, ℕ → A → A) :=
 ⟨λ hI, hI.dpow⟩
@@ -64,6 +73,9 @@ lemma coe_to_fun_apply {A : Type*} [comm_ring A] (I : ideal A) (hI : divided_pow
 structure pd_ring (A : Type*) extends comm_ring A := 
 (pd_ideal : ideal A)
 (divided_powers : divided_powers pd_ideal)
+
+instance  {A : Type*} [comm_ring A] : inhabited (pd_ring A) :=
+{ default := sorry}
 
 end divided_powers_definition
 
@@ -174,9 +186,10 @@ open finset
 
 /- Rob65, formula (III')-/
 /-- A product of divided powers is a multinomial coefficient times the divided power-/
-lemma mul_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} (n : ι → ℕ) {a : A} (ha : a ∈ I):
+lemma mul_dpow {ι : Type*}  {s : finset ι} (n : ι → ℕ) {a : A} (ha : a ∈ I):
   s.prod (λ i, hI.dpow (n i) a) = (nat.multinomial s n) * hI.dpow (s.sum n) a := 
 begin
+  classical,
   revert s,
   apply finset.induction,
   -- case : s = ∅ 
@@ -255,9 +268,10 @@ lemma sum_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A} (hx
 sum_dpow_aux hI.dpow (λ x hx, hI.dpow_zero hx) 
   (λ n x y hx hy, hI.dpow_add n hx hy) (λ n hn, hI.dpow_eval_zero hn) hx
 
-lemma prod_dpow_self {ι : Type*} [decidable_eq ι] {s : finset ι} {n : ι → ℕ} (a : A) (ha : a ∈ I) :
+lemma prod_dpow_self {ι : Type*} {s : finset ι} {n : ι → ℕ} (a : A) (ha : a ∈ I) :
   s.prod (λ i, hI.dpow (n i) a) = nat.multinomial s n * hI.dpow (s.sum n) a :=
 begin
+  classical,
   induction s using finset.induction with i s hi ih,
   { rw [finset.prod_empty, finset.sum_empty, hI.dpow_zero ha, nat.multinomial_nil, 
       nat.cast_one, mul_one] },
@@ -330,13 +344,19 @@ def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A
     { intros y hy,
       simp only [set_like.mem_coe, pd_morphism_ideal, submodule.mem_mk, set.mem_sep_iff,
         set_like.mem_coe], 
-      split,
-      rw ←hS, 
-      exact ideal.subset_span hy, 
-      exact h ⟨y, hy⟩ },
+      exact ⟨by {rw ← hS, exact ideal.subset_span hy}, h ⟨y, hy⟩⟩ },
     rw [← ideal.span_le, hS] at hS',
     exact ((hS' hx).2 n).symm,
   end }
+
+def pd_morphism.id {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) : 
+  pd_morphism hI hI :=
+{to_ring_hom := ring_hom.id A,
+  ideal_comp  := by simp only [ideal.map_id, le_refl],
+  dpow_comp   := λ n a ha, by simp only [ring_hom.id_apply] }
+
+instance {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) : 
+  inhabited (pd_morphism hI hI) := ⟨pd_morphism.id hI⟩
 
 lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} 
   (hI : divided_powers I) {J : ideal B} (hJ : divided_powers J) {f : A →+* B} {S : set A} 
@@ -370,7 +390,7 @@ end
 -- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
 -- Also, we expect a `pd` subscript
 
-/- TODO : identity, composition… -/
+/- TODO : identity (done), composition… -/
 
 end divided_powers_morphisms
 
@@ -463,3 +483,5 @@ dpow m (dpow n x) = (x ^n / c n) ^ m / c m = x ^ (m n) / ((c n ^ m) * c m)
   Case 1 : [ ] = mchoose m n, case 2 : p^ (-m)
 
 -/
+
+#lint
