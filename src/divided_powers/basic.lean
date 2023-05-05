@@ -20,7 +20,9 @@ Lectures notes in mathematics 407, Springer-Verlag.
 * P. Berthelot and A. Ogus (1978), *Notes on crystalline cohomology*, 
 Princeton University Press.
 
-* N. Roby (1963). « Lois polynomes et lois formelles en théorie des modules ». Annales scientifiques de l’École Normale Supérieure 80 (3): 213‑348. https://doi.org/10.24033/asens.1124.
+* N. Roby (1963). « Lois polynomes et lois formelles en théorie des modules ». 
+Annales scientifiques de l’École Normale Supérieure 80 (3): 213‑348. 
+https://doi.org/10.24033/asens.1124.
 
 * N. Roby (1968), *Construction de certaines algèbres à puissances divisées*, 
 Bulletin de la Société Mathématique de France, Tome 96, p. 97-113. 
@@ -56,7 +58,8 @@ instance {A : Type*} [comm_ring A] (I : ideal A) :
   has_coe_to_fun (divided_powers I) (λ _, ℕ → A → A) :=
 ⟨λ hI, hI.dpow⟩
 
-lemma coe_to_fun_apply {A : Type*} [comm_ring A] (I : ideal A) (hI : divided_powers I) (n : ℕ) (a : A): hI n a = hI.dpow n a := rfl 
+lemma coe_to_fun_apply {A : Type*} [comm_ring A] (I : ideal A) (hI : divided_powers I) (n : ℕ) 
+  (a : A) : hI n a = hI.dpow n a := rfl 
 
 structure pd_ring (A : Type*) extends comm_ring A := 
 (pd_ideal : ideal A)
@@ -177,7 +180,8 @@ begin
   revert s,
   apply finset.induction,
   -- case : s = ∅ 
-  simp only [prod_empty, nat.multinomial_nil, algebra_map.coe_one, sum_empty, one_mul, hI.dpow_zero ha],
+  simp only [prod_empty, nat.multinomial_nil, algebra_map.coe_one, sum_empty, one_mul, 
+    hI.dpow_zero ha],
   -- inductive step
   intros i s hi hrec,
   rw finset.prod_insert hi, rw hrec, 
@@ -334,9 +338,10 @@ def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A
     exact ((hS' hx).2 n).symm,
   end }
 
-lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
-  (hI : divided_powers I) (hJ : divided_powers J) {f : A →+* B} {S : set A} (hS : ideal.span S = I)
-  (hf : I.map f ≤ J) (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
+lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} 
+  (hI : divided_powers I) {J : ideal B} (hJ : divided_powers J) {f : A →+* B} {S : set A} 
+  (hS : ideal.span S = I) (hf : I.map f ≤ J)
+  (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
   (pd_morphism_from_gens hI hJ hS hf h).to_ring_hom = f :=
 rfl
 

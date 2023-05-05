@@ -247,8 +247,8 @@ def divided_power_algebra : Type* :=
 
 namespace divided_power_algebra
 
-/- Note that also we don't know yet that `divided_power_algebra R M`
-has divided powers, it has a kind of universal property for morphisms to a ring with divided_powers -/
+/- Note that also we don't know yet that `divided_power_algebra R M` has divided powers, 
+  it has a kind of universal property for morphisms to a ring with divided_powers -/
 
 open mv_polynomial
 
@@ -480,7 +480,8 @@ def grade := quot_submodule R (weighted_homogeneous_submodule R (prod.fst : ℕ 
   (divided_power_algebra.relI R M)
 
 /-- The canonical decomposition of `divided_power_algebra R M` -/
-def decomposition := quot_decomposition R  (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
+def decomposition := 
+quot_decomposition R  (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
   (divided_power_algebra.relI R M) (relI_is_homogeneous R M)
 
 end decidable_eq
@@ -514,8 +515,8 @@ namespace divided_power_algebra
 
 variable {M}
 
-lemma surjective_of_supported : function.surjective 
-  ((mkₐ R (relI R M)).comp (subalgebra.val (mv_polynomial.supported R {nm : ℕ × M | 0 < nm.1 }))) := 
+lemma surjective_of_supported : function.surjective ((mkₐ R (relI R M)).comp 
+  (subalgebra.val (mv_polynomial.supported R {nm : ℕ × M | 0 < nm.1 }))) := 
 begin
   intro f, 
   obtain ⟨p',hp'⟩ := mk_surjective f,
@@ -620,7 +621,8 @@ lemma finsupp.prod.mem_grade {A : Type*} [comm_ring A] [algebra R A]
 begin
   classical,
   rw finsupp.prod, rw finsupp.sum,
-  let p : finset σ → Prop := λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i * d i))),
+  let p : finset σ → Prop := 
+  λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i * d i))),
 
   apply @finset.induction_on σ p _ c.support,
 
@@ -661,7 +663,8 @@ lemma lift_aux_is_homogeneous {A : Type*} [comm_ring A] [algebra R A]
   (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
   (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) 
   (hf : ∀ n m, f (n, m) ∈ 𝒜 n) : 
-  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) 𝒜 (lift_aux R M f hf_zero hf_smul hf_mul hf_add) := 
+  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) 𝒜 
+    (lift_aux R M f hf_zero hf_smul hf_mul hf_add) := 
 begin
   dsimp only [galg_hom.is_homogeneous],
   intros i a ha,
@@ -708,7 +711,8 @@ end
 lemma lift'_is_homogeneous
   {N : Type*} [decidable_eq N] [add_comm_group N] [module R N] 
   (f : M →ₗ[R] N) :
-  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) (divided_power_algebra.grade R N) (lift' R R f) := 
+  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) (divided_power_algebra.grade R N) 
+    (lift' R R f) := 
 begin
   simp only [lift'],
   apply lift_aux_is_homogeneous,
@@ -806,7 +810,7 @@ map_eq_zero_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
   algebra_map R (divided_power_algebra R M) x = 1 ↔ x = 1 :=
 map_eq_one_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
 
-lemma algebra_map_right_inv_of_degree_zero' [decidable_eq R] [decidable_eq M] (x : grade R M 0) :
+lemma algebra_map_right_inv_of_degree_zero [decidable_eq R] [decidable_eq M] (x : grade R M 0) :
   (algebra_map R (divided_power_algebra R M)) ((algebra_map_inv R M) x.1) = x.1 := 
 begin
   rw algebra.algebra_map_eq_smul_one,
@@ -837,11 +841,13 @@ by rw [aug_ideal, ring_hom.mem_ker]
 lemma ι_mem_aug_ideal (m : M) : (ι R) m ∈ aug_ideal R M :=
 begin
   rw [mem_aug_ideal_iff, ι],
-  simp only [dp, linear_map.coe_mk, algebra_map_inv_eq, aeval_X, nat.lt_one_iff, eq_self_iff_true, if_true], 
+  simp only [dp, linear_map.coe_mk, algebra_map_inv_eq, aeval_X, nat.lt_one_iff, 
+    eq_self_iff_true, if_true], 
 end
 
 /- We prove that the augmentation is an augmentation ideal, namely there is a section -/
-lemma aug_ideal_is_augmentation_ideal : is_augmentation_ideal (divided_power_algebra R M) (aug_ideal R M) :=
+lemma aug_ideal_is_augmentation_ideal : 
+  is_augmentation_ideal (divided_power_algebra R M) (aug_ideal R M) :=
 begin
   rw is_augmentation_ideal,
   let g := ker_lift_alg (algebra_map_inv R M),
@@ -876,7 +882,8 @@ begin
   { intros f0, 
     obtain ⟨⟨f, hf⟩, rfl⟩ := divided_power_algebra.surjective_of_supported R f0,
     intro hf0,
-    simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, set_like.coe_mk] at hf0 ⊢, -- rw subtype.coe_mk at hf0 ⊢,
+    simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, 
+      set_like.coe_mk] at hf0 ⊢, -- rw subtype.coe_mk at hf0 ⊢,
     rw set.image_comp, 
     rw ← map_span (mk (relI R M)),
     apply ideal.mem_map_of_mem,
@@ -914,7 +921,8 @@ begin
     { -- that 
       intros nm hnm, 
       apply hf, 
-      simp only [mv_polynomial.mem_vars, mem_coe, mem_support_iff, ne.def, finsupp.mem_support_iff, exists_prop],
+      simp only [mv_polynomial.mem_vars, mem_coe, mem_support_iff, ne.def, finsupp.mem_support_iff, 
+        exists_prop],
       simp only [mem_coe, finsupp.mem_support_iff, ne.def] at hnm,
       simp only [mem_support_iff, ne.def] at hc, 
       exact ⟨c,⟨hc, hnm⟩⟩, },
@@ -949,19 +957,9 @@ begin
         simp only [monomial_zero', aeval_C, algebra.id.map_eq_id, ring_hom.id_apply, hf'], }, }, },
 end
 
-/- lemma algebra_map_left_inverse :
-  function.left_inverse (algebra_map_inv R M) (algebra_map R (divided_power_algebra R M)) := 
-λ m, by simp only [alg_hom.commutes, algebra.id.map_eq_id, ring_hom.id_apply]
--/
-
-
-
 lemma right_inv' [decidable_eq R] [decidable_eq M] (x : R) :
   (algebra_map_inv R M) (((proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M))) x).val = x :=
-begin  /- rw function.comp_app,
-  rw proj',
-  rw ← proj_zero_ring_hom'_apply, -/
-  --ext,
+begin  
   rw proj'_zero_comp_algebra_map,
   exact algebra_map_left_inverse R M x,
 end
