@@ -91,10 +91,9 @@ def dpow_exp (hI : divided_powers I) (a : A) := power_series.mk (λ n, hI.dpow n
 lemma add_dpow_exp (hI : divided_powers I) {a b : A} (ha : a ∈ I) (hb : b ∈ I) :
   hI.dpow_exp (a + b) = hI.dpow_exp (a) * hI.dpow_exp (b) :=
 begin   
-  simp only [dpow_exp],
   ext,
-  simp only [power_series.coeff_mk, power_series.coeff_mul],
-  rw [hI.dpow_add n ha hb, finset.nat.sum_antidiagonal_eq_sum_range_succ_mk], 
+  simp only [dpow_exp, power_series.coeff_mk, power_series.coeff_mul,
+    hI.dpow_add n ha hb, finset.nat.sum_antidiagonal_eq_sum_range_succ_mk], 
 end
 
 lemma eq_of_eq_on_ideal (hI : divided_powers I) (hI' : divided_powers I) 
@@ -145,8 +144,8 @@ begin
   { rw [nat.nat_zero_eq_zero, nat.factorial_zero, nat.cast_one, one_mul, pow_zero,
       hI.dpow_zero hx], },
   { rw [nat.factorial_succ, mul_comm (n + 1), ← (n + 1).choose_one_right,
-  ← nat.choose_symm_add, nat.cast_mul, nat.succ_eq_add_one, mul_assoc, 
-  ← hI.dpow_mul n 1 hx, ← mul_assoc, ih, hI.dpow_one hx, pow_succ'], }
+      ← nat.choose_symm_add, nat.cast_mul, nat.succ_eq_add_one, mul_assoc, 
+      ← hI.dpow_mul n 1 hx, ← mul_assoc, ih, hI.dpow_one hx, pow_succ'], }
 end
 
 lemma dpow_eval_zero {n : ℕ} (hn : n ≠ 0) : hI.dpow n 0 = 0 := 
@@ -192,20 +191,15 @@ begin
   classical,
   revert s,
   apply finset.induction,
-  -- case : s = ∅ 
-  simp only [prod_empty, nat.multinomial_nil, algebra_map.coe_one, sum_empty, one_mul, 
-    hI.dpow_zero ha],
-  -- inductive step
+  { -- case : s = ∅ 
+    simp only [prod_empty, nat.multinomial_nil, algebra_map.coe_one, sum_empty, one_mul, 
+    hI.dpow_zero ha] },
+  { -- inductive step
   intros i s hi hrec,
-  rw finset.prod_insert hi, rw hrec, 
-  rw ←mul_assoc, 
-  nth_rewrite 1 [mul_comm], 
-  rw mul_assoc,
-  rw dpow_mul _ _ _ ha, 
-  rw ← finset.sum_insert hi, 
-  rw ← mul_assoc,
+  rw [finset.prod_insert hi, hrec, ← mul_assoc, mul_comm (hI.dpow (n i) a), mul_assoc,
+    dpow_mul _ _ _ ha,  ← finset.sum_insert hi, ← mul_assoc],
   apply congr_arg2 _ _ rfl, 
-  rw [nat.multinomial_insert _ _ hi, mul_comm, nat.cast_mul, finset.sum_insert hi], 
+  rw [nat.multinomial_insert _ _ hi, mul_comm, nat.cast_mul, finset.sum_insert hi] }
 end
 
 -- Also : can it be used to deduce dpow_comp from the rest?
@@ -224,25 +218,16 @@ begin
     rintro (_ | n),
     { rw [dpow_zero (I.zero_mem), sum_unique_nonempty, prod_empty],
       exact univ_nonempty },
-    { rw [dpow_eval_zero (nat.succ_ne_zero n), sym_empty, sum_empty], }},
-  { have hx' : ∀ i, i ∈ s → x i ∈ I := 
-    λ i hi, hx i (finset.mem_insert_of_mem hi), 
+    { rw [dpow_eval_zero (nat.succ_ne_zero n), sym_empty, sum_empty] }},
+  { have hx' : ∀ i, i ∈ s → x i ∈ I := λ i hi, hx i (finset.mem_insert_of_mem hi), 
     intro n,
-    simp_rw [sum_insert ha, 
-      dpow_add n (hx a (finset.mem_insert_self a s)) 
-        (I.sum_mem (λ i, hx' i)),
+    simp_rw [sum_insert ha, dpow_add n (hx a (finset.mem_insert_self a s)) (I.sum_mem (λ i, hx' i)),
       sum_range, ih hx', mul_sum, sum_sigma'], 
 
-    refine (sum_bij' 
-      (λ m _, sym.filter_ne a m) 
-      (λ m hm, finset.mem_sigma.2 ⟨mem_univ _, _⟩)
-      (λ m hm, _) 
-      (λ m _, m.2.fill a m.1)
-      _ 
-      (λ m _, m.fill_filter_ne a) 
+    refine (sum_bij' (λ m _, sym.filter_ne a m) (λ m hm, finset.mem_sigma.2 ⟨mem_univ _, _⟩)
+      (λ m hm, _) (λ m _, m.2.fill a m.1) _ (λ m _, m.fill_filter_ne a) (λ m hm, _)).symm,
       -- explicit arguments above rather than m.fill_filter_ne a
       -- adjust once multinomial has been incorporated to mathlib
-      (λ m hm, _)).symm,
     
   -- #3
     { convert sym_filter_ne_mem a hm, rw erase_insert ha },
@@ -253,10 +238,9 @@ begin
       apply finset.prod_congr rfl,
       intros i hi, simp only [subtype.val_eq_coe, sym.mk_coe], 
       apply congr_arg2 _ _ rfl,
-      rw multiset.count_filter,
-      rw if_pos _, 
-      intro hi', apply ha, rw hi', exact hi, },
-      
+      have ha : a ≠ i,
+      { intro hi', rw hi' at ha, exact ha hi,},
+      rw [multiset.count_filter, if_pos ha] },
     { exact λ m hm, sym_fill_mem a (mem_sigma.1 hm).2 },
     { exact sym.filter_ne_fill a m (mt (mem_sym_iff.1 (mem_sigma.1 hm).2 a) ha) }},
 end
@@ -308,9 +292,8 @@ def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
     simp only [set.mem_sep_iff, set_like.mem_coe] at hx hy ⊢,
     refine ⟨I.add_mem hx.1 hy.1, _⟩,
     intros n,
-    rw [hI.dpow_add _ hx.1 hy.1, map_add,
-      hJ.dpow_add _ (hf ( ideal.mem_map_of_mem f hx.1)) (hf ( ideal.mem_map_of_mem f hy.1)),
-      map_sum], 
+    rw [hI.dpow_add _ hx.1 hy.1, map_add, hJ.dpow_add _ (hf ( ideal.mem_map_of_mem f hx.1))
+     (hf ( ideal.mem_map_of_mem f hy.1)), map_sum], 
     apply congr_arg,
     ext k,
     rw [map_mul, hx.2 k, hy.2 (n - k)]
@@ -351,9 +334,9 @@ def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A
 
 def pd_morphism.id {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) : 
   pd_morphism hI hI :=
-{to_ring_hom := ring_hom.id A,
-  ideal_comp  := by simp only [ideal.map_id, le_refl],
-  dpow_comp   := λ n a ha, by simp only [ring_hom.id_apply] }
+{ to_ring_hom  := ring_hom.id A,
+  ideal_comp   := by simp only [ideal.map_id, le_refl],
+  dpow_comp    := λ n a ha, by simp only [ring_hom.id_apply] }
 
 instance {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) : 
   inhabited (pd_morphism hI hI) := ⟨pd_morphism.id hI⟩
@@ -483,5 +466,3 @@ dpow m (dpow n x) = (x ^n / c n) ^ m / c m = x ^ (m n) / ((c n ^ m) * c m)
   Case 1 : [ ] = mchoose m n, case 2 : p^ (-m)
 
 -/
-
-#lint
