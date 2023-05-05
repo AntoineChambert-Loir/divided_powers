@@ -40,7 +40,7 @@ variable (R)
 def eval₂_alg_hom  (g : σ → S) :
   mv_polynomial σ R →ₐ[R] S := 
 { commutes' := λ r, by rw [ring_hom.to_fun_eq_coe, coe_eval₂_hom, algebra_map_eq, eval₂_C], 
-  .. mv_polynomial.eval₂_hom (algebra_map R S) g }
+  .. eval₂_hom (algebra_map R S) g }
 
 variable {R}
 lemma eval₂_alg_hom_apply (g : σ → S) (P : mv_polynomial σ R) :
@@ -306,7 +306,7 @@ begin
   rw fun_like.ext'_iff,
   apply function.surjective.injective_comp_right (quotient.mkₐ_surjective R (relI R M)),
   simp only [←  alg_hom.coe_comp, ← fun_like.ext'_iff], 
-  exact mv_polynomial.alg_hom_ext (λ ⟨n, m⟩, h n m),
+  exact alg_hom_ext (λ ⟨n, m⟩, h n m)
 end
 
 section functoriality
@@ -410,7 +410,7 @@ begin
     rw [← algebra_map_smul S r, ← algebra_map_smul S (r ^ n), dp_smul, map_pow],
     apply_instance, apply_instance, },
   { simp only [coe_eval₂_hom, eval₂_mul, eval₂_X, nsmul_eq_mul], 
-    simp only [mv_polynomial.eval₂_eq_eval_map, map_nat_cast, ← nsmul_eq_mul],
+    simp only [eval₂_eq_eval_map, map_nat_cast, ← nsmul_eq_mul],
     rw dp_mul, },
   { simp only [map_add, coe_eval₂_hom, eval₂_sum, eval₂_mul, eval₂_X],
     rw dp_add, },
@@ -502,7 +502,7 @@ graded_quot_alg R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ
   (divided_power_algebra.relI R M) (divided_power_algebra.relI_is_homogeneous R M)
 
 lemma mv_polynomial.vars_X_subset {R : Type*} {σ : Type*} (n : σ) [comm_semiring R] :
-  (mv_polynomial.X n : mv_polynomial σ R).vars ⊆ {n} := 
+  (X n : mv_polynomial σ R).vars ⊆ {n} := 
 begin
   classical,
   rw X,
@@ -518,23 +518,25 @@ begin
   { apply hc, rw if_neg h, },
 end
 
+open mv_polynomial
+
 namespace divided_power_algebra
 
 variable {M}
 
 lemma surjective_of_supported : function.surjective ((mkₐ R (relI R M)).comp 
-  (subalgebra.val (mv_polynomial.supported R {nm : ℕ × M | 0 < nm.1 }))) := 
+  (subalgebra.val (supported R {nm : ℕ × M | 0 < nm.1 }))) := 
 begin
   intro f, 
   obtain ⟨p',hp'⟩ := mk_surjective f,
-  have hX : ∀ (nm : ℕ × M), 0 < nm.1 → X nm ∈ mv_polynomial.supported R {nm : ℕ × M | 0 < nm.1},
+  have hX : ∀ (nm : ℕ × M), 0 < nm.1 → X nm ∈ supported R {nm : ℕ × M | 0 < nm.1},
   { intros nm hnm,
-    rw mv_polynomial.mem_supported, 
-    refine set.subset.trans (finset.coe_subset.mpr (mv_polynomial.vars_X_subset nm)) _,
+    rw mem_supported, 
+    refine set.subset.trans (finset.coe_subset.mpr (vars_X_subset nm)) _,
     simp only [coe_singleton, set.singleton_subset_iff, set.mem_set_of_eq],
     exact hnm, },
-  let φ : mv_polynomial (ℕ × M) R →ₐ[R] mv_polynomial.supported R {nm : ℕ × M | 0 < nm.1} :=  
-    mv_polynomial.aeval (λ (nm: ℕ × M), dite (0 < nm.1) (λ h, ⟨(X nm), hX nm h⟩) (λ h, 1)),
+  let φ : mv_polynomial (ℕ × M) R →ₐ[R] supported R {nm : ℕ × M | 0 < nm.1} :=  
+    aeval (λ (nm: ℕ × M), dite (0 < nm.1) (λ h, ⟨(X nm), hX nm h⟩) (λ h, 1)),
   have hφ : (mkₐ R (relI R M)).comp ((subalgebra.val _).comp φ) = (mkₐ R _),
   { apply mv_polynomial.alg_hom_ext, 
     rintro ⟨n,m⟩,
@@ -679,7 +681,7 @@ begin
   obtain ⟨p, hp, rfl⟩ := ha, 
   rw ← mkₐ_eq_mk R, rw lift_aux_eq,
 
-  rw mv_polynomial.as_sum p,
+  rw p.as_sum,
   rw eval₂_sum,
   apply _root_.sum_mem,
   intros c hc, 
@@ -766,11 +768,11 @@ lift R M (divided_powers.of_square_zero.divided_powers (by rw [zero_eq_bot, pow_
 
 lemma algebra_map_inv_eq (f : mv_polynomial (ℕ × M) R) : 
   algebra_map_inv R M (mkₐ R (relI R M) f) =
-  mv_polynomial.aeval (λ nm : ℕ × M, ite (0 < nm.1) (0 : R) 1) f :=
+  aeval (λ nm : ℕ × M, ite (0 < nm.1) (0 : R) 1) f :=
 begin
   rw ← alg_hom.comp_apply, 
   apply alg_hom.congr_fun,
-  refine mv_polynomial.alg_hom_ext _,
+  refine alg_hom_ext _,
   rintro ⟨n,m⟩,
   rw [algebra_map_inv, alg_hom.comp_apply, lift_eqₐ],
   simp only [linear_map.zero_apply, aeval_X],
@@ -826,54 +828,37 @@ begin
   ext d, simp only [mkₐ_eq_mk, aeval_X],
 end
 
+. 
+
 lemma mk_eq_eval₂ {C : Type*} [comm_ring C] {D : Type*} (I : ideal (mv_polynomial D C)) :
   (ideal.quotient.mk I).to_fun  = eval₂ (algebra_map C ((mv_polynomial D C)⧸ I)) 
   (λ (d : D), ideal.quotient.mk I (X d)) :=
-begin
-
-  sorry
-end
+by ext d; simp_rw [ring_hom.to_fun_eq_coe, ← mkₐ_eq_mk C, mkₐ_eq_aeval, aeval_X]; refl
 
 lemma algebra_map_right_inv_of_degree_zero [decidable_eq R] [decidable_eq M] (x : grade R M 0) :
   (algebra_map R (divided_power_algebra R M)) ((algebra_map_inv R M) x.1) = x.1 := 
 begin
-  have hx := x.2,
-  simp only [grade, quot_submodule] at hx,
-  simp only [subtype.val_eq_coe, submodule.mem_map, mem_weighted_homogeneous_submodule, 
-    mkₐ_eq_mk] at hx,
-  obtain ⟨y, hy0, hyx⟩ := hx,
-  rw subtype.val_eq_coe, rw ← hyx, rw ← mkₐ_eq_mk R _,
-  rw algebra_map_inv_eq,
-  rw mkₐ_eq_aeval,
-  simp only [map_aeval, algebra.id.map_eq_id, ring_hom_comp_triple.comp_eq, 
-  ring_hom.map_ite_zero_one, coe_eval₂_hom],
-  rw aeval_def,
-  rw mv_polynomial.as_sum y,
-  rw eval₂_sum, rw eval₂_sum,
-  rw finset.sum_congr rfl,
+  have hx : x.val ∈ grade R M 0 := x.2,
+  simp only [grade, quot_submodule, subtype.val_eq_coe, submodule.mem_map,
+    mem_weighted_homogeneous_submodule, is_weighted_homogeneous] at hx,
+  obtain ⟨p, hp0, hpx⟩ := hx,
+  rw [subtype.val_eq_coe, ← hpx, algebra_map_inv_eq, mkₐ_eq_aeval, map_aeval, algebra.id.map_eq_id, 
+    ring_hom_comp_triple.comp_eq, coe_eval₂_hom, aeval_def, p.as_sum, eval₂_sum, eval₂_sum, 
+    finset.sum_congr rfl],
   intros exp hexp,
-   have h : ∀ (nm : ℕ × M), nm ∈ exp.support → nm.fst = 0,
-   { intros nm hnm, 
-     simp only [is_weighted_homogeneous, ne.def] at hy0,
-     rw mem_support_iff at hexp,
-     specialize hy0 hexp,
-     rw weighted_degree' at hy0,
-     rw finsupp.total_apply at hy0,
-     rw finsupp.sum at hy0,
-     rw finset.sum_eq_zero_iff at hy0,
-     specialize hy0 nm hnm,
-     simp only [finsupp.mem_support_iff, ne.def] at hnm,
-     simp only [algebra.id.smul_eq_mul, nat.mul_eq_zero] at hy0,
-     exact or.resolve_left hy0 hnm, },
-  rw eval₂_monomial, rw eval₂_monomial,
+  have h : ∀ (nm : ℕ × M), nm ∈ exp.support → nm.fst = 0,
+  { intros nm hnm, 
+    specialize hp0 (mem_support_iff.mp hexp),
+    rw [weighted_degree', finsupp.total_apply, finsupp.sum, finset.sum_eq_zero_iff] at hp0,
+    specialize hp0 nm hnm,
+    rw [algebra.id.smul_eq_mul, nat.mul_eq_zero] at hp0,
+    exact or.resolve_left hp0 (finsupp.mem_support_iff.mp hnm), },
+  rw [eval₂_monomial, eval₂_monomial],
   apply congr_arg,
   rw finsupp.prod_congr,
   intros nm hnm,
-  rw if_neg,
-  simp only [one_pow],
-  rw [← @prod.mk.eta _ _ nm, ← dp_eq_mk],
-  rw h nm hnm, rw dp_zero, rw one_pow,
-  { rw [h nm hnm], simp only [not_lt_zero', not_false_iff] },
+  rw [if_neg, ← @prod.mk.eta _ _ nm, ← dp_eq_mk, h nm hnm, dp_zero, map_one],
+  { rw [h nm hnm], exact lt_irrefl 0, },
 end
 
 /-- An ideal J of a commutative ring A is an augmentation ideal
@@ -890,11 +875,8 @@ by rw [aug_ideal, ring_hom.mem_ker]
 
 /-- The image of ι is contained in the augmentation ideal -/
 lemma ι_mem_aug_ideal (m : M) : (ι R) m ∈ aug_ideal R M :=
-begin
-  rw [mem_aug_ideal_iff, ι],
-  simp only [dp, linear_map.coe_mk, algebra_map_inv_eq, aeval_X, nat.lt_one_iff, 
-    eq_self_iff_true, if_true], 
-end
+by simp only [mem_aug_ideal_iff, ι, dp, linear_map.coe_mk, algebra_map_inv_eq, aeval_X, 
+  nat.lt_one_iff, eq_self_iff_true, if_true]
 
 /- We prove that the augmentation is an augmentation ideal, namely there is a section -/
 lemma aug_ideal_is_augmentation_ideal : 
@@ -921,7 +903,7 @@ lemma coeff_zero_of_mem_aug_ideal {f : mv_polynomial (ℕ × M) R}
 begin
   rw [aug_ideal, ring_hom.mem_ker] at hf0,
   rw [← hf0, ← mkₐ_eq_mk R _, algebra_map_inv_eq R M, eq_comm],
-  conv_lhs { rw [mv_polynomial.as_sum f, map_sum] },
+  conv_lhs { rw [f.as_sum, map_sum] },
   convert @finset.sum_eq_single _ _ _ (f.support) _ 0 _ _,
   { rw [monomial_zero', aeval_C, algebra.id.map_eq_id, ring_hom.id_apply], },
   { intros b hb hb0,
@@ -941,7 +923,7 @@ begin
       ← not_mem_support_iff.mp hf'] }
 end  
 
-lemma aug_ideal_eq_span : 
+lemma aug_ideal_eq_span :
   span (set.image (λ nm, mk _ (X nm)) { nm : ℕ × M | 0 < nm.1 }) = aug_ideal R M := 
 begin
   classical,
@@ -959,10 +941,10 @@ begin
     have hf0' : coeff 0 f = 0 := coeff_zero_of_mem_aug_ideal R M hf hf0,
     simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, 
       set_like.coe_mk] at hf0 ⊢,
-    rw [set.image_comp, ← map_span (mk (relI R M)), mv_polynomial.as_sum f],
+    rw [set.image_comp, ← map_span (mk (relI R M)), f.as_sum],
     apply ideal.mem_map_of_mem _ (sum_mem _ _),
     intros c hc, 
-    rw [mv_polynomial.monomial_eq, finsupp.prod],
+    rw [monomial_eq, finsupp.prod],
     refine mul_mem_left _ _ _,
     suffices supp_ss : ↑(c.support) ⊆ {nm : ℕ × M | 0 < nm.fst},
     { by_cases hc0 : c.support.nonempty,
@@ -977,7 +959,7 @@ begin
         exact absurd hf0' (mem_support_iff.mp hc) }},
     { -- supp_ss
       intros nm hnm, 
-      apply mv_polynomial.mem_supported.mp hf, 
+      apply mem_supported.mp hf, 
       simp only [mem_vars, mem_coe, mem_support_iff, ne.def, finsupp.mem_support_iff, exists_prop],
       rw [mem_coe, finsupp.mem_support_iff] at hnm,
       exact ⟨c,⟨mem_support_iff.mp hc, hnm⟩⟩ }}, 
