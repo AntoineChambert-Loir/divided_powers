@@ -25,6 +25,17 @@ The divided power algebra of a module -/
 
 open finset mv_polynomial ring_quot direct_sum ideal ideal.quotient
 
+theorem ideal.pow_eq_bot {R : Type*} [comm_semiring R] [no_zero_divisors R] {I : ideal R} 
+  {n : ℕ} (hn : n ≠ 0) :
+  I ^ n = ⊥ ↔ I = ⊥ :=
+begin
+  induction n with n ih,
+  { exfalso, exact hn (eq.refl _) },
+  { by_cases hn0 : n = 0,
+    { rw [hn0, pow_one] },
+    { rw [pow_succ, mul_eq_bot, ih hn0, or_self] }}
+end
+
 namespace mv_polynomial
 
 variables {R S σ : Type*} [comm_semiring R] [comm_semiring S] 
@@ -107,30 +118,19 @@ def ker_ideal : ideal (triv_sq_zero_ext R M) := ring_hom.ker (fst_hom R R M)
 lemma mem_ker_ideal_iff_inr (x : triv_sq_zero_ext R M) :
   (x ∈ ker_ideal R M ↔ x = inr x.snd) :=
 begin
-  obtain ⟨r,m⟩ := x,
+  obtain ⟨r, m⟩ := x,
   simp only [ker_ideal, ring_hom.mem_ker, fst_hom_apply, fst_mk],
-  split,
-  intro hr, 
-  rw hr, refl, 
-  intro hrm,
-  rw [← fst_mk r m, hrm, fst_inr],
+  exact ⟨λ hr, by {rw hr, refl}, λ hrm, by rw [← fst_mk r m, hrm, fst_inr]⟩,
 end
 
-lemma mem_ker_ideal_iff_exists : ∀ (x : triv_sq_zero_ext R M),
+lemma mem_ker_ideal_iff_exists (x : triv_sq_zero_ext R M) :
   (x ∈ ker_ideal R M ↔ ∃ (m : M), x = inr m) :=
-begin
-  rintro ⟨r,m⟩,
-  simp only [ker_ideal, ring_hom.mem_ker, fst_hom_apply, fst_mk],
-  split,
-  intro hr, rw hr, use m, refl,
-  rintro ⟨n,hn⟩,
-  rw [← fst_mk r m, hn, fst_inr],
-end
+by rw mem_ker_ideal_iff_inr; exact ⟨λ h, ⟨x.snd, h⟩, λ ⟨m, hm⟩, by {rw hm, refl}⟩
+
 
 lemma square_zero : (ker_ideal R M) ^ 2 = 0 := 
 begin
-  rw [pow_two, zero_eq_bot, eq_bot_iff, mul_le],
-  simp only [mem_ker_ideal_iff_inr],
+  simp only [pow_two, zero_eq_bot, eq_bot_iff, mul_le, mem_ker_ideal_iff_inr],
   rintros x hx y hy, 
   rw [hx, hy, mem_bot, inr_mul_inr],
 end
@@ -143,9 +143,12 @@ section graded_algebra
 
 variables {R : Type*} [comm_ring R]
 variables {A : Type*} [comm_ring A] [algebra R A]
-variables {ι : Type*} [decidable_eq ι] [canonically_ordered_add_monoid ι] --[add_comm_monoid ι]
-variables (𝒜 : ι → submodule R A) [graded_algebra 𝒜]
+variables {ι : Type*}[canonically_ordered_add_monoid ι]
+variables (𝒜 : ι → submodule R A)
 
+lemma grade_zero_coe_smul (r : R) (x : 𝒜 0) : (↑(r • x) : A) = r • x := rfl 
+
+variables  [decidable_eq ι] [graded_algebra 𝒜]
 instance : has_one ↥(𝒜 0) := 
 ⟨⟨1, (@graded_ring.to_graded_monoid ι A (submodule R A) _ _ _ _ _ 𝒜 _).one_mem⟩⟩
 
@@ -155,9 +158,6 @@ instance : has_mul ↥(𝒜 0) :=
 @[simp] lemma grade_zero_coe_mul (x y : 𝒜 0) : (↑(x * y) : A) = x * y := rfl 
 
 @[simp] lemma grade_zero_val_mul (x y : 𝒜 0) : (x * y).val = x.val * y.val := rfl
-
-@[nolint unused_arguments] -- I don't understand why the linter complains here
-lemma grade_zero_coe_smul (r : R) (x : 𝒜 0) :  (↑(r • x) : A) = r • x := rfl 
 
 @[simp] lemma grade_zero_coe_one : (↑(1 : 𝒜 0) : A) = 1 := rfl
 
@@ -176,8 +176,7 @@ instance grade_zero_comm_ring : comm_ring ↥(𝒜 0) := {
   mul_assoc     := λ x y z, by ext; simp only [grade_zero_coe_mul, mul_assoc],
   one_mul       := λ x, by  ext; rw [grade_zero_coe_mul, grade_zero_coe_one, one_mul],
   mul_one       := λ x, by  ext; rw [grade_zero_coe_mul, grade_zero_coe_one, mul_one],
-  left_distrib  := λ x y z, 
-    by ext; simp only [submodule.coe_add, grade_zero_coe_mul, left_distrib],
+  left_distrib  := λ x y z, by ext; simp only [submodule.coe_add, grade_zero_coe_mul, left_distrib],
   right_distrib := λ x y z, 
     by ext; simp only [submodule.coe_add, grade_zero_coe_mul, right_distrib],
   mul_comm      := λ x y, by ext; simp only [grade_zero_coe_mul, mul_comm],
@@ -188,7 +187,6 @@ instance grade_zero_algebra : algebra R ↥(𝒜 0) := algebra.of_module'
     algebra.smul_mul_assoc, one_mul])
   (λ r x, by ext; simp only [grade_zero_coe_mul, grade_zero_coe_smul, grade_zero_coe_one, 
     algebra.mul_smul_comm, mul_one])
-
 
 /-- The projection from `A` to the degree `i` component `𝒜 i`, as an `R`-linear map. -/
 def proj (i : ι) : A →ₗ[R] (𝒜 i) :=
@@ -392,9 +390,6 @@ by rw [← mkₐ_eq_mk R, lift_eqₐ_X]
 
 end lift
 
-
-
-
 section lift'
 
 variables {M}
@@ -448,53 +443,35 @@ variables (M) [decidable_eq R] [decidable_eq M]
 lemma relI_is_homogeneous : 
   (relI R M).is_homogeneous ((weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ))) :=
 begin
-  dsimp only [relI, of_rel],
   apply is_homogeneous_span,
   rintros x ⟨a, b, h, hx⟩,
-  rw ← eq_sub_iff_add_eq at hx, rw hx,
+  rw eq_sub_iff_add_eq.mpr hx,
   induction h with n r n m n p m n u v,
-  { use 0, 
-    refine submodule.sub_mem _ _ _;
-    rw [mem_weighted_homogeneous_submodule], 
-    apply is_weighted_homogeneous_X, 
-    apply is_weighted_homogeneous_one, },
-  { use n, 
-    refine submodule.sub_mem _ _ _,
-    rw [mem_weighted_homogeneous_submodule], 
-    apply is_weighted_homogeneous_X, 
-    refine submodule.smul_mem _ _ _,
-    rw [mem_weighted_homogeneous_submodule], 
-    apply is_weighted_homogeneous_X, },
-  { use n + p, 
-    refine submodule.sub_mem _ _ _,
-    rw [mem_weighted_homogeneous_submodule], 
-    apply is_weighted_homogeneous.mul;
-    apply is_weighted_homogeneous_X, 
-    refine nsmul_mem _ _,
-    rw [mem_weighted_homogeneous_submodule], 
-    apply is_weighted_homogeneous_X, },
+  { exact ⟨0, submodule.sub_mem _ (is_weighted_homogeneous_X R _ _) 
+      (is_weighted_homogeneous_one R _)⟩ },
+  { exact ⟨n, submodule.sub_mem _ (is_weighted_homogeneous_X R _ _) 
+      (submodule.smul_mem _ _ (is_weighted_homogeneous_X R _ _))⟩ },
+  { exact ⟨n + p, submodule.sub_mem _ (is_weighted_homogeneous.mul (is_weighted_homogeneous_X R _ _)
+      (is_weighted_homogeneous_X R _ _)) (nsmul_mem (is_weighted_homogeneous_X R _ _) _)⟩ },
   { use n,
-    refine submodule.sub_mem _ _ _,
-    rw [mem_weighted_homogeneous_submodule], 
-    apply is_weighted_homogeneous_X, 
-    
-    refine submodule.sum_mem _ _,
+    refine submodule.sub_mem _ (is_weighted_homogeneous_X R _ _) (submodule.sum_mem _ _),
     intros c hc,
-    rw [mem_weighted_homogeneous_submodule], 
-    have : n = c + (n - c)
-    := (nat.add_sub_of_le (finset.mem_range_succ_iff.mp hc)).symm, 
-    nth_rewrite 1 this, 
-    apply is_weighted_homogeneous.mul;
-    apply is_weighted_homogeneous_X, },
+    have hnc : n = c + (n - c) := (nat.add_sub_of_le (finset.mem_range_succ_iff.mp hc)).symm, 
+    nth_rewrite 1 hnc, 
+    exact (is_weighted_homogeneous.mul (is_weighted_homogeneous_X R _ _)
+      (is_weighted_homogeneous_X R _ _)) },
 end
 
 /-- The graded submodules of `divided_power_algebra R M` -/
 def grade := quot_submodule R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ))
   (divided_power_algebra.relI R M)
 
+lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 :=
+⟨1, (is_weighted_homogeneous_one R _), rfl⟩
+
 /-- The canonical decomposition of `divided_power_algebra R M` -/
 def decomposition := 
-quot_decomposition R  (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
+quot_decomposition R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
   (divided_power_algebra.relI R M) (relI_is_homogeneous R M)
 
 end decidable_eq
@@ -511,22 +488,38 @@ lemma mv_polynomial.vars_X_subset {R : Type*} {σ : Type*} (n : σ) [comm_semiri
   (X n : mv_polynomial σ R).vars ⊆ {n} := 
 begin
   classical,
-  rw X,
   intro u,
-  rw mem_vars, 
+  rw [X, mem_vars, mem_singleton], 
   rintro ⟨c, hc, hc'⟩,
-  simp only [mem_singleton],
   by_contradiction h', 
-  simp only [mem_support_iff, coeff_monomial, ne.def] at hc, 
+  rw [mem_support_iff, coeff_monomial, ne.def] at hc, 
   by_cases h : finsupp.single n 1 = c,
   { rw [← h, finsupp.mem_support_iff, ne.def, finsupp.single_apply] at hc',
     apply hc', rw if_neg (ne.symm h'), },
   { apply hc, rw if_neg h, },
 end
 
+namespace divided_power_algebra
+
 open mv_polynomial
 
-namespace divided_power_algebra
+section decidable_eq
+
+variables (M) [decidable_eq R] [decidable_eq M]
+
+/-- degree of a product is sum of degrees -/
+lemma mul_mem ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade R M i)
+  (hj : gj ∈ grade R M j) : gi * gj ∈ grade R M (i + j) :=
+(divided_power_galgebra R M).to_graded_monoid.mul_mem hi hj
+
+def decompose : divided_power_algebra R M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
+(divided_power_galgebra R M).to_decomposition.decompose'
+
+/- graded_algebra (grade R M )-/
+instance : graded_algebra (divided_power_algebra.grade R M) := 
+divided_power_galgebra R M
+
+end decidable_eq
 
 variable {M}
 
@@ -537,41 +530,35 @@ begin
   obtain ⟨p',hp'⟩ := mk_surjective f,
   have hX : ∀ (nm : ℕ × M), 0 < nm.1 → X nm ∈ supported R {nm : ℕ × M | 0 < nm.1},
   { intros nm hnm,
-    rw mem_supported, 
+    rw mem_supported,
     refine set.subset.trans (finset.coe_subset.mpr (vars_X_subset nm)) _,
-    simp only [coe_singleton, set.singleton_subset_iff, set.mem_set_of_eq],
+    rw [coe_singleton, set.singleton_subset_iff, set.mem_set_of_eq],
     exact hnm, },
   let φ : mv_polynomial (ℕ × M) R →ₐ[R] supported R {nm : ℕ × M | 0 < nm.1} :=  
     aeval (λ (nm: ℕ × M), dite (0 < nm.1) (λ h, ⟨(X nm), hX nm h⟩) (λ h, 1)),
   have hφ : (mkₐ R (relI R M)).comp ((subalgebra.val _).comp φ) = (mkₐ R _),
-  { apply mv_polynomial.alg_hom_ext, 
+  { apply mv_polynomial.alg_hom_ext,
     rintro ⟨n,m⟩,
     simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, aeval_X],
     split_ifs,
-    refl,
-    simp only [not_lt, le_zero_iff] at h, rw h,
-    apply symm,
-    simp only [algebra_map.coe_one],
-    dsimp only [relI],
-    rw quotient_mk_eq_of_rel rel.zero, },
+    { refl },
+    { simp only [not_lt, le_zero_iff] at h,
+      dsimp only [relI],
+      rw [h, algebra_map.coe_one, quotient_mk_eq_of_rel rel.zero] }},
   use φ p',
-  rw ← alg_hom.comp_apply, 
-  rw alg_hom.comp_assoc, 
-  rw [hφ,  ← hp', mkₐ_eq_mk],
+  rw [← alg_hom.comp_apply, alg_hom.comp_assoc, hφ,  ← hp', mkₐ_eq_mk]
 end
 
 /-- The canonical linear map `M →ₗ[R] divided_power_algebra R M`. -/
 def ι : M →ₗ[R] (divided_power_algebra R M) :=
-{ to_fun := λ m, dp R 1 m,
-  map_add' := λ x y, by simp only [dp_add, sum_range_succ', sum_range_zero, zero_add, nat.sub_zero,
+{ to_fun    := λ m, dp R 1 m,
+  map_add'  := λ x y, by simp only [dp_add, sum_range_succ', sum_range_zero, zero_add, nat.sub_zero,
     nat.sub_self, dp_zero, mul_one, one_mul],
   map_smul' := λ r x, by rw [dp_smul, pow_one, ring_hom.id_apply] }
 
-lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) :
-  mkₐ R (relI R M) (X (1, m)) = ι R m := rfl
+lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) : mkₐ R (relI R M) (X (1, m)) = ι R m := rfl
 
-lemma mk_alg_hom_mv_polynomial_ι_eq_ι' (m : M) :
-  dp R 1 m = ι R m := rfl
+lemma mk_alg_hom_mv_polynomial_ι_eq_ι' (m : M) : dp R 1 m = ι R m := rfl
 
 @[simp] theorem ι_comp_lift {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} 
   (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) :
@@ -588,36 +575,7 @@ end
   lift R M hI φ hφ (ι R x) = φ x :=
 by { conv_rhs {rw ← ι_comp_lift R hI φ hφ,},refl, }
 
-
-
 variables (M)
-
-section decidable_eq
-
-variables [decidable_eq R] [decidable_eq M]
-
-
--- TODO : move above
-lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 := begin
-  refine ⟨1, _, rfl⟩,
-  simp only [set_like.mem_coe, mem_weighted_homogeneous_submodule, is_weighted_homogeneous_one], 
-end
-
-/-- degree of a product is sum of degrees -/
-lemma mul_mem ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade R M i)
-  (hj : gj ∈ grade R M j) : gi * gj ∈ grade R M (i + j) :=
-(divided_power_galgebra R M).to_graded_monoid.mul_mem hi hj
-
-
-def decompose : divided_power_algebra R M → direct_sum ℕ (λ (i : ℕ), ↥(grade R M i)) :=
-(divided_power_galgebra R M).to_decomposition.decompose'
-
-/- graded_algebra (grade R M )-/
-instance : graded_algebra (divided_power_algebra.grade R M) := 
-divided_power_galgebra R M
-
-
-end decidable_eq
 
 def galg_hom.is_homogeneous {ι : Type*} /- [add_comm_monoid ι] [decidable_eq ι] -/
   {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ι → submodule R A) /- [graded_algebra 𝒜] -/
@@ -631,28 +589,19 @@ lemma finsupp.prod.mem_grade {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ
   c.prod (λ s e, (f s) ^ e) ∈ 𝒜 (c.sum (λ s e, e * d s)) := 
 begin
   classical,
-  rw finsupp.prod, rw finsupp.sum,
+  rw [finsupp.prod, finsupp.sum],
   let p : finset σ → Prop := 
   λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i * d i))),
-
   apply @finset.induction_on σ p _ c.support,
-
-  dsimp [p], apply imp_intro,
-  exact set_like.one_mem_graded 𝒜, 
-
-  intros a s ha hs,
-  by_cases hs' : (insert a s) ⊆ c.support,  
-  { apply imp_intro,
-    rw finset.prod_insert ha,
-    rw finset.sum_insert ha,
-    apply set_like.mul_mem_graded,
-    rw ← smul_eq_mul ℕ, 
-    apply set_like.pow_mem_graded,
-    exact hc a (hs' (mem_insert_self a s)),
-    exact hs (subset_trans (subset_insert a s) hs'), },
-  { apply not.elim, exact hs', },
-
-  exact subset_rfl,
+  { exact imp_intro (set_like.one_mem_graded 𝒜) },
+  { intros a s ha hs,
+    by_cases hs' : (insert a s) ⊆ c.support,  
+    { apply imp_intro,
+      rw [finset.prod_insert ha, finset.sum_insert ha],
+      exact set_like.mul_mem_graded (set_like.pow_mem_graded _ (hc a (hs' (mem_insert_self a s))))
+       (hs (subset_trans (subset_insert a s) hs')) },
+    { exact not.elim hs' }},
+  { exact subset_rfl }
 end
 
 variable {R}
@@ -665,10 +614,8 @@ section decidable_eq
 
 variables (R) [decidable_eq R] [decidable_eq M]
 
-lemma lift_aux_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] 
-  (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜]
-  (f : ℕ × M → A) 
-  (hf_zero : ∀ m, f (0, m) = 1) 
+lemma lift_aux_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ → submodule R A) 
+  [graded_algebra 𝒜] (f : ℕ × M → A) (hf_zero : ∀ m, f (0, m) = 1) 
   (hf_smul : ∀ (n : ℕ) (r : R) (m : M), f(⟨n, r • m⟩) = r ^ n • f(⟨n, m⟩)) 
   (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
   (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) 
@@ -676,80 +623,55 @@ lemma lift_aux_is_homogeneous {A : Type*} [comm_ring A] [algebra R A]
   galg_hom.is_homogeneous R (divided_power_algebra.grade R M) 𝒜 
     (lift_aux R M f hf_zero hf_smul hf_mul hf_add) := 
 begin
-  dsimp only [galg_hom.is_homogeneous],
   intros i a ha,
   dsimp [grade, quot_submodule] at ha,
   obtain ⟨p, hp, rfl⟩ := ha, 
-  rw ← mkₐ_eq_mk R, rw lift_aux_eq,
-
-  rw p.as_sum,
-  rw eval₂_sum,
+  rw [← mkₐ_eq_mk R, lift_aux_eq, p.as_sum, eval₂_sum],
   apply _root_.sum_mem,
   intros c hc, 
   rw [eval₂_monomial, ← smul_eq_mul, algebra_map_smul A],
   apply submodule.smul_mem, 
-  rw is_weighted_homogeneous at hp,
-  rw mem_support_iff at hc,
-  specialize hp hc,
-  suffices : i = c.sum (λ nm e, e * nm.fst), rw this,
-  apply finsupp.prod.mem_grade,
-
-  rintros ⟨n,m⟩ hnm, exact hf n m,
-
-  rw ←hp,  refl,
-
-  apply_instance, 
+  rw ← hp (mem_support_iff.mp hc), 
+  exact finsupp.prod.mem_grade _ _ _ _ _ (λ ⟨n,m⟩ hnm, hf n m),
+  { apply_instance }, 
 end
 
 variable {R}
   
-lemma lift_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] 
-  (𝒜 : ℕ → submodule R A) [graded_algebra 𝒜]
-  {I : ideal A} (hI : divided_powers I) 
-  (hI' : has_graded_dpow 𝒜 hI)
+lemma lift_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ → submodule R A) 
+  [graded_algebra 𝒜] {I : ideal A} (hI : divided_powers I) (hI' : has_graded_dpow 𝒜 hI)
   (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (hφ' : ∀ m, φ m ∈ 𝒜 1) : 
-  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) 𝒜
-    (lift R M hI φ hφ) := 
+  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) 𝒜 (lift R M hI φ hφ) := 
 begin
-  rw [lift],
   apply lift_aux_is_homogeneous,
   intros n m,
-  dsimp only,
-  simpa only [algebra.id.smul_eq_mul, mul_one] using hI' (φ m) (hφ m) 1 (hφ' m) n,
+  simpa only [algebra.id.smul_eq_mul, mul_one] using hI' (φ m) (hφ m) 1 (hφ' m) n
 end
 
-lemma lift'_is_homogeneous
-  {N : Type*} [decidable_eq N] [add_comm_group N] [module R N] 
+lemma lift'_is_homogeneous {N : Type*} [decidable_eq N] [add_comm_group N] [module R N] 
   (f : M →ₗ[R] N) :
   galg_hom.is_homogeneous R (divided_power_algebra.grade R M) (divided_power_algebra.grade R N) 
     (lift' R R f) := 
 begin
-  simp only [lift'],
   apply lift_aux_is_homogeneous,
-  -- Because lift' does not use lift_aux, we have to reprove stuff…
-  intro m, rw dp_zero,
-  intros n r m, simp only [linear_map.map_smul], rw dp_smul,
-  intros n p m, rw dp_mul, 
-  intros n u v, dsimp only, rw map_add, apply dp_add R,
-  intros n m, dsimp only [grade, quot_submodule, submodule.mem_map],
-    use X(n, f m),
-    split,
-    simp only [mem_weighted_homogeneous_submodule],
-    apply is_weighted_homogeneous_X,
-    refl,
+  { intro m, rw dp_zero},
+  { intros n r m, rw [linear_map.map_smul, dp_smul] },
+  { intros n p m, rw dp_mul }, 
+  { intros n u v, rw [map_add, dp_add] },
+  { intros n m, exact ⟨X(n, f m), ⟨is_weighted_homogeneous_X R _ _, rfl⟩⟩ },
 end
 
 /- We need the projections (divided_power_algebra R M) → grade R M n ,
 more generally for graded algebras -/
 
 variable (R)
+
 def proj' (n : ℕ) : divided_power_algebra R M →ₗ[R] grade R M n := 
 proj (grade R M) n
 
 lemma proj'_zero_one : (proj' R M 0) 1 = 1 :=
 by rw [proj', proj, linear_map.coe_mk, decompose_one]; refl
 
-set_option pp.full_names true
 lemma proj'_zero_mul (x y : divided_power_algebra R M) : 
   (proj' R M 0) (x * y) = (proj' R M 0) x * (proj' R M 0) y :=
 by simp only [proj', ← proj_zero_ring_hom'_apply, _root_.map_mul]
@@ -768,28 +690,17 @@ lift R M (divided_powers.of_square_zero.divided_powers (by rw [zero_eq_bot, pow_
   (0 : M →ₗ[R] R) (λ m, by simp only [linear_map.zero_apply, zero_eq_bot, mem_bot])
 
 lemma algebra_map_inv_eq (f : mv_polynomial (ℕ × M) R) : 
-  algebra_map_inv R M (mkₐ R (relI R M) f) =
-  aeval (λ nm : ℕ × M, ite (0 < nm.1) (0 : R) 1) f :=
+  algebra_map_inv R M (mkₐ R (relI R M) f) = aeval (λ nm : ℕ × M, ite (0 < nm.1) (0 : R) 1) f :=
 begin
   rw ← alg_hom.comp_apply, 
   apply alg_hom.congr_fun,
-  refine alg_hom_ext _,
-  rintro ⟨n,m⟩,
-  rw [algebra_map_inv, alg_hom.comp_apply, lift_eqₐ],
-  simp only [linear_map.zero_apply, aeval_X],
+  ext ⟨n, m⟩,
+  simp only [algebra_map_inv, alg_hom.comp_apply, lift_eqₐ, linear_map.zero_apply, aeval_X],
   by_cases hn : 0 < n,
-  rw if_pos hn,
-  rw ← mem_bot,
-  rw [eval₂_X],
-  refine divided_powers.dpow_mem _ _ _, 
-  exact ne_of_gt hn,
-  exact mem_bot.mpr rfl,
-  rw if_neg hn,
-  simp only [not_lt, le_zero_iff] at hn,
-  rw hn,
-  rw [eval₂_X],
-  refine divided_powers.dpow_zero _ _,
-  exact mem_bot.mpr rfl,
+  { rw [if_pos hn, eval₂_X, divided_powers.dpow_eval_zero _ (ne_of_gt hn)] },
+  { rw if_neg hn,
+    rw [not_lt, le_zero_iff] at hn,
+    rw [hn, eval₂_X, divided_powers.dpow_zero _ (mem_bot.mpr rfl)] }
 end
 
 lemma proj'_zero_comp_algebra_map [decidable_eq R] [decidable_eq M] (x : R) :
@@ -820,16 +731,9 @@ map_eq_zero_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
   algebra_map R (divided_power_algebra R M) x = 1 ↔ x = 1 :=
 map_eq_one_iff (algebra_map _ _) (algebra_map_left_inverse _ _).injective
 
-.
-
-
 lemma mkₐ_eq_aeval {C : Type*} [comm_ring C] {D : Type*} (I : ideal (mv_polynomial D C)) :
   (ideal.quotient.mkₐ C I) = aeval (λ (d : D), ideal.quotient.mk I (X d)) :=
-begin
-  ext d, simp only [mkₐ_eq_mk, aeval_X],
-end
-
-. 
+by ext d; simp only [mkₐ_eq_mk, aeval_X]
 
 lemma mk_eq_eval₂ {C : Type*} [comm_ring C] {D : Type*} (I : ideal (mv_polynomial D C)) :
   (ideal.quotient.mk I).to_fun  = eval₂ (algebra_map C ((mv_polynomial D C)⧸ I)) 
@@ -883,17 +787,17 @@ by simp only [mem_aug_ideal_iff, ι, dp, linear_map.coe_mk, algebra_map_inv_eq, 
 lemma aug_ideal_is_augmentation_ideal : 
   is_augmentation_ideal (divided_power_algebra R M) (aug_ideal R M) :=
 begin
-  rw is_augmentation_ideal,
   let g := ker_lift_alg (algebra_map_inv R M),
   let g1 := algebra_map R (divided_power_algebra R M ⧸ aug_ideal R M),
-  use (algebra_map R (divided_power_algebra R M)).comp g.to_ring_hom, 
-  ext x, 
+  use (algebra_map R (divided_power_algebra R M)).comp g.to_ring_hom,
+  ext x,
   rw [ker_lift_alg_to_ring_hom, ring_hom.coe_comp, function.comp_app, mk_algebra_map, id.def],
-  suffices : function.right_inverse g g1, 
-  exact this x, 
-  apply function.right_inverse_of_injective_of_left_inverse,
-  exact ring_hom.ker_lift_injective _,
-  intro r, simp only [alg_hom_class.commutes, algebra.id.map_eq_id, ring_hom.id_apply],
+  suffices h_inv : function.right_inverse g g1, 
+  { exact h_inv x },
+  refine function.right_inverse_of_injective_of_left_inverse
+   (ring_hom.ker_lift_injective _) _,
+  intro r, 
+  rw [alg_hom_class.commutes, algebra.id.map_eq_id, ring_hom.id_apply]
 end 
 
 -- Q : if algebra map has a section, is the kernel an augmentation ideal?
@@ -968,10 +872,7 @@ end
 
 lemma right_inv' [decidable_eq R] [decidable_eq M] (x : R) :
   (algebra_map_inv R M) (((proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M))) x).val = x :=
-begin  
-  rw proj'_zero_comp_algebra_map,
-  exact algebra_map_left_inverse R M x,
-end
+by rw proj'_zero_comp_algebra_map; exact algebra_map_left_inverse R M x
 
 lemma left_inv' [decidable_eq R] [decidable_eq M] (x : grade R M 0) :
   ((proj' R M 0) ∘ (algebra_map R (divided_power_algebra R M))) ((algebra_map_inv R M) x.val) = x :=
@@ -1039,23 +940,17 @@ lemma on_dp_algebra_unique (h h' : divided_powers (aug_ideal R M))
   (h1 : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = mk _ (X (n, x)))
   (h1' : ∀ (x : M) (n : ℕ), h'.dpow n (ι R x) = mk _ (X (n, x))) : h = h' := 
 begin
-  apply divided_powers.dp_uniqueness,
-  exact (aug_ideal_eq_span R M),
-  intros n f,
-  rw set.mem_image, 
-  rintro ⟨⟨q, m⟩, hq, rfl⟩,
+  apply divided_powers.dp_uniqueness h h' (aug_ideal_eq_span R M),
+  rintros n f ⟨⟨q, m⟩, hq, rfl⟩,
   simp only [set.mem_set_of_eq] at hq,
+  simp only,
   nth_rewrite 0 [← h1 m q],
-  rw ← h1' m q, 
-  rw h.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
-  rw h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
-  rw h1 m, rw h1' m,
+  rw [← h1' m q, h.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
+    h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), h1 m,  h1' m],
 end
-
 
 def cond_D : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
   ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x))
-
 
 end divided_power_algebra
 
@@ -1064,13 +959,10 @@ end
 section roby
 /- Formalization of Roby 1965, section 8 -/
 
-.
-
 open_locale tensor_product
 
 variables (A R S : Type*) [comm_ring A] [comm_ring R] [algebra A R] [comm_ring S] [algebra A S] 
   {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J)
-
 
 def i_1 : R →ₐ R ⊗[A] S := algebra.tensor_product.include_left
 
@@ -1121,7 +1013,6 @@ def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] /- [algebra A R] not used -
   function.surjective f.to_ring_hom
 
 end free
-
 
 end divided_powers
 
