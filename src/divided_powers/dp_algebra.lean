@@ -953,20 +953,44 @@ end
 
 .
 
-
-
-/-  | zero {a : M} : rel (X (0, a)) 1
-| smul {r : R} {n : ℕ} {a : M} : rel (X (n, r • a)) (r^n • X (n, a))
-| mul {m n : ℕ} {a : M} : rel (X (m, a) * X (n, a)) ((nat.choose (m + n) m) • X (m + n, a))
-| add {n : ℕ} {a b : M} : rel (X (n, a + b)) 
-    (finset.sum (range (n + 1)) (λ k, (X (k, a) * X (n - k, b))))-/
-
--- TODO: move
-lemma eq_finsupp_single_of_degree_one {d : ℕ × M →₀ ℕ} (hd : (weighted_degree' prod.fst) d = 1) :
+-- TODO: move; generalize
+lemma eq_finsupp_single_of_degree_one {d : ℕ × M →₀ ℕ} (hd : (weighted_degree' prod.fst) d = 1)
+  (hsupp : ∀ (nm : ℕ × M), nm ∈ d.support → 0 < nm.fst) :
   ∃ (m : M), finsupp.single (1, m) 1 = d :=
 begin
+  classical,
   rw [weighted_degree', finsupp.total_apply, finsupp.sum] at hd,
-  sorry
+  have hnm : ∃ (nm : ℕ × M), d nm • nm.fst = 1,
+  { by_contra h0,
+    rw [not_exists] at h0,
+    have hd0 : d.support.sum (λ (a : ℕ × M), d a • a.fst) = 0,
+    { rw finset.sum_eq_zero,
+      intros nm hnm,
+      rw ← nat.lt_one_iff,
+      apply lt_of_le_of_ne _ (h0 nm),
+      rw ← hd,
+      exact finset.single_le_sum (λab hab,  zero_le _ ) hnm },
+    rw [hd0] at hd,
+    exact zero_ne_one hd, },
+  obtain ⟨nm, hnm⟩ := hnm,
+  rw ← hnm at hd,
+  rw [algebra.id.smul_eq_mul, nat.mul_eq_one_iff] at hnm,
+  use nm.snd,
+  ext ab,
+  rw finsupp.single_apply,
+  split_ifs with hab;
+  rw [← hnm.2, eq_comm, prod.mk.eta] at hab,
+  { rw [hab, hnm.1], },
+  { rw eq_comm,
+    by_contra hab',
+    have hne0 : d ab * ab.fst ≠ 0,
+    { exact mul_ne_zero hab' (ne_of_gt (hsupp ab (finsupp.mem_support_iff.mpr hab'))) },
+    have hnm_mem : nm ∈ d.support,
+    { rw [finsupp.mem_support_iff, hnm.1], exact one_ne_zero },
+    simp only [finset.sum_eq_sum_diff_singleton_add hnm_mem, add_left_eq_self, 
+      algebra.id.smul_eq_mul, sum_eq_zero_iff, mem_sdiff, finsupp.mem_support_iff, --ne.def, 
+      mem_singleton] at hd,
+    exact hne0 (hd ab ⟨hab', hab⟩) },
 end
 
 /- have h : ∀ (nm : ℕ × M), nm ∈ exp.support → nm.fst = 0,
@@ -976,7 +1000,6 @@ end
     specialize hp0 nm hnm,
     rw [algebra.id.smul_eq_mul, nat.mul_eq_zero] at hp0,
     exact or.resolve_left hp0 (finsupp.mem_support_iff.mp hnm), }, -/
-
 
 theorem grade_one.induction_on {R M : Type*} [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] {P : grade R M 1 → Prop} 
@@ -1006,56 +1029,54 @@ begin
       and_true] at hdnm,
     rw ← hdnm },
 
-  have hp : ∃ (s : finset M) (hs : s.nonempty), 
+  have hp : ∃ (s : finset M), 
     p = s.sum (λ m, (coeff (finsupp.single (1, m) 1) q.1) • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩),
   { set s : finset M := finset.image (λ (nm : ℕ × M) , nm.snd) q.1.vars with hs,
     use s,
-    split,
-    { rw [hs, nonempty.image_iff],
-      sorry },
-    { ext,
-      rw [hs, finset.sum_image (λ nm hnm nm' hnm' heq, 
-        prod.ext_iff.mpr ⟨by rw [hq_fst nm hnm, hq_fst nm' hnm'], heq⟩), ← hq],
-      simp only [dp_eq_mkₐ, mkₐ_eq_mk, subtype.val_eq_coe, submodule.coe_sum, set_like.mk_smul_mk, 
-        submodule.coe_mk, ← ideal.quotient.mk_eq_mk, ← submodule.quotient.mk_smul, 
-        mv_polynomial.smul_eq_C_mul],
-      simp only [mk_eq_mk, ← map_sum],
-      apply congr_arg,
-      ext d,
-      simp only [coeff_sum, coeff_C_mul],
-      by_cases hd : ∃ m, finsupp.single (1, m) 1 = d,
-      { obtain ⟨m, hmd⟩ := hd, 
-        rw finset.sum_eq_single (1, m),
-        { rw [← hmd, coeff_X, mul_one] },
-        { intros nm hnm hnm1,
-          rw [← hmd, coeff_X', if_neg, mul_zero],
-          { simp only [finsupp.single_eq_single_iff, prod.mk.inj_iff, eq_self_iff_true, true_and, 
-              and_true, nat.one_ne_zero, and_self, or_false],
-            rw [ne.def, prod.eq_iff_fst_eq_snd_eq, hq_fst nm hnm, eq_self_iff_true, 
-              true_and] at hnm1,
-            exact hnm1 }},
-        { intros hm_vars,
-          simp only [mem_vars, not_exists] at hm_vars,
-          have h_coeff : coeff (finsupp.single (1, (1, m).snd) 1) (↑q : mv_polynomial _ R) = 0,
-          { by_contra hne0,
-            rw [← ne.def, ← mem_support_iff] at hne0,
-            specialize hm_vars _ hne0,
-            rw [finsupp.mem_support_iff, finsupp.single_eq_same] at hm_vars,
-            exact hm_vars nat.one_ne_zero },
-          rw [h_coeff, zero_mul] }},
-      { have hq0 : coeff d (↑q : mv_polynomial _ R) = 0,
-        { simp_rw not_imp_comm at hq1,
-          apply hq1,
-          intros h,
-          exact hd (eq_finsupp_single_of_degree_one M h) },
-        rw [hq0, eq_comm],
-        apply finset.sum_eq_zero,
-        intros nm hnm,
-        rw [mv_polynomial.coeff_X', if_neg, mul_zero],
-        { rw [not_exists] at hd, exact hd nm.snd }}}},
-  obtain ⟨s, hs, hsp⟩ := hp,
+    ext,
+    rw [hs, finset.sum_image (λ nm hnm nm' hnm' heq, 
+      prod.ext_iff.mpr ⟨by rw [hq_fst nm hnm, hq_fst nm' hnm'], heq⟩), ← hq],
+    simp only [dp_eq_mkₐ, mkₐ_eq_mk, subtype.val_eq_coe, submodule.coe_sum, set_like.mk_smul_mk, 
+      submodule.coe_mk, ← ideal.quotient.mk_eq_mk, ← submodule.quotient.mk_smul, 
+      mv_polynomial.smul_eq_C_mul],
+    simp only [mk_eq_mk, ← map_sum],
+    apply congr_arg,
+    ext d,
+    simp only [coeff_sum, coeff_C_mul],
+    by_cases hd : ∃ m, finsupp.single (1, m) 1 = d,
+    { obtain ⟨m, hmd⟩ := hd, 
+      rw finset.sum_eq_single (1, m),
+      { rw [← hmd, coeff_X, mul_one] },
+      { intros nm hnm hnm1,
+        rw [← hmd, coeff_X', if_neg, mul_zero],
+        { simp only [finsupp.single_eq_single_iff, prod.mk.inj_iff, eq_self_iff_true, true_and, 
+            and_true, nat.one_ne_zero, and_self, or_false],
+          rw [ne.def, prod.eq_iff_fst_eq_snd_eq, hq_fst nm hnm, eq_self_iff_true, 
+            true_and] at hnm1,
+          exact hnm1 }},
+      { intros hm_vars,
+        simp only [mem_vars, not_exists] at hm_vars,
+        have h_coeff : coeff (finsupp.single (1, (1, m).snd) 1) (↑q : mv_polynomial _ R) = 0,
+        { by_contra hne0,
+          rw [← ne.def, ← mem_support_iff] at hne0,
+          specialize hm_vars _ hne0,
+          rw [finsupp.mem_support_iff, finsupp.single_eq_same] at hm_vars,
+          exact hm_vars nat.one_ne_zero },
+        rw [h_coeff, zero_mul] }},
+    { have hq0 : coeff d (↑q : mv_polynomial _ R) = 0,
+      { simp_rw not_imp_comm at hq1,
+        apply hq1,
+        intros h,
+        exact hd (eq_finsupp_single_of_degree_one M h) },
+      rw [hq0, eq_comm],
+      apply finset.sum_eq_zero,
+      intros nm hnm,
+      rw [mv_polynomial.coeff_X', if_neg, mul_zero],
+      { rw [not_exists] at hd, exact hd nm.snd }}},
+  obtain ⟨s, hsp⟩ := hp,
   rw hsp,
-  exact finset.sum_induction_nonempty _ _ h_add hs (λ m hm, h_X m _),
+  refine finset.sum_induction _ _ h_add _ (λ m hm, h_X m _),
+  { convert h_X 0 0, rw zero_smul }
 end
 
 lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
