@@ -276,12 +276,12 @@ variable (R)
 def dp (n : ℕ) (m : M) : divided_power_algebra R M :=
 mkₐ R (relI R M) (X (⟨n, m⟩))
 
-lemma dp_eq_mkₐ (n : ℕ) (m : M) : dp R n m = (mkₐ R (relI R M)) (X ⟨n, m⟩) := rfl
+--lemma dp_def (n : ℕ) (m : M) : dp R n m = mkₐ R (relI R M) (X (⟨n, m⟩)) := rfl  --rename?
 
-lemma dp_eq_mk (n : ℕ) (m : M) : dp R n m = (mk (relI R M)) (X (⟨n, m⟩ : ℕ × M)) :=
+lemma dp_eq_mkₐ (n : ℕ) (m : M) : dp R n m = mkₐ R (relI R M) (X ⟨n, m⟩) := rfl
+
+lemma dp_eq_mk (n : ℕ) (m : M) : dp R n m = mk (relI R M) (X (⟨n, m⟩ : ℕ × M)) :=
 by rw [dp, mkₐ_eq_mk]
-
- -- { rw [dp, mkₐ_eq_mk, prod.mk.eta] },
 
 lemma dp_zero (m : M) : dp R 0 m = 1 :=
 begin
@@ -474,6 +474,8 @@ def grade := quot_submodule R (weighted_homogeneous_submodule R (prod.fst : ℕ 
 lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 :=
 ⟨1, (is_weighted_homogeneous_one R _), rfl⟩
 
+
+
 /-- The canonical decomposition of `divided_power_algebra R M` -/
 def decomposition := 
 quot_decomposition R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
@@ -512,8 +514,12 @@ section decidable_eq
 
 variables (M) [decidable_eq R] [decidable_eq M]
 
-lemma mkₐ_mem_grade (n : ℕ) (m : M) : (mkₐ R (relI R M)) (X (n, m)) ∈ grade R M n :=
+-- Do we need both versions?
+lemma dp_mem_grade (n : ℕ) (m : M) : dp R n m ∈ grade R M n  :=
 ⟨X (n, m), is_weighted_homogeneous_X R _ (n, m), rfl⟩
+
+lemma mkₐ_mem_grade (n : ℕ) (m : M) : (mkₐ R (relI R M)) (X (n, m)) ∈ grade R M n :=
+⟨X (n, m), is_weighted_homogeneous_X R _ (n, m), rfl⟩ 
 
 /-- degree of a product is sum of degrees -/
 lemma mul_mem ⦃i j : ℕ⦄ {gi gj : divided_power_algebra R M} (hi : gi ∈ grade R M i)
@@ -563,6 +569,8 @@ def ι : M →ₗ[R] (divided_power_algebra R M) :=
   map_add'  := λ x y, by simp only [dp_add, sum_range_succ', sum_range_zero, zero_add, nat.sub_zero,
     nat.sub_self, dp_zero, mul_one, one_mul],
   map_smul' := λ r x, by rw [dp_smul, pow_one, ring_hom.id_apply] }
+
+lemma ι_def (m : M) : ι R m = dp R 1 m := rfl
 
 lemma mk_alg_hom_mv_polynomial_ι_eq_ι (m : M) : mkₐ R (relI R M) (X (1, m)) = ι R m := rfl
 
@@ -926,12 +934,10 @@ lift R M (divided_powers.of_square_zero.divided_powers (triv_sq_zero_ext.square_
    to_triv_sq_zero_ext R M (ι R x) = inr x :=
 lift_ι_apply R _ _ _ x
 
-/- @[simp] lemma to_triv_sq_zero_ext_snd [module Rᵐᵒᵖ M] [is_central_scalar R M] (m : M) :
-  (to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) p).snd = m :=
-lift_ι_apply R _ _ _ x -/
-
+@[simp] lemma to_triv_sq_zero_ext_snd [module Rᵐᵒᵖ M] [is_central_scalar R M] (m : M) :
+  ((to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) (X (1, m)))).snd = m :=
+by rw [← dp_eq_mkₐ, ← ι_def, to_triv_sq_zero_ext_ι]; refl
 .
-
 
 lemma deg_one_left_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
   function.left_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
@@ -947,227 +953,118 @@ end
 
 .
 
-lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
-  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
-    ((proj' R M 1) ∘ (ι R)) :=
+
+
+/-  | zero {a : M} : rel (X (0, a)) 1
+| smul {r : R} {n : ℕ} {a : M} : rel (X (n, r • a)) (r^n • X (n, a))
+| mul {m n : ℕ} {a : M} : rel (X (m, a) * X (n, a)) ((nat.choose (m + n) m) • X (m + n, a))
+| add {n : ℕ} {a b : M} : rel (X (n, a + b)) 
+    (finset.sum (range (n + 1)) (λ k, (X (k, a) * X (n - k, b))))-/
+
+-- TODO: move
+lemma eq_finsupp_single_of_degree_one {d : ℕ × M →₀ ℕ} (hd : (weighted_degree' prod.fst) d = 1) :
+  ∃ (m : M), finsupp.single (1, m) 1 = d :=
 begin
-  intros x,
-  /- have hx : x.val ∈ grade R M 1 := x.2,
-  simp only [grade, quot_submodule, subtype.val_eq_coe, submodule.mem_map,
-    mem_weighted_homogeneous_submodule, is_weighted_homogeneous] at hx,
-  obtain ⟨p, hp1, hpx⟩ := hx, -/
-
-  obtain ⟨q, hqx⟩ := surjective_of_supported R x.1,
-
-  have hq1 : ∀ ⦃d : ℕ × M →₀ ℕ⦄, (weighted_degree' prod.fst) d ≠ 1 → coeff d q.1 = 0,
-  { have hx := x.2,
-    simp only [grade, quot_submodule, subtype.val_eq_coe, submodule.mem_map,
-    mem_weighted_homogeneous_submodule, is_weighted_homogeneous] at hx,
-    intros nm hnm,
-    simp only [weighted_degree', ne.def] at hnm,
-    sorry },
-
-  have hq : rel R M (X (1, ((to_triv_sq_zero_ext R M)
-          (((mkₐ R (relI R M)).comp (supported R {nm : ℕ × M | 0 < nm.fst}).val) q)).snd)) q.1,
-  { rw alg_hom.comp_apply,
-    simp only [subalgebra.coe_val, mkₐ_eq_mk, ← subtype.val_eq_coe],
-    rw q.1.as_sum, rw map_sum, rw map_sum,
-    by_cases h_supp : q.1.support = ∅,
-    { rw h_supp, simp only [sum_empty, snd_zero],  rw ← zero_smul R (0 : M), 
-      have hsmul : rel R M (X (1, (0 : R) • (0 : M))) _ := rel.smul,
-      rw [pow_one, zero_smul R (X (1, (0 : M)))] at hsmul,
-      exact hsmul,  },
-    { rw [← ne.def, ← nonempty_iff_ne_empty] at h_supp,
-      obtain ⟨a, ha⟩ := h_supp,
-      have h_add : rel R M (X (1, ((q.1.support ∩ {a}).sum (λ (x : ℕ × M →₀ ℕ), 
-        (to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) ((monomial x) (coeff x q.1)))) + 
-        (q.1.support \ {a}).sum (λ (x : ℕ × M →₀ ℕ), (to_triv_sq_zero_ext R M) 
-        ((mkₐ R (relI R M)) ((monomial x) (coeff x q.1))))).snd)) _ := rel.add,
-      
-
-      simp only [snd_add] at h_add,
-
-      rw finset.range_add_one at h_add,
-      rw finset.range_one at h_add,
-      simp only [sum_insert, mem_singleton, nat.one_ne_zero, not_false_iff, 
-        tsub_self, sum_singleton, tsub_zero] at h_add,
-      
-      rw ← finset.sum_inter_add_sum_diff q.1.support {a},
-
-      
-
-
-      /- convert h_add,
-
-      simp only [subtype.val_eq_coe, support_sum_monomial_coeff, mkₐ_eq_mk],
-
-      rw finset.range_add_one,
-      rw finset.range_one,
-      simp only [sum_insert, mem_singleton, nat.one_ne_zero, not_false_iff, 
-        tsub_self, sum_singleton, tsub_zero], -/
-    sorry
-    }},
-
-  ext,
-  nth_rewrite 1 ← subtype.val_eq_coe,
-  rw [← hqx],
-  simp only [proj', proj, linear_map.coe_mk, function.comp_app, ι, dp],
-  rw decompose_of_mem_same _ (mkₐ_mem_grade R M 1 _),
-  conv_lhs {rw mkₐ_eq_aeval }, 
-  rw aeval_def,
-  simp only [eval₂_monomial, eval₂_X],
-  rw alg_hom.comp_apply,
-  rw mkₐ_eq_mk,
-
-  rw ideal.quotient.eq,
-
-  have h : X (1, ((to_triv_sq_zero_ext R M) x.val).snd) -
-    (((supported R {nm : ℕ × M | 0 < nm.fst}).val) q) ∈ relI R M,
-  { /- rw alg_hom.comp_apply,
-    simp only [subalgebra.coe_val, mkₐ_eq_mk, ← subtype.val_eq_coe],
-    rw q.1.as_sum, rw map_sum, rw map_sum, -/
-    by_cases h_supp : q.1.support = ∅,
-    { sorry/- rw h_supp, simp only [sum_empty, snd_zero],  rw ← zero_smul R (0 : M), 
-      have hsmul : rel R M (X (1, (0 : R) • (0 : M))) _ := rel.smul,
-      rw [pow_one, zero_smul R (X (1, (0 : M)))] at hsmul,
-      exact hsmul,  -/ },
-    { rw [← ne.def, ← nonempty_iff_ne_empty] at h_supp,
-      obtain ⟨a, ha⟩ := h_supp,
-      have h_add : rel R M (X (1, ((q.1.support ∩ {a}).sum (λ (x : ℕ × M →₀ ℕ), 
-        (to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) ((monomial x) (coeff x q.1)))) + 
-        (q.1.support \ {a}).sum (λ (x : ℕ × M →₀ ℕ), (to_triv_sq_zero_ext R M) 
-        ((mkₐ R (relI R M)) ((monomial x) (coeff x q.1))))).snd)) _ := rel.add,
-
-      -- simp only [snd_add] at h_add,
-      rw finset.sum_inter_add_sum_diff q.1.support {a} at h_add,
-      rw finset.range_add_one at h_add,
-      rw finset.range_one at h_add,
-      simp only [sum_insert, mem_singleton, nat.one_ne_zero, not_false_iff, 
-        tsub_self, sum_singleton, tsub_zero] at h_add,
-      rw ← map_sum at h_add, rw ← map_sum at h_add, 
-      rw ← q.1.as_sum at h_add,
-      --simp only [subtype.val_eq_coe, mkₐ_eq_mk] at h_add,
-     -- simp_rw finset.sum_inter_add_sum_diff q.1.support {a} at h_add,
-      have h_add' := sub_mem_rel_of_rel h_add,
-
-      simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, 
-        function.comp_app, subtype.val_eq_coe] at hqx,
-      simp only [subtype.val_eq_coe]at h_add' ⊢,
-      rw ← hqx,
-
-     -- convert ideal.sub_mem _ h_add' _,
-      sorry }},
-
-  simp only [relI, of_rel, ← hqx],
-
-  --simp only [subtype.val_eq_coe, ← hpx ],
-  apply submodule.subset_span, 
-  rw set.mem_set_of_eq,
-  use (X (1, ((to_triv_sq_zero_ext R M)
-    (((mkₐ R (relI R M)).comp (supported R {nm : ℕ × M | 0 < nm.fst}).val) q)).snd)),
-  use ((supported R {nm : ℕ × M | 0 < nm.fst}).val) q,
-  split,
-  exact hq,
-  rw sub_add_cancel,
- 
+  rw [weighted_degree', finsupp.total_apply, finsupp.sum] at hd,
+  sorry
 end
 
-#exit
-
-
-lemma deg_one_right_inv' [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
-  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
-    ((proj' R M 1) ∘ (ι R)) :=
-begin
-  intros x,
-  have hx : x.val ∈ grade R M 1 := x.2,
-  simp only [grade, quot_submodule, subtype.val_eq_coe, submodule.mem_map,
-    mem_weighted_homogeneous_submodule, is_weighted_homogeneous] at hx,
-  obtain ⟨p, hp1, hpx⟩ := hx,
-
-  obtain ⟨q, hq⟩ := surjective_of_supported R x.1,
-
-  have hp : rel R M (X (1, ((to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) p)).snd)) p,
-  { rw p.as_sum, rw map_sum, rw map_sum,
-    by_cases h_supp : p.support = ∅,
-    { rw h_supp, simp only [sum_empty, snd_zero],  rw ← zero_smul R (0 : M), 
-      have hsmul : rel R M (X (1, (0 : R) • (0 : M))) _ := rel.smul,
-      rw [pow_one, zero_smul R (X (1, (0 : M)))] at hsmul,
-      exact hsmul },
-    { rw [← ne.def, ← nonempty_iff_ne_empty] at h_supp,
-      obtain ⟨a, ha⟩ := h_supp,
-      have h_add : rel R M (X (1, ((p.support ∩ {a}).sum (λ (x : ℕ × M →₀ ℕ), 
-        (to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) ((monomial x) (coeff x p)))) + 
-        (p.support \ {a}).sum (λ (x : ℕ × M →₀ ℕ), (to_triv_sq_zero_ext R M) 
-        ((mkₐ R (relI R M)) ((monomial x) (coeff x p))))).snd)) _ := rel.add,
-      
-
-      simp only [snd_add] at h_add,
-      
-      rw ← finset.sum_inter_add_sum_diff p.support {a},
-       
-    sorry
-    }},
-
-  ext,
-  rw [← hpx],
-  simp only [proj', proj, linear_map.coe_mk, function.comp_app, ι, dp],
-  rw decompose_of_mem_same _ (mkₐ_mem_grade R M 1 _),
-  conv_lhs {rw mkₐ_eq_aeval }, 
-  rw aeval_def,
-  simp only [eval₂_monomial, eval₂_X],
-  rw mkₐ_eq_mk,
-
-  rw ideal.quotient.eq,
-
-  simp only [relI, of_rel],
-  simp only [subtype.val_eq_coe, ← hpx ],
-  apply submodule.subset_span, 
-  rw set.mem_set_of_eq,
-  use X (1, ((to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) p)).snd),
-  use p,
-  split,
-  exact hp,
-  rw sub_add_cancel,
-  --simp only [mkₐ_eq_mk, support_sum_monomial_coeff, exists_prop, set.mem_set_of_eq],
-
-  --simp only [subtype.val_eq_coe, support_sum_monomial_coeff],
-
-
-  --conv_rhs{ rw aeval_def, rw eval₂_sum,},
-
- -- simp only [eval₂_monomial, eval₂_X],
-  --rw finset.sum_congr rfl,
-
-  /- rw [subtype.val_eq_coe, ← hpx, algebra_map_inv_eq, mkₐ_eq_aeval, map_aeval, algebra.id.map_eq_id, 
-    ring_hom_comp_triple.comp_eq, coe_eval₂_hom, aeval_def, p.as_sum, eval₂_sum, eval₂_sum, 
-    finset.sum_congr rfl],-/
-  /- simp_rw [subtype.val_eq_coe, ← hpx], 
-  simp only [function.comp_app],
-  simp only [proj', proj, linear_map.coe_mk, to_triv_sq_zero_ext, mkₐ_eq_aeval],
-  rw [aeval_def, p.as_sum, eval₂_sum],
-  simp only [eval₂_monomial],
-  rw finset.sum_congr rfl, -/
-  /-   rw [subtype.val_eq_coe, ← hpx, algebra_map_inv_eq, mkₐ_eq_aeval, map_aeval, algebra.id.map_eq_id, 
-    ring_hom_comp_triple.comp_eq, coe_eval₂_hom, aeval_def, p.as_sum, eval₂_sum, eval₂_sum, 
-    finset.sum_congr rfl],
-  intros exp hexp,
-  have h : ∀ (nm : ℕ × M), nm ∈ exp.support → nm.fst = 0,
+/- have h : ∀ (nm : ℕ × M), nm ∈ exp.support → nm.fst = 0,
   { intros nm hnm, 
     specialize hp0 (mem_support_iff.mp hexp),
     rw [weighted_degree', finsupp.total_apply, finsupp.sum, finset.sum_eq_zero_iff] at hp0,
     specialize hp0 nm hnm,
     rw [algebra.id.smul_eq_mul, nat.mul_eq_zero] at hp0,
-    exact or.resolve_left hp0 (finsupp.mem_support_iff.mp hnm), },
-  rw [eval₂_monomial, eval₂_monomial],
-  apply congr_arg,
-  rw finsupp.prod_congr,
-  intros nm hnm,
-  rw [if_neg, ← @prod.mk.eta _ _ nm, ← dp_eq_mk, h nm hnm, dp_zero, map_one],
-  { rw [h nm hnm], exact lt_irrefl 0, }, -/
-  /- simp only [to_triv_sq_zero_ext, function.comp_app, subtype.val_eq_coe,
-    proj', proj, linear_map.coe_mk], -/
- --sorry, sorry
+    exact or.resolve_left hp0 (finsupp.mem_support_iff.mp hnm), }, -/
+
+
+theorem grade_one.induction_on {R M : Type*} [comm_ring R] [add_comm_group M]
+  [module R M] [decidable_eq R] [decidable_eq M] {P : grade R M 1 → Prop} 
+  (p : grade R M 1) (h_X : ∀ (m : M) (r : R), P (r • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩)) 
+  (h_add : ∀ (p q : grade R M 1), P p → P q → P (p + q)) :
+  P p :=
+begin
+  obtain ⟨q, hq⟩ := surjective_of_supported R p.1,
+
+  simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app,
+      subtype.val_eq_coe] at hq,
+
+  have hq1 : ∀ ⦃d : ℕ × M →₀ ℕ⦄, coeff d q.1 ≠ 0 → (weighted_degree' prod.fst) d = 1,
+  { sorry },
+
+  have hq_fst : ∀ (nm : ℕ × M), nm ∈ q.1.vars → nm.fst = 1,
+  { intros nm hnm,
+    simp only [vars, degrees, sup_to_finset, finsupp.to_finset_to_multiset, finset.mem_sup] at hnm,
+    obtain ⟨d, hd, hdnm⟩ := hnm,
+    specialize hq1 (mem_support_iff.mp hd),
+    rw [weighted_degree', finsupp.total_apply, finsupp.sum] at hq1,
+    obtain ⟨m, hm⟩ := eq_finsupp_single_of_degree_one M hq1,
+    rw [← hm] at hdnm,
+    simp only [finsupp.mem_support_iff, ne.def] at hdnm,
+    rw finsupp.single_apply at hdnm,
+    simp only [ite_eq_right_iff, nat.one_ne_zero, not_forall, not_false_iff, exists_prop, 
+      and_true] at hdnm,
+    rw ← hdnm },
+
+  have hp : ∃ (s : finset M) (hs : s.nonempty), 
+    p = s.sum (λ m, (coeff (finsupp.single (1, m) 1) q.1) • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩),
+  { set s : finset M := finset.image (λ (nm : ℕ × M) , nm.snd) q.1.vars with hs,
+    use s,
+    split,
+    { rw [hs, nonempty.image_iff],
+      sorry },
+    { ext,
+      rw [hs, finset.sum_image (λ nm hnm nm' hnm' heq, 
+        prod.ext_iff.mpr ⟨by rw [hq_fst nm hnm, hq_fst nm' hnm'], heq⟩), ← hq],
+      simp only [dp_eq_mkₐ, mkₐ_eq_mk, subtype.val_eq_coe, submodule.coe_sum, set_like.mk_smul_mk, 
+        submodule.coe_mk, ← ideal.quotient.mk_eq_mk, ← submodule.quotient.mk_smul, 
+        mv_polynomial.smul_eq_C_mul],
+      simp only [mk_eq_mk, ← map_sum],
+      apply congr_arg,
+      ext d,
+      simp only [coeff_sum, coeff_C_mul],
+      by_cases hd : ∃ m, finsupp.single (1, m) 1 = d,
+      { obtain ⟨m, hmd⟩ := hd, 
+        rw finset.sum_eq_single (1, m),
+        { rw [← hmd, coeff_X, mul_one] },
+        { sorry },
+        { sorry }},
+      { have hq0 : coeff d (↑q : mv_polynomial _ R) = 0,
+        { simp_rw not_imp_comm at hq1,
+          apply hq1,
+          intros h,
+          exact hd (eq_finsupp_single_of_degree_one M h) },
+        rw [hq0, eq_comm],
+        apply finset.sum_eq_zero,
+        intros nm hnm,
+        rw [mv_polynomial.coeff_X', if_neg, mul_zero],
+        { rw [not_exists] at hd, exact hd nm.snd }}}},
+  obtain ⟨s, hs, hsp⟩ := hp,
+  rw hsp,
+  exact finset.sum_induction_nonempty _ _ h_add hs (λ m hm, h_X m _),
+end
+
+lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
+  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
+    ((proj' R M 1) ∘ (ι R)) :=
+begin
+  intros x,
+  apply grade_one.induction_on x,
+  { intros m r,
+    ext,
+    simp only [proj', proj, linear_map.coe_mk, function.comp_app, ι, dp,
+      set_like.mk_smul_mk, alg_hom.map_smul, snd_smul, submodule.coe_mk],
+    rw [decompose_of_mem_same _ (mkₐ_mem_grade R M 1 _),
+      to_triv_sq_zero_ext_snd, ← alg_hom.map_smul],
+    rw [mkₐ_eq_mk, ideal.quotient.eq],
+    apply sub_mem_rel_of_rel,
+    convert rel.smul,
+    rw pow_one  },
+  { intros y z hy hz,
+    simp only [subtype.val_eq_coe, function.comp_app] at hy hz,
+    have hyz : (y + z).val = y.val + z.val := rfl,
+    simp only [hyz, function.comp_app],
+    simp only [subtype.val_eq_coe, snd_add, map_add, hy, hz] }
 end
 
 /- ι : M → grade R M 1 is isomorphism -/
@@ -1178,22 +1075,9 @@ def linear_equiv_degree_one [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ
   map_add'  := λ x y, by simp only [function.comp_app, map_add],
   map_smul' := λ r x, by simp only [function.comp_app, linear_map.map_smulₛₗ, ring_hom.id_apply],
   left_inv  := deg_one_left_inv R M,
-  right_inv := deg_one_right_inv R M, }
-
-/- 
--- Use description of augmentation ideal
-/- ι : M → grade R M 1 is isomorphism -/
-def linear_equiv_degree_one : linear_equiv (ring_hom.id R) M (grade R M 1) :=
-{ to_fun    := (proj' R M 1) ∘ ι R,
-  map_add'  := sorry,
-  map_smul' := sorry,
-  inv_fun   := sorry,
-  left_inv  := sorry,
-  right_inv := sorry } -/
-
+  right_inv := deg_one_right_inv R M }
 
 end grade_one
-
 
 variables (x : M) (n : ℕ)
 
