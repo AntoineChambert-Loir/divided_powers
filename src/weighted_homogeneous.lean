@@ -741,3 +741,5 @@ decompose'_fun_apply R w φ m
 end graded_algebra
 
 end mv_polynomial
+
+#lint
