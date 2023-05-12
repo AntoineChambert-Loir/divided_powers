@@ -303,7 +303,7 @@ open mv_polynomial
 
 variables {R M : Type*} [comm_ring R]
 
-instance [decidable_eq R] [decidable_eq M] :
+instance :
   graded_algebra (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) := 
 weighted_graded_algebra _ _
 
@@ -614,8 +614,7 @@ end functoriality
 
 section decidable_eq
 
-variables (M) [decidable_eq R] [decidable_eq M]
-
+variable (M)
 lemma relI_is_homogeneous : 
   (relI R M).is_homogeneous ((weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ))) :=
 begin
@@ -638,14 +637,14 @@ begin
       (is_weighted_homogeneous_X R _ _)) },
 end
 
+variables [decidable_eq R] [decidable_eq M]
+
 /-- The graded submodules of `divided_power_algebra R M` -/
 def grade := quot_submodule R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ))
   (divided_power_algebra.relI R M)
 
 lemma one_mem : (1 : divided_power_algebra R M) ∈ grade R M 0 :=
 ⟨1, (is_weighted_homogeneous_one R _), rfl⟩
-
-
 
 /-- The canonical decomposition of `divided_power_algebra R M` -/
 def decomposition := 
