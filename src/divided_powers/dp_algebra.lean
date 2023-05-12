@@ -1084,7 +1084,7 @@ lift R M (divided_powers.of_square_zero.divided_powers (triv_sq_zero_ext.square_
    to_triv_sq_zero_ext R M (ι R x) = inr x :=
 lift_ι_apply R _ _ _ x
 
-@[simp] lemma to_triv_sq_zero_ext_snd [module Rᵐᵒᵖ M] [is_central_scalar R M] (m : M) :
+lemma to_triv_sq_zero_ext_snd [module Rᵐᵒᵖ M] [is_central_scalar R M] (m : M) :
   ((to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) (X (1, m)))).snd = m :=
 by rw [← dp_eq_mkₐ, ← ι_def, to_triv_sq_zero_ext_ι]; refl
 .
@@ -1252,8 +1252,8 @@ begin
 end
 
 lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
-  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) --try with snd_hom , submodule.val
-    ((proj' R M 1) ∘ (ι R)) :=
+  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
+    ((proj' R M 1) ∘ (ι R)) := --try with snd_hom , submodule.val
 begin
   --rw function.right_inverse_iff_comp,
   --rw ← linear_map.coe_comp,
