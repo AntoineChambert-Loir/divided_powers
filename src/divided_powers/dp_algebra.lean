@@ -145,7 +145,7 @@ section graded_algebra
 
 variables {R : Type*} [comm_ring R]
 variables {A : Type*} [comm_ring A] [algebra R A]
-variables {ι : Type*}[canonically_ordered_add_monoid ι]
+variables {ι : Type*} [canonically_ordered_add_monoid ι]
 variables (𝒜 : ι → submodule R A)
 
 lemma grade_zero_coe_smul (r : R) (x : 𝒜 0) : (↑(r • x) : A) = r • x := rfl 
@@ -211,7 +211,133 @@ def proj (i : ι) : A →ₗ[R] (𝒜 i) :=
       ← graded_ring.proj_zero_ring_hom_apply 𝒜, ← _root_.map_mul],
   end }
 
+
 end graded_algebra
+
+section graded_algebra
+
+variables {R : Type*} [comm_ring R]
+
+def galg_hom.is_homogeneous {ι : Type*} /- [add_comm_monoid ι] [decidable_eq ι] -/
+  {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ι → submodule R A) /- [graded_algebra 𝒜] -/
+  {B : Type*} [comm_ring B] [algebra R B] (ℬ : ι → submodule R B) /- [graded_algebra ℬ]  -/
+  (f : A →ₐ[R] B):= 
+∀ i a, a ∈ 𝒜 i → f a ∈ ℬ i
+
+-- TODO: remove (particular case of next)
+/- lemma finsupp.prod.mem_grade' {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ → submodule R A)
+  [graded_algebra 𝒜] {σ : Type*} (c : σ →₀ ℕ) (f : σ → A) (d : σ → ℕ)
+  (hc : ∀ s ∈ c.support, f s ∈ 𝒜 (d s)) : 
+  c.prod (λ s e, (f s) ^ e) ∈ 𝒜 (c.sum (λ s e, e * d s)) := 
+begin
+  classical,
+  rw [finsupp.prod, finsupp.sum],
+  let p : finset σ → Prop := 
+  λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i * d i))),
+  apply @finset.induction_on σ p _ c.support,
+  { exact imp_intro (set_like.one_mem_graded 𝒜) },
+  { intros a s ha hs,
+    by_cases hs' : (insert a s) ⊆ c.support,  
+    { apply imp_intro,
+      rw [finset.prod_insert ha, finset.sum_insert ha],
+      exact set_like.mul_mem_graded (set_like.pow_mem_graded _ (hc a (hs' (mem_insert_self a s))))
+       (hs (subset_trans (subset_insert a s) hs')) },
+    { exact not.elim hs' }},
+  { exact subset_rfl }
+end
+ -/
+lemma finsupp.prod.mem_grade {κ A : Type*} [add_comm_monoid κ] [decidable_eq κ] 
+  [comm_ring A] [algebra R A] (𝒜 : κ → submodule R A)
+  [graded_algebra 𝒜] {σ : Type*} (c : σ →₀ ℕ) (f : σ → A) (d : σ → κ )
+  (hc : ∀ s ∈ c.support, f s ∈ 𝒜 (d s)) : 
+  c.prod (λ s e, (f s) ^ e) ∈ 𝒜 (c.sum (λ s e, e • d s)) := 
+begin
+  classical,
+  rw [finsupp.prod, finsupp.sum],
+  let p : finset σ → Prop := 
+  λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i • d i))),
+  apply @finset.induction_on σ p _ c.support,
+  { exact imp_intro (set_like.one_mem_graded 𝒜) },
+  { intros a s ha hs,
+    by_cases hs' : (insert a s) ⊆ c.support,  
+    { apply imp_intro,
+      rw [finset.prod_insert ha, finset.sum_insert ha],
+      exact set_like.mul_mem_graded (set_like.pow_mem_graded _ (hc a (hs' (mem_insert_self a s))))
+       (hs (subset_trans (subset_insert a s) hs')) },
+    { exact not.elim hs' }},
+  { exact subset_rfl },
+end
+
+def galg_hom.is_homogeneous' {ι κ : Type*} /- [add_comm_monoid ι] [decidable_eq ι] -/
+  (A : Type*) [comm_ring A] [algebra R A] (𝒜 : ι → submodule R A) /- [graded_algebra 𝒜] -/
+  (B : Type*) [comm_ring B] [algebra R B] (ℬ : κ → submodule R B) /- [graded_algebra ℬ]  -/
+  (φ : ι → κ) (f : A →ₐ[R] B) := 
+∀ i a, a ∈ 𝒜 i → f a ∈ ℬ (φ i)
+
+/- lemma foo {σ ι κ : Type*}  [add_comm_monoid ι] [decidable_eq ι]
+  [add_comm_monoid κ] [decidable_eq κ]
+  {A : Type*} [comm_ring A] [algebra R A] (𝒜 : κ → submodule R A) 
+  [graded_algebra 𝒜] (w : σ → ℕ) (φ : ℕ →+ κ) (f : σ → A) 
+  (h : ∀ s : σ, f s ∈ 𝒜 (φ (w s))) : 
+  galg_hom.is_homogeneous' (weighted_homogeneous_submodule R w ) 𝒜 φ
+    (mv_polynomial.aeval f) :=
+begin
+  intros i p hp,
+  simp only [mem_weighted_homogeneous_submodule, is_weighted_homogeneous] at hp,
+  rw p.as_sum,
+  rw map_sum,
+  apply submodule.sum_mem,
+  intros c hc,
+  rw aeval_monomial,
+  rw ← smul_eq_mul, 
+  rw algebra_map_smul,
+  apply submodule.smul_mem, 
+  convert finsupp.prod.mem_grade 𝒜 c f _ (λ s _, h s ),
+  rw ← hp (mem_support_iff.mp hc),
+  simp only [weighted_degree'],
+  rw finsupp.total,
+  simp only [finsupp.coe_lsum, finsupp.sum],
+  rw map_sum,
+  simp only [linear_map.coe_smul_right, linear_map.id_coe, id.def, algebra.id.smul_eq_mul],
+  apply congr_arg2 _ rfl,
+  ext s,
+  rw ← smul_eq_mul,
+  rw add_monoid_hom.map_nsmul,
+end -/
+
+lemma foo (σ : Type*) {ι κ : Type*} [add_comm_monoid ι] --[decidable_eq ι]
+  [add_comm_monoid κ] [decidable_eq κ]
+  (A : Type*) [comm_ring A] [algebra R A] (𝒜 : κ → submodule R A) 
+  [graded_algebra 𝒜] (w : σ → ι) (φ : ι →+ κ) (f : σ → A) 
+  (h : ∀ s : σ, f s ∈ 𝒜 (φ (w s))) : 
+  galg_hom.is_homogeneous' _ (weighted_homogeneous_submodule R w ) _ 𝒜 φ
+    (mv_polynomial.aeval f) :=
+begin
+  intros i p hp,
+  simp only [mem_weighted_homogeneous_submodule, is_weighted_homogeneous] at hp,
+  rw p.as_sum,
+  rw map_sum,
+  apply submodule.sum_mem,
+  intros c hc,
+  rw aeval_monomial,
+  rw ← smul_eq_mul, 
+  rw algebra_map_smul,
+  apply submodule.smul_mem, 
+  convert finsupp.prod.mem_grade 𝒜 c f _ (λ s _, h s ),
+  rw ← hp (mem_support_iff.mp hc),
+  simp only [weighted_degree'],
+  rw finsupp.total,
+  simp only [finsupp.coe_lsum, finsupp.sum],
+  rw map_sum,
+  simp only [linear_map.coe_smul_right, linear_map.id_coe, id.def, algebra.id.smul_eq_mul],
+  apply congr_arg2 _ rfl,
+  ext s,
+  rw add_monoid_hom.map_nsmul,
+end
+
+end graded_algebra
+
+
 section
 
 variables {R M : Type*} [comm_ring R]
@@ -537,36 +663,102 @@ end decidable_eq
 
 variable {M}
 
+lemma variable_mem_supported (nm : ℕ × M) (hn : 0 < nm.1) :
+  X nm ∈ supported R {nm : ℕ × M | 0 < nm.1} :=
+begin
+  rw mem_supported,
+  refine set.subset.trans (finset.coe_subset.mpr (vars_X_subset nm)) _,
+  rw [coe_singleton, set.singleton_subset_iff, set.mem_set_of_eq],
+  exact hn,
+end
+
+def to_supported : mv_polynomial (ℕ × M) R →ₐ[R] supported R {nm : ℕ × M | 0 < nm.1} :=  
+aeval (λ (nm : ℕ × M), dite (0 < nm.1) (λ h, ⟨(X nm), (variable_mem_supported R nm h)⟩) (λ h, 1))
+
+variable (M)
+lemma mkₐ_comp_to_supported : 
+  (mkₐ R (relI R M)).comp ((subalgebra.val _).comp (to_supported R)) = (mkₐ R _) :=
+begin
+  apply mv_polynomial.alg_hom_ext,
+  rintro ⟨n,m⟩,
+  simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, aeval_X,
+    to_supported],
+  split_ifs,
+  { refl },
+  { simp only [not_lt, le_zero_iff] at h,
+    dsimp only [relI],
+    rw [h, algebra_map.coe_one, quotient_mk_eq_of_rel rel.zero] },
+end
+
+variable {M}
 lemma surjective_of_supported : function.surjective ((mkₐ R (relI R M)).comp 
   (subalgebra.val (supported R {nm : ℕ × M | 0 < nm.1 }))) := 
 begin
   intro f, 
   obtain ⟨p',hp'⟩ := mk_surjective f,
-  have hX : ∀ (nm : ℕ × M), 0 < nm.1 → X nm ∈ supported R {nm : ℕ × M | 0 < nm.1},
-  { intros nm hnm,
-    rw mem_supported,
-    refine set.subset.trans (finset.coe_subset.mpr (vars_X_subset nm)) _,
-    rw [coe_singleton, set.singleton_subset_iff, set.mem_set_of_eq],
-    exact hnm, },
-  let φ : mv_polynomial (ℕ × M) R →ₐ[R] supported R {nm : ℕ × M | 0 < nm.1} :=  
-    aeval (λ (nm : ℕ × M), dite (0 < nm.1) (λ h, ⟨(X nm), hX nm h⟩) (λ h, 1)),
-  have hφ : (mkₐ R (relI R M)).comp ((subalgebra.val _).comp φ) = (mkₐ R _),
-  { apply mv_polynomial.alg_hom_ext,
-    rintro ⟨n,m⟩,
-    simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, aeval_X],
-    split_ifs,
-    { refl },
-    { simp only [not_lt, le_zero_iff] at h,
-      dsimp only [relI],
-      rw [h, algebra_map.coe_one, quotient_mk_eq_of_rel rel.zero] }},
-  use φ p',
-  rw [← alg_hom.comp_apply, alg_hom.comp_assoc, hφ, ← hp', mkₐ_eq_mk]
+  use to_supported R p',
+  rw [← alg_hom.comp_apply, alg_hom.comp_assoc, mkₐ_comp_to_supported, ← hp', mkₐ_eq_mk],
 end
 
-.
+lemma to_supported_is_homogeneous : 
+  galg_hom.is_homogeneous' (mv_polynomial (ℕ × M) R)
+    (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) (mv_polynomial (ℕ × M) R)
+    (weighted_homogeneous_submodule R prod.fst) (id : ℕ → ℕ)
+    ((subalgebra.val _).comp (to_supported R)) :=
+begin
+  classical,
+  have := @foo R _ (ℕ × M) ℕ ℕ _ _ _ (mv_polynomial (ℕ × M) R) _ _
+  (weighted_homogeneous_submodule R prod.fst) _ prod.fst (add_monoid_hom.id ℕ)
+  ((subalgebra.val _).to_fun.comp (λ (nm : ℕ × M), 
+    dite (0 < nm.1) (λ h, ⟨(X nm), (variable_mem_supported R nm h)⟩) (λ h, 1))) _,
+  
+  have heq : (aeval ((supported R {nm : ℕ × M | 0 < nm.fst}).val.to_fun ∘ 
+   λ (nm : ℕ × M), dite (0 < nm.fst) (λ (h : 0 < nm.fst), ⟨X nm, _⟩) (λ (h : ¬0 < nm.fst), 1))) =
+   ((supported R {nm : ℕ × M | 0 < nm.fst}).val.comp (to_supported R)),
+
+  { apply mv_polynomial.alg_hom_ext,
+    intros nm,
+    simp only [to_supported, alg_hom.to_fun_eq_coe, function.comp_app, alg_hom.coe_comp, aeval_X] },
+
+  rw heq at this,
+  exact this,
+
+  { intros nm,
+    simp only [mem_weighted_homogeneous_submodule, alg_hom.to_fun_eq_coe, subalgebra.coe_val, 
+      function.comp_app, add_monoid_hom.id_apply],
+    split_ifs,
+    { exact is_weighted_homogeneous_X R _ _,  },
+    { simp only [not_lt, le_zero_iff] at h,
+      rw h,
+      simp only [algebra_map.coe_one],
+      exact is_weighted_homogeneous_one R _, },
+ }
+
+  
+end
+
+lemma surjective_of_supported' [decidable_eq R] [decidable_eq M] {n : ℕ} (p : grade R M n) :
+  ∃ (q : supported R {nm : ℕ × M | 0 < nm.1 }), 
+  is_weighted_homogeneous prod.fst q.1 n ∧ ⇑(mk (relI R M)) q.1 = ↑p :=
+begin
+  --intro f, 
+  have hp := p.2,
+  simp only [grade, quot_submodule, subtype.val_eq_coe, submodule.mem_map, 
+    mem_weighted_homogeneous_submodule, mkₐ_eq_mk] at hp,
+  obtain ⟨p', hpn', hp'⟩ := hp,
+  use to_supported R p',
+  split,
+  { apply to_supported_is_homogeneous,
+    exact hpn', },
+  rw ← mkₐ_eq_mk R,
+  erw fun_like.congr_fun (mkₐ_comp_to_supported R M) p', -- TODO: write mk_comp_to_supported
+  rw mkₐ_eq_mk R,
+  rw hp',
+  { apply_instance },
+end
 
 -- TODO: golf, combine with previous lemma?
-lemma surjective_of_supported' [decidable_eq R] [decidable_eq M] {n : ℕ} (p : grade R M n) :
+/- lemma surjective_of_supported' [decidable_eq R] [decidable_eq M] {n : ℕ} (p : grade R M n) :
   ∃ (q : supported R {nm : ℕ × M | 0 < nm.1 }), 
   is_weighted_homogeneous prod.fst q.1 n ∧ ⇑(mk (relI R M)) q.1 = ↑p :=
 begin
@@ -648,8 +840,8 @@ begin
   -- rw ←hφ,  
   --rw [← alg_hom.comp_apply, alg_hom.comp_assoc, hφ, ← hqp, mkₐ_eq_mk],
 end
-
-#exit
+ -/
+--#exit
 
 /-- The canonical linear map `M →ₗ[R] divided_power_algebra R M`. -/
 def ι : M →ₗ[R] (divided_power_algebra R M) :=
@@ -681,32 +873,7 @@ by { conv_rhs {rw ← ι_comp_lift R hI φ hφ,},refl, }
 
 variables (M)
 
-def galg_hom.is_homogeneous {ι : Type*} /- [add_comm_monoid ι] [decidable_eq ι] -/
-  {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ι → submodule R A) /- [graded_algebra 𝒜] -/
-  {B : Type*} [comm_ring B] [algebra R B] (ℬ : ι → submodule R B) /- [graded_algebra ℬ]  -/
-  (f : A →ₐ[R] B):= 
-∀ i a, a ∈ 𝒜 i → f a ∈ ℬ i
 
-lemma finsupp.prod.mem_grade {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ → submodule R A)
-  [graded_algebra 𝒜] {σ : Type*} (c : σ →₀ ℕ) (f : σ → A) (d : σ → ℕ)
-  (hc : ∀ s ∈ c.support, f s ∈ 𝒜 (d s)) : 
-  c.prod (λ s e, (f s) ^ e) ∈ 𝒜 (c.sum (λ s e, e * d s)) := 
-begin
-  classical,
-  rw [finsupp.prod, finsupp.sum],
-  let p : finset σ → Prop := 
-  λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i * d i))),
-  apply @finset.induction_on σ p _ c.support,
-  { exact imp_intro (set_like.one_mem_graded 𝒜) },
-  { intros a s ha hs,
-    by_cases hs' : (insert a s) ⊆ c.support,  
-    { apply imp_intro,
-      rw [finset.prod_insert ha, finset.sum_insert ha],
-      exact set_like.mul_mem_graded (set_like.pow_mem_graded _ (hc a (hs' (mem_insert_self a s))))
-       (hs (subset_trans (subset_insert a s) hs')) },
-    { exact not.elim hs' }},
-  { exact subset_rfl }
-end
 
 variable {R}
 /-  [graded_algebra 𝒜] --not used in this def -/
@@ -724,7 +891,7 @@ lemma lift_aux_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] (𝒜 : �
   (hf_mul : ∀ n p m, f (⟨n, m⟩) * f (⟨p, m⟩) = ((n + p).choose n) • f (⟨n + p, m⟩))
   (hf_add : ∀ n u v, f (⟨n, u + v⟩) = (range (n + 1)).sum (λ (x : ℕ), f (⟨x, u⟩) * f (⟨n - x, v⟩))) 
   (hf : ∀ n m, f (n, m) ∈ 𝒜 n) : 
-  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) 𝒜 
+  galg_hom.is_homogeneous (divided_power_algebra.grade R M) 𝒜 
     (lift_aux R M f hf_zero hf_smul hf_mul hf_add) := 
 begin
   intros i a ha,
@@ -736,7 +903,7 @@ begin
   rw [eval₂_monomial, ← smul_eq_mul, algebra_map_smul A],
   apply submodule.smul_mem, 
   rw ← hp (mem_support_iff.mp hc), 
-  exact finsupp.prod.mem_grade _ _ _ _ _ (λ ⟨n,m⟩ hnm, hf n m),
+  exact finsupp.prod.mem_grade _ _ _ _ (λ ⟨n,m⟩ hnm, hf n m),
   { apply_instance }, 
 end
 
@@ -745,7 +912,7 @@ variable {R}
 lemma lift_is_homogeneous {A : Type*} [comm_ring A] [algebra R A] (𝒜 : ℕ → submodule R A) 
   [graded_algebra 𝒜] {I : ideal A} (hI : divided_powers I) (hI' : has_graded_dpow 𝒜 hI)
   (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (hφ' : ∀ m, φ m ∈ 𝒜 1) : 
-  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) 𝒜 (lift R M hI φ hφ) := 
+  galg_hom.is_homogeneous (divided_power_algebra.grade R M) 𝒜 (lift R M hI φ hφ) := 
 begin
   apply lift_aux_is_homogeneous,
   intros n m,
@@ -754,7 +921,7 @@ end
 
 lemma lift'_is_homogeneous {N : Type*} [decidable_eq N] [add_comm_group N] [module R N] 
   (f : M →ₗ[R] N) :
-  galg_hom.is_homogeneous R (divided_power_algebra.grade R M) (divided_power_algebra.grade R N) 
+  galg_hom.is_homogeneous (divided_power_algebra.grade R M) (divided_power_algebra.grade R N) 
     (lift' R R f) := 
 begin
   apply lift_aux_is_homogeneous,
@@ -1120,6 +1287,11 @@ end
 
 .
 
+theorem grade_one_eq_span {R M : Type*} [comm_ring R] [add_comm_group M]
+  [module R M] [decidable_eq R] [decidable_eq M] : 
+  grade R M 1 = submodule.span R (set.range (dp R 1)) := 
+sorry
+
 --TODO: golf
 theorem grade_one.induction_on {R M : Type*} [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] {P : grade R M 1 → Prop} 
@@ -1217,7 +1389,7 @@ begin
   { convert h_X 0 0, rw zero_smul }
 end
 
-#exit 
+/- #exit 
 
 
 theorem grade_one.induction_on {R M : Type*} [comm_ring R] [add_comm_group M]
@@ -1302,11 +1474,16 @@ begin
   refine finset.sum_induction _ _ h_add _ (λ m hm, h_X m _),
   { convert h_X 0 0, rw zero_smul },
 end
-
+ -/
 lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
-  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
+  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) --try with snd_hom , submodule.val
     ((proj' R M 1) ∘ (ι R)) :=
 begin
+  --rw function.right_inverse_iff_comp,
+  --rw ← linear_map.coe_comp,
+  --simp only [linear_map.coe_comp, subtype.val_eq_coe, snd_hom_apply],
+  --simp only [subtype.val_eq_coe],
+  --apply linear_map.ext_on,
   intros x,
   apply grade_one.induction_on x,
   { intros m r,
