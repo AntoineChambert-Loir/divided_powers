@@ -282,8 +282,24 @@ end
 
 end graded_algebra
 
+lemma mv_polynomial.vars_X_subset {R : Type*} {σ : Type*} (n : σ) [comm_semiring R] :
+  (X n : mv_polynomial σ R).vars ⊆ {n} := 
+begin
+  classical,
+  intro u,
+  rw [X, mem_vars, mem_singleton], 
+  rintro ⟨c, hc, hc'⟩,
+  by_contradiction h', 
+  rw [mem_support_iff, coeff_monomial, ne.def] at hc, 
+  by_cases h : finsupp.single n 1 = c,
+  { rw [← h, finsupp.mem_support_iff, ne.def, finsupp.single_apply] at hc',
+    apply hc', rw if_neg (ne.symm h'), },
+  { apply hc, rw if_neg h, },
+end
 
 section
+
+open mv_polynomial 
 
 variables {R M : Type*} [comm_ring R]
 
@@ -295,9 +311,93 @@ variable {R}
 def degree (v : (ℕ × M) →₀ ℕ) : ℕ := finsum (λ x, (v x) * x.1)
 
 def is_homogeneous_of_degree (p : mv_polynomial (ℕ × M) R) (n : ℕ) : Prop :=
-∀ v ∈ p.support, degree v = n 
+∀ v ∈ p.support, degree v = n
 
-variables (R M) [add_comm_group M] [module R M]
+variable (R)
+
+lemma variable_mem_supported (nm : ℕ × M) (hn : 0 < nm.1) :
+  X nm ∈ supported R {nm : ℕ × M | 0 < nm.1} :=
+begin
+  rw mem_supported,
+  refine set.subset.trans (finset.coe_subset.mpr (vars_X_subset nm)) _,
+  rw [coe_singleton, set.singleton_subset_iff, set.mem_set_of_eq],
+  exact hn,
+end
+
+def to_supported : mv_polynomial (ℕ × M) R →ₐ[R] supported R {nm : ℕ × M | 0 < nm.1} :=  
+aeval (λ (nm : ℕ × M), dite (0 < nm.1) (λ h, ⟨(X nm), (variable_mem_supported R nm h)⟩) (λ h, 1))
+
+lemma to_supported_is_homogeneous : 
+  galg_hom.is_homogeneous' (mv_polynomial (ℕ × M) R)
+    (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) (mv_polynomial (ℕ × M) R)
+    (weighted_homogeneous_submodule R prod.fst) (id : ℕ → ℕ)
+    ((subalgebra.val _).comp (to_supported R)) :=
+begin
+  classical,
+  have h := @foo R _ (ℕ × M) ℕ ℕ _ _ _ (mv_polynomial (ℕ × M) R) _ _
+  (weighted_homogeneous_submodule R prod.fst) _ prod.fst (add_monoid_hom.id ℕ)
+  ((subalgebra.val _).to_fun.comp (λ (nm : ℕ × M), 
+    dite (0 < nm.1) (λ h, ⟨(X nm), (variable_mem_supported R nm h)⟩) (λ h, 1))) _,
+  have heq : (aeval ((supported R {nm : ℕ × M | 0 < nm.fst}).val.to_fun ∘ 
+    λ (nm : ℕ × M), dite (0 < nm.fst) (λ (h : 0 < nm.fst), ⟨X nm, _⟩) (λ (h : ¬0 < nm.fst), 1))) =
+    ((supported R {nm : ℕ × M | 0 < nm.fst}).val.comp (to_supported R)),
+  { apply mv_polynomial.alg_hom_ext,
+    intros nm,
+    simp only [to_supported, alg_hom.to_fun_eq_coe, function.comp_app, alg_hom.coe_comp, aeval_X] },
+  rw heq at h,
+  exact h,
+  { intros nm,
+    simp only [mem_weighted_homogeneous_submodule, alg_hom.to_fun_eq_coe, subalgebra.coe_val, 
+      function.comp_app, add_monoid_hom.id_apply],
+    split_ifs,
+    { exact is_weighted_homogeneous_X R _ _, },
+    { simp only [not_lt, le_zero_iff] at h,
+      rw [h, algebra_map.coe_one],
+      exact is_weighted_homogeneous_one R _, }}
+end
+
+variable (M)
+-- TODO: generalize
+lemma eq_finsupp_single_of_degree_one {d : ℕ × M →₀ ℕ} (hd : (weighted_degree' prod.fst) d = 1)
+  (hsupp : ∀ (nm : ℕ × M), nm ∈ d.support → 0 < nm.fst) :
+  ∃ (m : M), finsupp.single (1, m) 1 = d :=
+begin
+  classical,
+  rw [weighted_degree', finsupp.total_apply, finsupp.sum] at hd,
+  have hnm : ∃ (nm : ℕ × M), d nm • nm.fst = 1,
+  { by_contra h0,
+    rw [not_exists] at h0,
+    have hd0 : d.support.sum (λ (a : ℕ × M), d a • a.fst) = 0,
+    { rw finset.sum_eq_zero,
+      intros nm hnm,
+      rw ← nat.lt_one_iff,
+      apply lt_of_le_of_ne _ (h0 nm),
+      rw ← hd,
+      exact finset.single_le_sum (λab hab,  zero_le _ ) hnm },
+    rw [hd0] at hd,
+    exact zero_ne_one hd, },
+  obtain ⟨nm, hnm⟩ := hnm,
+  rw ← hnm at hd,
+  rw [algebra.id.smul_eq_mul, nat.mul_eq_one_iff] at hnm,
+  use nm.snd,
+  ext ab,
+  rw finsupp.single_apply,
+  split_ifs with hab;
+  rw [← hnm.2, eq_comm, prod.mk.eta] at hab,
+  { rw [hab, hnm.1], },
+  { rw eq_comm,
+    by_contra hab',
+    have hne0 : d ab * ab.fst ≠ 0,
+    { exact mul_ne_zero hab' (ne_of_gt (hsupp ab (finsupp.mem_support_iff.mpr hab'))) },
+    have hnm_mem : nm ∈ d.support,
+    { rw [finsupp.mem_support_iff, hnm.1], exact one_ne_zero },
+    simp only [finset.sum_eq_sum_diff_singleton_add hnm_mem, add_left_eq_self, 
+      algebra.id.smul_eq_mul, sum_eq_zero_iff, mem_sdiff, finsupp.mem_support_iff, --ne.def, 
+      mem_singleton] at hd,
+    exact hne0 (hd ab ⟨hab', hab⟩) },
+end
+
+variables [add_comm_group M] [module R M]
 
 namespace divided_power_algebra
 
@@ -562,21 +662,6 @@ def divided_power_galgebra [decidable_eq R] [decidable_eq M] :
 graded_quot_alg R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
   (divided_power_algebra.relI R M) (divided_power_algebra.relI_is_homogeneous R M)
 
-lemma mv_polynomial.vars_X_subset {R : Type*} {σ : Type*} (n : σ) [comm_semiring R] :
-  (X n : mv_polynomial σ R).vars ⊆ {n} := 
-begin
-  classical,
-  intro u,
-  rw [X, mem_vars, mem_singleton], 
-  rintro ⟨c, hc, hc'⟩,
-  by_contradiction h', 
-  rw [mem_support_iff, coeff_monomial, ne.def] at hc, 
-  by_cases h : finsupp.single n 1 = c,
-  { rw [← h, finsupp.mem_support_iff, ne.def, finsupp.single_apply] at hc',
-    apply hc', rw if_neg (ne.symm h'), },
-  { apply hc, rw if_neg h, },
-end
-
 namespace divided_power_algebra
 
 open mv_polynomial
@@ -608,18 +693,6 @@ end decidable_eq
 
 variable {M}
 
-lemma variable_mem_supported (nm : ℕ × M) (hn : 0 < nm.1) :
-  X nm ∈ supported R {nm : ℕ × M | 0 < nm.1} :=
-begin
-  rw mem_supported,
-  refine set.subset.trans (finset.coe_subset.mpr (vars_X_subset nm)) _,
-  rw [coe_singleton, set.singleton_subset_iff, set.mem_set_of_eq],
-  exact hn,
-end
-
-def to_supported : mv_polynomial (ℕ × M) R →ₐ[R] supported R {nm : ℕ × M | 0 < nm.1} :=  
-aeval (λ (nm : ℕ × M), dite (0 < nm.1) (λ h, ⟨(X nm), (variable_mem_supported R nm h)⟩) (λ h, 1))
-
 variable (M)
 lemma mkₐ_comp_to_supported : 
   (mkₐ R (relI R M)).comp ((subalgebra.val _).comp (to_supported R)) = (mkₐ R _) :=
@@ -643,35 +716,6 @@ begin
   obtain ⟨p',hp'⟩ := mk_surjective f,
   use to_supported R p',
   rw [← alg_hom.comp_apply, alg_hom.comp_assoc, mkₐ_comp_to_supported, ← hp', mkₐ_eq_mk],
-end
-
-lemma to_supported_is_homogeneous : 
-  galg_hom.is_homogeneous' (mv_polynomial (ℕ × M) R)
-    (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) (mv_polynomial (ℕ × M) R)
-    (weighted_homogeneous_submodule R prod.fst) (id : ℕ → ℕ)
-    ((subalgebra.val _).comp (to_supported R)) :=
-begin
-  classical,
-  have h := @foo R _ (ℕ × M) ℕ ℕ _ _ _ (mv_polynomial (ℕ × M) R) _ _
-  (weighted_homogeneous_submodule R prod.fst) _ prod.fst (add_monoid_hom.id ℕ)
-  ((subalgebra.val _).to_fun.comp (λ (nm : ℕ × M), 
-    dite (0 < nm.1) (λ h, ⟨(X nm), (variable_mem_supported R nm h)⟩) (λ h, 1))) _,
-  have heq : (aeval ((supported R {nm : ℕ × M | 0 < nm.fst}).val.to_fun ∘ 
-    λ (nm : ℕ × M), dite (0 < nm.fst) (λ (h : 0 < nm.fst), ⟨X nm, _⟩) (λ (h : ¬0 < nm.fst), 1))) =
-    ((supported R {nm : ℕ × M | 0 < nm.fst}).val.comp (to_supported R)),
-  { apply mv_polynomial.alg_hom_ext,
-    intros nm,
-    simp only [to_supported, alg_hom.to_fun_eq_coe, function.comp_app, alg_hom.coe_comp, aeval_X] },
-  rw heq at h,
-  exact h,
-  { intros nm,
-    simp only [mem_weighted_homogeneous_submodule, alg_hom.to_fun_eq_coe, subalgebra.coe_val, 
-      function.comp_app, add_monoid_hom.id_apply],
-    split_ifs,
-    { exact is_weighted_homogeneous_X R _ _, },
-    { simp only [not_lt, le_zero_iff] at h,
-      rw [h, algebra_map.coe_one],
-      exact is_weighted_homogeneous_one R _, }}
 end
 
 lemma surjective_of_supported' [decidable_eq R] [decidable_eq M] {n : ℕ} (p : grade R M n) :
@@ -1057,7 +1101,7 @@ begin
     decompose_of_mem_same _ (mkₐ_mem_grade R M 1 m)],
 end
 
--- TODO: move; generalize
+/- -- TODO: move; generalize
 lemma eq_finsupp_single_of_degree_one {d : ℕ × M →₀ ℕ} (hd : (weighted_degree' prod.fst) d = 1)
   (hsupp : ∀ (nm : ℕ × M), nm ∈ d.support → 0 < nm.fst) :
   ∃ (m : M), finsupp.single (1, m) 1 = d :=
@@ -1095,7 +1139,7 @@ begin
       algebra.id.smul_eq_mul, sum_eq_zero_iff, mem_sdiff, finsupp.mem_support_iff, --ne.def, 
       mem_singleton] at hd,
     exact hne0 (hd ab ⟨hab', hab⟩) },
-end
+end -/
 
 theorem grade_one_eq_span {R M : Type*} [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] : 
@@ -1358,3 +1402,5 @@ In general, x ^ [n]  for dpow n x ?
 -/
 
 end divided_power_algebra
+
+#lint
