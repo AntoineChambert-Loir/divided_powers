@@ -707,34 +707,26 @@ lemma to_supported_is_homogeneous :
     ((subalgebra.val _).comp (to_supported R)) :=
 begin
   classical,
-  have := @foo R _ (ℕ × M) ℕ ℕ _ _ _ (mv_polynomial (ℕ × M) R) _ _
+  have h := @foo R _ (ℕ × M) ℕ ℕ _ _ _ (mv_polynomial (ℕ × M) R) _ _
   (weighted_homogeneous_submodule R prod.fst) _ prod.fst (add_monoid_hom.id ℕ)
   ((subalgebra.val _).to_fun.comp (λ (nm : ℕ × M), 
     dite (0 < nm.1) (λ h, ⟨(X nm), (variable_mem_supported R nm h)⟩) (λ h, 1))) _,
-  
   have heq : (aeval ((supported R {nm : ℕ × M | 0 < nm.fst}).val.to_fun ∘ 
-   λ (nm : ℕ × M), dite (0 < nm.fst) (λ (h : 0 < nm.fst), ⟨X nm, _⟩) (λ (h : ¬0 < nm.fst), 1))) =
-   ((supported R {nm : ℕ × M | 0 < nm.fst}).val.comp (to_supported R)),
-
+    λ (nm : ℕ × M), dite (0 < nm.fst) (λ (h : 0 < nm.fst), ⟨X nm, _⟩) (λ (h : ¬0 < nm.fst), 1))) =
+    ((supported R {nm : ℕ × M | 0 < nm.fst}).val.comp (to_supported R)),
   { apply mv_polynomial.alg_hom_ext,
     intros nm,
     simp only [to_supported, alg_hom.to_fun_eq_coe, function.comp_app, alg_hom.coe_comp, aeval_X] },
-
-  rw heq at this,
-  exact this,
-
+  rw heq at h,
+  exact h,
   { intros nm,
     simp only [mem_weighted_homogeneous_submodule, alg_hom.to_fun_eq_coe, subalgebra.coe_val, 
       function.comp_app, add_monoid_hom.id_apply],
     split_ifs,
-    { exact is_weighted_homogeneous_X R _ _,  },
+    { exact is_weighted_homogeneous_X R _ _, },
     { simp only [not_lt, le_zero_iff] at h,
-      rw h,
-      simp only [algebra_map.coe_one],
-      exact is_weighted_homogeneous_one R _, },
- }
-
-  
+      rw [h, algebra_map.coe_one],
+      exact is_weighted_homogeneous_one R _, }}
 end
 
 lemma surjective_of_supported' [decidable_eq R] [decidable_eq M] {n : ℕ} (p : grade R M n) :
@@ -1290,10 +1282,115 @@ end
 theorem grade_one_eq_span {R M : Type*} [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] : 
   grade R M 1 = submodule.span R (set.range (dp R 1)) := 
-sorry
+begin
+  apply le_antisymm,
+  { intros p hp,
+    obtain ⟨q, hq1, hqp⟩ := surjective_of_supported' R ⟨p, hp⟩,
+    rw [subtype.val_eq_coe, submodule.coe_mk] at hqp,
+    rw [is_weighted_homogeneous, subtype.val_eq_coe] at hq1,
+    rw [← hqp, ← mkₐ_eq_mk R, (q : mv_polynomial (ℕ × M) R).as_sum, map_sum],
+    apply submodule.sum_mem (submodule.span R (set.range (dp R 1))),
+    intros d hd,
+    have hsupp : ∀ (nm : ℕ × M), nm ∈ d.support → 0 < nm.fst,
+    { intros nm hnm,
+      apply mem_supported.mp q.2,
+      rw [subtype.val_eq_coe, mem_coe, mem_vars],
+      exact ⟨d, hd, hnm⟩, },
+    obtain ⟨m, hm⟩ := eq_finsupp_single_of_degree_one M (hq1 (mem_support_iff.mp hd)) hsupp,
+    rw [← hm, monomial_eq, C_mul', map_smul, finsupp.prod_single_index, pow_one],
+    exact submodule.smul_mem (submodule.span R (set.range (dp R 1))) _ 
+      (submodule.subset_span (set.mem_range.mpr ⟨m, rfl⟩)),
+    { rw pow_zero}, },
+  { rw submodule.span_le,
+    intros p hp,
+    obtain ⟨m, hm⟩ := set.mem_range.mp hp,
+    rw ← hm,
+    exact dp_mem_grade R M 1 m, }
+end
+
+theorem grade_one.induction_on {R M : Type*} [comm_ring R] [add_comm_group M]
+  [module R M] [decidable_eq R] [decidable_eq M] {P : grade R M 1 → Prop} 
+  (p : grade R M 1) (h_X : ∀ (m : M) (r : R), P (r • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩)) 
+  (h_add : ∀ (p q : grade R M 1), P p → P q → P (p + q)) :
+  P p :=
+begin
+  obtain ⟨q, hq1, hqp⟩ := surjective_of_supported' R p,
+
+  have hq_fst : ∀ (nm : ℕ × M), nm ∈ q.1.vars → nm.fst = 1,
+  { intros nm hnm,
+    simp only [vars, degrees, sup_to_finset, finsupp.to_finset_to_multiset, finset.mem_sup] at hnm,
+    obtain ⟨d, hd, hdnm⟩ := hnm,
+    have hd' : ∀ (ab : ℕ × M), ab ∈ d.support → 0 < ab.fst, --TODO: extract to lemma
+    { intros ab hab,
+      have hq2 := q.2,
+      simp only [mem_supported] at hq2,
+      sorry },
+    specialize hq1 (mem_support_iff.mp hd),
+    rw [weighted_degree', finsupp.total_apply, finsupp.sum] at hq1,
+    obtain ⟨m, hm⟩ := eq_finsupp_single_of_degree_one M hq1 hd',
+    rw [← hm] at hdnm,
+    simp only [finsupp.mem_support_iff, ne.def] at hdnm,
+    rw finsupp.single_apply at hdnm,
+    simp only [ite_eq_right_iff, nat.one_ne_zero, not_forall, not_false_iff, exists_prop, 
+      and_true] at hdnm,
+    rw ← hdnm },
+
+  have hp : ∃ (s : finset M), 
+    p = s.sum (λ m, (coeff (finsupp.single (1, m) 1) q.1) • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩),
+  { set s : finset M := finset.image (λ (nm : ℕ × M) , nm.snd) q.1.vars with hs,
+    use s,
+    ext,
+    rw [hs, finset.sum_image (λ nm hnm nm' hnm' heq, 
+      prod.ext_iff.mpr ⟨by rw [hq_fst nm hnm, hq_fst nm' hnm'], heq⟩), ← hqp],
+    simp only [dp_eq_mkₐ, mkₐ_eq_mk, subtype.val_eq_coe, submodule.coe_sum, set_like.mk_smul_mk, 
+      submodule.coe_mk, ← ideal.quotient.mk_eq_mk, ← submodule.quotient.mk_smul, 
+      mv_polynomial.smul_eq_C_mul],
+    simp only [mk_eq_mk, ← map_sum],
+    apply congr_arg,
+    ext d,
+    simp only [coeff_sum, coeff_C_mul],
+    by_cases hd : ∃ m, finsupp.single (1, m) 1 = d,
+    { obtain ⟨m, hmd⟩ := hd, 
+      rw finset.sum_eq_single (1, m),
+      { rw [← hmd, coeff_X, mul_one] },
+      { intros nm hnm hnm1,
+        rw [← hmd, coeff_X', if_neg, mul_zero],
+        { simp only [finsupp.single_eq_single_iff, prod.mk.inj_iff, eq_self_iff_true, true_and, 
+            and_true, nat.one_ne_zero, and_self, or_false],
+          rw [ne.def, prod.eq_iff_fst_eq_snd_eq, hq_fst nm hnm, eq_self_iff_true, 
+            true_and] at hnm1,
+          exact hnm1 }},
+      { intros hm_vars,
+        simp only [mem_vars, not_exists] at hm_vars,
+        have h_coeff : coeff (finsupp.single (1, (1, m).snd) 1) (↑q : mv_polynomial _ R) = 0,
+        { by_contra hne0,
+          rw [← ne.def, ← mem_support_iff] at hne0,
+          specialize hm_vars _ hne0,
+          rw [finsupp.mem_support_iff, finsupp.single_eq_same] at hm_vars,
+          exact hm_vars nat.one_ne_zero },
+        rw [h_coeff, zero_mul] }},
+    { have hq0 : coeff d (↑q : mv_polynomial _ R) = 0,
+      { have hd' : ∀ (ab : ℕ × M), ab ∈ d.support → 0 < ab.fst,
+      { intros ab hab,
+        sorry },
+        rw is_weighted_homogeneous at hq1,
+        simp_rw not_imp_comm at hq1,
+        apply hq1,
+        intros h,
+        exact hd (eq_finsupp_single_of_degree_one M h hd') },
+      rw [hq0, eq_comm],
+      apply finset.sum_eq_zero,
+      intros nm hnm,
+      rw [mv_polynomial.coeff_X', if_neg, mul_zero],
+      { rw [not_exists] at hd, exact hd nm.snd }}},
+  obtain ⟨s, hsp⟩ := hp,
+  rw hsp,
+  refine finset.sum_induction _ _ h_add _ (λ m hm, h_X m _),
+  { convert h_X 0 0, rw zero_smul }
+end
 
 --TODO: golf
-theorem grade_one.induction_on {R M : Type*} [comm_ring R] [add_comm_group M]
+theorem grade_one.induction_on'' {R M : Type*} [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] {P : grade R M 1 → Prop} 
   (p : grade R M 1) (h_X : ∀ (m : M) (r : R), P (r • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩)) 
   (h_add : ∀ (p q : grade R M 1), P p → P q → P (p + q)) :
