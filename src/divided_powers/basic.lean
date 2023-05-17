@@ -52,16 +52,48 @@ section divided_powers_definition
 (dpow_comp : ∀ m {n} (hn : n ≠ 0) {x} (hx : x ∈ I),
   dpow m (dpow n x) = (mchoose m n) * dpow (m * n) x)
 
-instance  {A : Type*} [comm_ring A] [decidable_eq A] : inhabited (divided_powers (⊥ : ideal A)) :=
-⟨{ dpow     := sorry,
-  dpow_null := sorry,
-  dpow_zero := sorry,
-  dpow_one  := sorry,
-  dpow_mem  := sorry,
-  dpow_add  := sorry,
-  dpow_smul := sorry,
-  dpow_mul  := sorry,
-  dpow_comp := sorry }⟩
+def divided_powers_bot (A : Type*) [comm_ring A] [decidable_eq A] : divided_powers (⊥ : ideal A) := { 
+dpow     := λ n a, ite (a = 0) (ite (n = 0) 1 0) 0, 
+dpow_null := λ n a ha, if_neg ha,
+dpow_zero := λ a ha, if_pos ha, 
+dpow_one  := λ a ha, by simp only [nat.one_ne_zero, if_false, if_t_t, ha.symm],
+dpow_mem  := λ n hn a ha, by
+  { simp only [ideal.mem_bot, ite_eq_right_iff],
+    exact λ ha' hn',  false.rec _ (hn hn'), },
+dpow_add  := λ n a b ha hb, by { 
+  rw [ideal.mem_bot.mp ha, ideal.mem_bot.mp hb, add_zero, if_pos rfl],
+  simp only [eq_self_iff_true, if_true, tsub_eq_zero_iff_le, boole_mul, finset.sum_ite_eq', finset.mem_range, add_pos_iff,
+nat.lt_one_iff, or_true, le_zero_iff], },
+dpow_smul := λ n a x hx, by {
+  rw [ideal.mem_bot.mp hx, mul_zero, if_pos rfl, mul_ite, mul_zero, mul_one],
+  by_cases hn : n = 0,
+  rw [if_pos hn, hn, pow_zero, if_pos rfl], 
+  simp only [if_neg hn], },
+dpow_mul  := λ m n x hx, by {
+  simp only [mul_ite, mul_boole, mul_zero, add_eq_zero_iff],
+  apply congr_arg2 _ _ rfl,
+  by_cases hm : m = 0,
+    simp only [hm, eq_self_iff_true, if_true, true_and, nat.choose_zero_right, algebra_map.coe_one],  
+    apply congr_arg2 _ _ rfl,
+    rw [ideal.mem_bot.mp hx, if_pos rfl],
+    simp only [if_neg hm, if_t_t],
+    rw if_neg (λ h : (m = 0 ∧ n = 0), hm h.1), },
+dpow_comp := λ m n hn a ha, 
+begin
+  rw [if_neg hn, ideal.mem_bot.mp ha, if_pos rfl], 
+  simp only [eq_self_iff_true, if_true, nat.mul_eq_zero, mul_boole], 
+  by_cases hm : m = 0,
+  simp only [hm, mchoose_zero, eq_self_iff_true, true_or, algebra_map.coe_one],
+  rw if_neg hm, 
+  rw if_neg, intro h,
+  cases h with h h,
+  exact hm h, exact hn h, 
+end }
+
+
+instance  {A : Type*} [comm_ring A] [decidable_eq A] : 
+  inhabited (divided_powers (⊥ : ideal A)) :=
+⟨divided_powers_bot A⟩ 
 
 instance {A : Type*} [comm_ring A] (I : ideal A) :
   has_coe_to_fun (divided_powers I) (λ _, ℕ → A → A) :=
@@ -74,8 +106,12 @@ structure pd_ring (A : Type*) extends comm_ring A :=
 (pd_ideal : ideal A)
 (divided_powers : divided_powers pd_ideal)
 
-instance  {A : Type*} [comm_ring A] : inhabited (pd_ring A) :=
-{ default := sorry}
+instance  {A : Type*} [comm_ring A] [decidable_eq A] : 
+  inhabited (pd_ring A) := {
+default := {
+  to_comm_ring := infer_instance, 
+  pd_ideal := ⊥, 
+  divided_powers := divided_powers_bot A } }
 
 end divided_powers_definition
 
