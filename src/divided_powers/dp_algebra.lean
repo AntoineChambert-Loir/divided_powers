@@ -1100,47 +1100,7 @@ begin
     decompose_of_mem_same _ (mkₐ_mem_grade R M 1 m)],
 end
 
-/- -- TODO: move; generalize
-lemma eq_finsupp_single_of_degree_one {d : ℕ × M →₀ ℕ} (hd : (weighted_degree' prod.fst) d = 1)
-  (hsupp : ∀ (nm : ℕ × M), nm ∈ d.support → 0 < nm.fst) :
-  ∃ (m : M), finsupp.single (1, m) 1 = d :=
-begin
-  classical,
-  rw [weighted_degree', finsupp.total_apply, finsupp.sum] at hd,
-  have hnm : ∃ (nm : ℕ × M), d nm • nm.fst = 1,
-  { by_contra h0,
-    rw [not_exists] at h0,
-    have hd0 : d.support.sum (λ (a : ℕ × M), d a • a.fst) = 0,
-    { rw finset.sum_eq_zero,
-      intros nm hnm,
-      rw ← nat.lt_one_iff,
-      apply lt_of_le_of_ne _ (h0 nm),
-      rw ← hd,
-      exact finset.single_le_sum (λab hab,  zero_le _ ) hnm },
-    rw [hd0] at hd,
-    exact zero_ne_one hd, },
-  obtain ⟨nm, hnm⟩ := hnm,
-  rw ← hnm at hd,
-  rw [algebra.id.smul_eq_mul, nat.mul_eq_one_iff] at hnm,
-  use nm.snd,
-  ext ab,
-  rw finsupp.single_apply,
-  split_ifs with hab;
-  rw [← hnm.2, eq_comm, prod.mk.eta] at hab,
-  { rw [hab, hnm.1], },
-  { rw eq_comm,
-    by_contra hab',
-    have hne0 : d ab * ab.fst ≠ 0,
-    { exact mul_ne_zero hab' (ne_of_gt (hsupp ab (finsupp.mem_support_iff.mpr hab'))) },
-    have hnm_mem : nm ∈ d.support,
-    { rw [finsupp.mem_support_iff, hnm.1], exact one_ne_zero },
-    simp only [finset.sum_eq_sum_diff_singleton_add hnm_mem, add_left_eq_self, 
-      algebra.id.smul_eq_mul, sum_eq_zero_iff, mem_sdiff, finsupp.mem_support_iff, --ne.def, 
-      mem_singleton] at hd,
-    exact hne0 (hd ab ⟨hab', hab⟩) },
-end -/
-
-theorem grade_one_eq_span {R M : Type*} [comm_ring R] [add_comm_group M]
+theorem grade_one_eq_span (R M : Type*) [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] : 
   grade R M 1 = submodule.span R (set.range (dp R 1)) := 
 begin
@@ -1169,88 +1129,38 @@ begin
     exact dp_mem_grade R M 1 m, }
 end
 
-theorem grade_one.induction_on {R M : Type*} [comm_ring R] [add_comm_group M]
-  [module R M] [decidable_eq R] [decidable_eq M] {P : grade R M 1 → Prop} 
-  (p : grade R M 1) (h_X : ∀ (m : M) (r : R), P (r • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩)) 
-  (h_add : ∀ (p q : grade R M 1), P p → P q → P (p + q)) :
-  P p :=
+theorem grade_one_eq_span' (R M : Type*) [comm_ring R] [add_comm_group M]
+  [module R M] [decidable_eq R] [decidable_eq M] : 
+  (⊤ : submodule R (grade R M 1)) = 
+    submodule.span R (set.range (λ m, ⟨dp R 1 m, dp_mem_grade R M 1 m⟩)) := 
 begin
-  obtain ⟨q, hq1, hqp⟩ := surjective_of_supported' R p,
-
-  have hq_fst : ∀ (nm : ℕ × M), nm ∈ q.1.vars → nm.fst = 1,
-  { intros nm hnm,
-    simp only [vars, degrees, sup_to_finset, finsupp.to_finset_to_multiset, finset.mem_sup] at hnm,
-    obtain ⟨d, hd, hdnm⟩ := hnm,
-    have hd' : ∀ (ab : ℕ × M), ab ∈ d.support → 0 < ab.fst, --TODO: extract to lemma
-    { intros ab hab,
-      have hq2 := q.2,
-      simp only [mem_supported] at hq2,
-      sorry },
-    specialize hq1 (mem_support_iff.mp hd),
-    rw [weighted_degree', finsupp.total_apply, finsupp.sum] at hq1,
-    obtain ⟨m, hm⟩ := eq_finsupp_single_of_degree_one M hq1 hd',
-    rw [← hm] at hdnm,
-    simp only [finsupp.mem_support_iff, ne.def] at hdnm,
-    rw finsupp.single_apply at hdnm,
-    simp only [ite_eq_right_iff, nat.one_ne_zero, not_forall, not_false_iff, exists_prop, 
-      and_true] at hdnm,
-    rw ← hdnm },
-
-  have hp : ∃ (s : finset M), 
-    p = s.sum (λ m, (coeff (finsupp.single (1, m) 1) q.1) • ⟨dp R 1 m, dp_mem_grade R M 1 m⟩),
-  { set s : finset M := finset.image (λ (nm : ℕ × M) , nm.snd) q.1.vars with hs,
-    use s,
-    ext,
-    rw [hs, finset.sum_image (λ nm hnm nm' hnm' heq, 
-      prod.ext_iff.mpr ⟨by rw [hq_fst nm hnm, hq_fst nm' hnm'], heq⟩), ← hqp],
-    simp only [dp_eq_mkₐ, mkₐ_eq_mk, subtype.val_eq_coe, submodule.coe_sum, set_like.mk_smul_mk, 
-      submodule.coe_mk, ← ideal.quotient.mk_eq_mk, ← submodule.quotient.mk_smul, 
-      mv_polynomial.smul_eq_C_mul],
-    simp only [mk_eq_mk, ← map_sum],
-    apply congr_arg,
-    ext d,
-    simp only [coeff_sum, coeff_C_mul],
-    by_cases hd : ∃ m, finsupp.single (1, m) 1 = d,
-    { obtain ⟨m, hmd⟩ := hd, 
-      rw finset.sum_eq_single (1, m),
-      { rw [← hmd, coeff_X, mul_one] },
-      { intros nm hnm hnm1,
-        rw [← hmd, coeff_X', if_neg, mul_zero],
-        { simp only [finsupp.single_eq_single_iff, prod.mk.inj_iff, eq_self_iff_true, true_and, 
-            and_true, nat.one_ne_zero, and_self, or_false],
-          rw [ne.def, prod.eq_iff_fst_eq_snd_eq, hq_fst nm hnm, eq_self_iff_true, 
-            true_and] at hnm1,
-          exact hnm1 }},
-      { intros hm_vars,
-        simp only [mem_vars, not_exists] at hm_vars,
-        have h_coeff : coeff (finsupp.single (1, (1, m).snd) 1) (↑q : mv_polynomial _ R) = 0,
-        { by_contra hne0,
-          rw [← ne.def, ← mem_support_iff] at hne0,
-          specialize hm_vars _ hne0,
-          rw [finsupp.mem_support_iff, finsupp.single_eq_same] at hm_vars,
-          exact hm_vars nat.one_ne_zero },
-        rw [h_coeff, zero_mul] }},
-    { have hq0 : coeff d (↑q : mv_polynomial _ R) = 0,
-      { have hd' : ∀ (ab : ℕ × M), ab ∈ d.support → 0 < ab.fst,
-      { intros ab hab,
-        sorry },
-        rw is_weighted_homogeneous at hq1,
-        simp_rw not_imp_comm at hq1,
-        apply hq1,
-        intros h,
-        exact hd (eq_finsupp_single_of_degree_one M h hd') },
-      rw [hq0, eq_comm],
-      apply finset.sum_eq_zero,
-      intros nm hnm,
-      rw [mv_polynomial.coeff_X', if_neg, mul_zero],
-      { rw [not_exists] at hd, exact hd nm.snd }}},
-  obtain ⟨s, hsp⟩ := hp,
-  rw hsp,
-  refine finset.sum_induction _ _ h_add _ (λ m hm, h_X m _),
-  { convert h_X 0 0, rw zero_smul }
+  sorry
 end
 
 lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
+  function.right_inverse ((triv_sq_zero_ext.snd_hom R M) ∘ 
+      (to_triv_sq_zero_ext R M).to_linear_map ∘ (grade R M 1).subtype)
+    ((proj' R M 1) ∘ (ι R)) := --try with snd_hom , submodule.val
+begin
+  simp only [function.right_inverse_iff_comp, ← linear_map.coe_comp, ← @linear_map.id_coe R],
+  rw fun_like.coe_injective.eq_iff,
+  apply linear_map.ext_on_range (grade_one_eq_span' R M).symm,
+  intros m,
+  have hm : ((to_triv_sq_zero_ext R M) (dp R 1 m)).snd = m,
+  { rw [to_triv_sq_zero_ext, dp, mkₐ_eq_mk, lift, lift_aux, liftₐ_apply, lift_mk],
+    simp only [inr_hom_apply, alg_hom.coe_to_ring_hom, eval₂_alg_hom_X'],
+    rw [divided_powers.dpow_one _ ((mem_ker_ideal_iff_exists R M _).mpr ⟨m, rfl⟩), snd_inr] },
+  simp only [linear_map.coe_comp, submodule.coe_subtype, function.comp_app, submodule.coe_mk, 
+    alg_hom.to_linear_map_apply, snd_hom_apply, linear_map.id_coe, id.def, proj', proj,
+    linear_map.coe_mk, ι],
+  ext,
+  rw [hm, decompose_of_mem_same _ (dp_mem_grade R M 1 m), subtype.coe_mk],
+end
+
+#exit
+
+
+lemma deg_one_right_inv' [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
   function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
     ((proj' R M 1) ∘ (ι R)) := --try with snd_hom , submodule.val
 begin
@@ -1260,7 +1170,8 @@ begin
   --simp only [subtype.val_eq_coe],
   --apply linear_map.ext_on,
   intros x,
-  apply grade_one.induction_on x,
+  sorry,
+  /- apply grade_one.induction_on x,
   { intros m r,
     ext,
     simp only [proj', proj, linear_map.coe_mk, function.comp_app, ι, dp,
@@ -1275,7 +1186,7 @@ begin
     simp only [subtype.val_eq_coe, function.comp_app] at hy hz,
     have hyz : (y + z).val = y.val + z.val := rfl,
     simp only [hyz, function.comp_app],
-    simp only [subtype.val_eq_coe, snd_add, map_add, hy, hz] }
+    simp only [subtype.val_eq_coe, snd_add, map_add, hy, hz] } -/
 end
 
 /- ι : M → grade R M 1 is isomorphism -/
