@@ -23,16 +23,18 @@ import ..graded_module_quot
 
 noncomputable theory
 
+open finset mv_polynomial ideal.quotient triv_sq_zero_ext ideal direct_sum ring_quot
 
 /-! 
 The divided power algebra of a module -/
 
+section
 
 variables (R M : Type*) [comm_ring R] [add_comm_group M] [module R M]
 
 namespace divided_power_algebra
 
-open finset mv_polynomial ideal.quotient triv_sq_zero_ext ideal direct_sum ring_quot
+--open finset mv_polynomial ideal.quotient triv_sq_zero_ext ideal direct_sum ring_quot
 
 -- We should probably change this name...
 
@@ -180,6 +182,8 @@ lift_aux R M (λ nm, hI.dpow nm.1 (φ nm.2)) (λ m, hI.dpow_zero (hφ m))
     smul_eq_mul, hI.dpow_smul n (hφ m), ← smul_eq_mul, ← map_pow, algebra_map_smul]) 
   (λ n p m, by rw [hI.dpow_mul n p (hφ m), ← nsmul_eq_mul]) 
   (λ n u v, by rw [map_add, hI.dpow_add n (hφ u) (hφ v)]) 
+
+variables {φ}
 
 lemma lift_eqₐ (p : mv_polynomial (ℕ × M) R) : lift R M hI φ hφ (mkₐ R (relI R M) p) = 
   eval₂ (algebra_map R A) (λ (nm : ℕ × M), hI.dpow nm.1 (φ nm.2)) p :=
@@ -849,8 +853,12 @@ begin
     h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), h1 m,  h1' m],
 end
 
+variable (R)
+/- def cond_D' : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
+  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x)) -/
+
 def cond_D : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
-  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x))
+  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x
 
 end divided_power_algebra
 
@@ -914,10 +922,52 @@ def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] /- [algebra A R] not used -
 
 end free
 
+theorem roby_D (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M] [module A M] :
+  divided_power_algebra.cond_D A M :=
+sorry
 
-theorem roby (A : Type*) [comm_ring A]  :
-  cond_D A ∧ cond_T A ∧ cond_Q A := sorry
+theorem roby_T (A R S : Type*) [comm_ring A] [comm_ring R] [algebra A R] [comm_ring S] 
+  [algebra A S] {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J) :
+  cond_T A hI hJ :=
+sorry
 
+open divided_power_algebra
+namespace divided_power_algebra
+
+-- Part of Roby65 Thm 1
+def divided_powers' (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M]
+  [module A M] : divided_powers (aug_ideal A M) :=
+(roby_D A M).some
+
+lemma dpow_ι (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M]
+  [module A M] (x : M) (m : ℕ) :
+  dpow (divided_powers' A M) m (ι A x) = dp A m x :=
+sorry 
+
+lemma ι_mem_aug_ideal (A : Type*) [comm_ring A] {M : Type*} [add_comm_group M]
+  [module A M] (x : M) : (ι A) x ∈ aug_ideal A M :=
+sorry 
+
+lemma dp_comp (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M]
+  [module A M] (x : M) {n : ℕ} (m : ℕ) (hn : n ≠ 0) :
+  dpow (divided_powers' A M) m (dp A n x) = ↑(mchoose m n) * dp A (m * n) x :=
+by erw [← (roby_D A M).some_spec, dpow_comp _ m hn (ι_mem_aug_ideal A x),  dpow_ι]
+
+theorem roby_theorem_2 (R : Type*) [comm_ring R] (M : Type*) [add_comm_group M] [module R M]
+  {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) {φ : M →ₗ[R] A} 
+  (hφ : ∀ m, φ m ∈ I) : 
+  is_pd_morphism (divided_powers' R M) hI (divided_power_algebra.lift R M hI φ hφ) :=
+sorry
+
+theorem roby_prop_8 (R : Type*) [comm_ring R] {M : Type*} [add_comm_group M] [module R M]
+  (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N]
+  [module S N] [is_scalar_tower R S N] [algebra R (divided_power_algebra S N)]
+  [is_scalar_tower R S (divided_power_algebra S N)] (f : M →ₗ[R] N) :
+  is_pd_morphism (divided_powers' R M) (divided_powers' S N) 
+    (divided_power_algebra.lift' R S f) := 
+sorry
+
+end divided_power_algebra
 
 end divided_powers
 
