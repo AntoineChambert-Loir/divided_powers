@@ -23,6 +23,7 @@ import ..graded_module_quot
 
 noncomputable theory
 
+
 /-! 
 The divided power algebra of a module -/
 

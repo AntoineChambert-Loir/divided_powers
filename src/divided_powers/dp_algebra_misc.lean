@@ -9,9 +9,12 @@ import linear_algebra.multilinear.basic
 import ring_theory.graded_algebra.basic
 import ring_theory.tensor_product
 import data.mv_polynomial.supported
+import data.mv_polynomial.comm_ring
 
 import data.rel
 
+import data.nat.order.basic
+import algebra.order.monoid.canonical.defs
 
 
 import ..weighted_homogeneous -- Modified version of PR #17855
@@ -253,7 +256,8 @@ lemma foo (σ : Type*) {ι κ : Type*} [add_comm_monoid ι] --[decidable_eq ι]
   (A : Type*) [comm_ring A] [algebra R A] (𝒜 : κ → submodule R A) 
   [graded_algebra 𝒜] (w : σ → ι) (φ : ι →+ κ) (f : σ → A) 
   (h : ∀ s : σ, f s ∈ 𝒜 (φ (w s))) : 
-  galg_hom.is_homogeneous' _ (weighted_homogeneous_submodule R w ) _ 𝒜 φ
+  galg_hom.is_homogeneous'  -- _ R _ ι κ (mv_polynomial σ R) _
+     _ (weighted_homogeneous_submodule R w ) _ 𝒜 φ
     (mv_polynomial.aeval f) :=
 begin
   intros i p hp,
@@ -394,7 +398,5 @@ begin
       mem_singleton] at hd,
     exact hne0 (hd ab ⟨hab', hab⟩) },
 end
-
-#where
 
 end 
