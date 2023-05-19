@@ -1129,13 +1129,41 @@ begin
     exact dp_mem_grade R M 1 m, }
 end
 
+
 theorem grade_one_eq_span' (R M : Type*) [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] : 
   (⊤ : submodule R (grade R M 1)) = 
     submodule.span R (set.range (λ m, ⟨dp R 1 m, dp_mem_grade R M 1 m⟩)) := 
 begin
-  sorry
+  have h := grade_one_eq_span R M,
+  ext x,
+  have hx := submodule.coe_mem x,
+
+  have : submodule.span R (set.range (dp R 1)) = 
+  submodule.map ((grade R M 1).subtype)
+    (submodule.span R (set.range (λm:M, ⟨dp R 1 m, by sorry⟩))),
+  { ext z,
+    simp only [submodule.mem_map, submodule.coe_subtype],
+    split; intro hz,
+    { 
+      --use z,
+      sorry },
+    { obtain ⟨y, hy, hyz⟩ := hz,
+      rw ← hyz,
+      sorry }},
+  simp only [h] at hx,
+  simp only [submodule.mem_top, true_iff],
+  rw ← submodule.subtype_apply at hx,
+  rw this at hx,
+   simp only [submodule.coe_subtype, submodule.mem_map, set_like.coe_eq_coe, 
+    exists_eq_right] at hx,
+  exact hx,
+
 end
+
+#exit
+
+#lint
 
 lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
   function.right_inverse ((triv_sq_zero_ext.snd_hom R M) ∘ 
@@ -1157,37 +1185,12 @@ begin
   rw [hm, decompose_of_mem_same _ (dp_mem_grade R M 1 m), subtype.coe_mk],
 end
 
-#exit
 
-
+-- TODO: decide whether to change def of inv_fun
 lemma deg_one_right_inv' [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
   function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
     ((proj' R M 1) ∘ (ι R)) := --try with snd_hom , submodule.val
-begin
-  --rw function.right_inverse_iff_comp,
-  --rw ← linear_map.coe_comp,
-  --simp only [linear_map.coe_comp, subtype.val_eq_coe, snd_hom_apply],
-  --simp only [subtype.val_eq_coe],
-  --apply linear_map.ext_on,
-  intros x,
-  sorry,
-  /- apply grade_one.induction_on x,
-  { intros m r,
-    ext,
-    simp only [proj', proj, linear_map.coe_mk, function.comp_app, ι, dp,
-      set_like.mk_smul_mk, alg_hom.map_smul, snd_smul, submodule.coe_mk],
-    rw [decompose_of_mem_same _ (mkₐ_mem_grade R M 1 _),
-      to_triv_sq_zero_ext_snd, ← alg_hom.map_smul],
-    rw [mkₐ_eq_mk, ideal.quotient.eq],
-    apply sub_mem_rel_of_rel,
-    convert rel.smul,
-    rw pow_one  },
-  { intros y z hy hz,
-    simp only [subtype.val_eq_coe, function.comp_app] at hy hz,
-    have hyz : (y + z).val = y.val + z.val := rfl,
-    simp only [hyz, function.comp_app],
-    simp only [subtype.val_eq_coe, snd_add, map_add, hy, hz] } -/
-end
+deg_one_right_inv R M
 
 /- ι : M → grade R M 1 is isomorphism -/
 def linear_equiv_degree_one [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M]
