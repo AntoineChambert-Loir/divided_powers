@@ -1,9 +1,6 @@
 import divided_powers.dp_algebra
 
-open divided_powers
-
-/- variables (A : Type*) [comm_ring A] {I : ideal A} (hI : divided_powers I) (B : Type*) [comm_ring B]
-  [algebra A B] (J : ideal B) -/
+open divided_powers ideal divided_power_algebra
 
 def is_universal (A : Type*) [comm_ring A] {I : ideal A} (hI : divided_powers I) (B : Type*) 
   [comm_ring B] [algebra A B] (J : ideal B) (D : Type*) [comm_ring D] {J' : ideal D} 
@@ -29,7 +26,6 @@ section included
 
 variables (hIJ : (algebra_map A B)'' I ⊆ J)
 
-open ideal divided_power_algebra
 
 inductive rel1 : _root_.rel (divided_power_algebra B J) (divided_power_algebra B J)
 | rel {x : J} : rel1 (ι B x) (algebra_map _ _ (x : B))
@@ -50,10 +46,6 @@ noncomputable def J12 : ideal (divided_power_algebra B J) := J1 B J + J2 A B hI 
 theorem J12_is_sub_pd_ideal : is_sub_pd_ideal (divided_power_algebra.divided_powers' B J)
   ((J12 A B hI J hIJ) ⊓ (aug_ideal B J)) :=
 sorry
-
-#check quot.divided_powers (divided_power_algebra.divided_powers' B J)
-  (J12_is_sub_pd_ideal A B hI J hIJ)
-
 
 def dp_envelope := (divided_power_algebra B J) ⧸ (J12 A B hI J hIJ)
 
@@ -76,34 +68,24 @@ lemma sub_ideal_dp_ideal :
   (algebra_map B (dp_envelope A B hI J hIJ)) '' J ⊆ (dp_ideal A B hI J hIJ) :=
 sorry
 
-theorem dp_envelope_is_universal :
-  is_universal A hI B J (dp_envelope A B hI J hIJ) (quot.divided_powers (divided_power_algebra.divided_powers' B J)
-  (J12_is_sub_pd_ideal A B hI J hIJ)) (algebra_map B (dp_envelope A B hI J hIJ))
+theorem dp_envelope_is_universal : is_universal A hI B J (dp_envelope A B hI J hIJ) 
+  (quot.divided_powers (divided_power_algebra.divided_powers' B J)
+    (J12_is_sub_pd_ideal A B hI J hIJ)) (algebra_map B (dp_envelope A B hI J hIJ))
   (sub_ideal_dp_ideal A B hI J hIJ) :=
 sorry
 
 end included
 
 namespace general
---variables (hIJ : (algebra_map A B)'' I ⊆ J)
 variables {A B} (I)
 
 def J' : ideal B := J + I.map (algebra_map A B)
 
---lemma sub_ideal_J' :  I.map (algebra_map A B) ≤  J' I J := sorry
-
 lemma sub_ideal_J' :  (algebra_map A B) '' I ⊆  J' I J := sorry
-
 
 variables (A B) {I}
 
-#check quot.divided_powers (divided_power_algebra.divided_powers' B (J' I J))
-  (J12_is_sub_pd_ideal A B hI (J' I J) (sub_ideal_J' I J))
-
-
 def dp_envelope := (divided_power_algebra B (J' I J)) ⧸ (J12 A B hI (J' I J) (sub_ideal_J' I J))
-
-#check dp_envelope A B hI J
 
 noncomputable instance : comm_ring (dp_envelope A B hI J) := 
 ideal.quotient.comm_ring _
@@ -118,16 +100,18 @@ instance : is_scalar_tower A B (dp_envelope A B hI J) :=
 sorry
 
 noncomputable def dp_ideal : ideal (dp_envelope A B hI J) :=
-(map (ideal.quotient.mk (J12 A B hI (J' I J))) (divided_powers.aug_ideal B (J' I J)))
+(ideal.map (ideal.quotient.mk (J12 A B hI (J' I J) (sub_ideal_J' I J))) 
+  (aug_ideal B (J' I J)))
 
 lemma sub_ideal_dp_ideal : 
-  (algebra_map B (dp_envelope A B hI J hIJ)) '' J ⊆ (dp_ideal A B hI J hIJ) :=
+  (algebra_map B (dp_envelope A B hI J)) '' J ⊆ (dp_ideal A B hI J) :=
 sorry
 
 theorem dp_envelope_is_universal :
-  is_universal A hI B J (dp_envelope A B hI J hIJ) (quot.divided_powers (divided_power_algebra.divided_powers' B J)
-  (J12_is_sub_pd_ideal A B hI J hIJ)) (algebra_map B (dp_envelope A B hI J hIJ))
-  (sub_ideal_dp_ideal A B hI J hIJ) :=
+  is_universal A hI B J (dp_envelope A B hI J)
+  (quot.divided_powers (divided_power_algebra.divided_powers' B (J' I J))
+    (J12_is_sub_pd_ideal A B hI (J' I J) (sub_ideal_J' I J))) 
+  (algebra_map B (dp_envelope A B hI J)) (sub_ideal_dp_ideal A B hI J) :=
 sorry
 
 end general
