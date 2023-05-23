@@ -48,17 +48,13 @@ sorry
 
 def dp_envelope := (divided_power_algebra B J) ⧸ (J12 hI J hIJ)
 
-noncomputable instance : comm_ring (dp_envelope hI J hIJ) := 
-ideal.quotient.comm_ring _
+noncomputable instance : comm_ring (dp_envelope hI J hIJ) := ideal.quotient.comm_ring _
 
-noncomputable instance : algebra B (dp_envelope hI J hIJ) := 
-ideal.quotient.algebra _
+noncomputable instance : algebra B (dp_envelope hI J hIJ) := ideal.quotient.algebra _
 
-instance algebra' : algebra A (dp_envelope hI J hIJ) := 
-sorry
+instance algebra' : algebra A (dp_envelope hI J hIJ) := sorry
 
-instance : is_scalar_tower A B (dp_envelope hI J hIJ) := 
-sorry
+instance : is_scalar_tower A B (dp_envelope hI J hIJ) := sorry
 
 noncomputable def dp_ideal : ideal (dp_envelope hI J hIJ) :=
 (map (ideal.quotient.mk (J12 hI J hIJ)) (aug_ideal B J))
