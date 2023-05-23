@@ -854,11 +854,13 @@ begin
 end
 
 variable (R)
-/- def cond_D' : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
-  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = submodule.quotient.mk (X (n, x)) -/
 
-def cond_D : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
-  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x
+def cond_δ : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
+  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x 
+
+def cond_D (R : Type*) [_inst_1 : comm_ring R] := 
+  ∀ (M : Type*) [add_comm_group M], by exactI ∀ [module R M],
+  by exactI cond_δ R M
 
 end divided_power_algebra
 
@@ -903,35 +905,143 @@ begin
     le_sup_right hK hK' hJK hJK',
 end
 
-def cond_T : Prop :=
+def cond_τ : Prop :=
 ∃ hK : divided_powers (K A I J), 
   is_pd_morphism hI hK (i_1 A R S) ∧ is_pd_morphism hJ hK (i_2 A R S)
+
+def cond_T (A : Type*) [comm_ring A] : Prop := ∀ {R S : Type*} [comm_ring R] [comm_ring S], by exactI ∀ [algebra A R] [algebra A S],
+by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
+cond_τ A hI hJ 
+
+#check cond_T
 
 section free
 
 -- hR_free, hS_free are not used for the def (they might be needed at lemmas about cond_T_free)
-def cond_T_free /- [hR_free : module.free A R] [hS_free : module.free A S]  -/: Prop :=
-∃ hK : divided_powers (K A I J), 
-  is_pd_morphism hI hK (i_1 A R S) ∧ is_pd_morphism hJ hK (i_2 A R S)
 
-def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] /- [algebra A R] not used -/
+def cond_T_free (A : Type*) [comm_ring A] : Prop := ∀ {R S : Type*} [comm_ring R] [comm_ring S], by exactI ∀ [algebra A R] [algebra A S],
+by exactI ∀ (hR_free : module.free A R) (hS_free : module.free A S),
+by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
+cond_τ A hI hJ
+
+#check cond_T_free 
+
+/- def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] /- [algebra A R] not used -/
   {I : ideal R} (hI : divided_powers I) : Prop := 
 ∃ (T : Type*) [comm_ring T], by exactI ∃ [algebra A T], by exactI ∃ [module.free A T]
   {J : ideal T} (hJ : divided_powers J) (f : pd_morphism hI hJ), 
   function.surjective f.to_ring_hom
+ -/
 
+def cond_Q (A : Type*) [comm_ring A] : Prop := 
+∀ (R : Type*) [comm_ring R],
+by exactI ∀ [algebra A R] {I : ideal R} (hI : divided_powers I),
+∃ (T : Type*) [comm_ring T], 
+  by exactI ∃ [algebra A T], 
+  by exactI ∃ [module.free A T] 
+  (f : T →ₐ[A] R)  
+  {J : ideal T} (hJ : divided_powers J) (hf : is_pd_morphism hJ hI f),
+  function.surjective f
+  
 end free
 
-theorem roby_D (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M] [module A M] :
-  divided_power_algebra.cond_D A M :=
-sorry
+.
 
-theorem roby_T (A R S : Type*) [comm_ring A] [comm_ring R] [algebra A R] [comm_ring S] 
-  [algebra A S] {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J) :
-  cond_T A hI hJ :=
-sorry
+section Proofs
 
 open divided_power_algebra
+
+/- 
+variables {M : Type*} [add_comm_group M] [module R M] (h : divided_powers (aug_ideal R M))(hh : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x)
+include M  h -/
+
+-- Roby, lemma 3
+lemma cond_D_uniqueness {M : Type*} [add_comm_group M] [module R M] 
+  (h : divided_powers (aug_ideal R M))
+  (hh : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x)
+  {S : Type*} [comm_ring S]
+  [algebra R S] {J : ideal S} (hJ : divided_powers J) (f : M →ₗ[R] S) 
+  (hf : ∀ m, f m ∈ J) :
+  is_pd_morphism h hJ (divided_power_algebra.lift R M hJ f hf)  := 
+sorry
+
+
+-- Roby, lemma 4
+lemma T_free_and_D_to_Q (A R : Type*) [comm_ring A] [comm_ring R]
+  (hT_free : cond_T_free A) (hD : cond_D A) : cond_Q A :=
+sorry
+
+-- Roby, lemma 5
+lemma ker_tens (A : Type*) [comm_ring A] {R S R' S' : Type*} 
+  [comm_ring R] [comm_ring S] [comm_ring R'] [comm_ring S']
+  [algebra A R] [algebra A S] [algebra A R'] [algebra A S'] 
+  (f : R →ₐ[A] R') (g : S →ₐ[A] S') 
+  (hf : function.surjective f) (hg : function.surjective g) : 
+  ring_hom.ker (algebra.tensor_product.map f g) 
+  = (f.to_ring_hom.ker.map (algebra.tensor_product.include_left : R →ₐ[A] (R ⊗[A] S))) 
+  ⊔ ((g.to_ring_hom.ker.map (algebra.tensor_product.include_right : S →ₐ[A] (R ⊗[A] S)))) :=
+sorry
+
+-- Roby, lemma 6
+lemma cond_τ_rel (A : Type*) [comm_ring A] {R S R' S' : Type*} 
+  [comm_ring R] [comm_ring S] [comm_ring R'] [comm_ring S']
+  [algebra A R] [algebra A S] [algebra A R'] [algebra A S'] 
+  (f : R →ₐ[A] R') (g : S →ₐ[A] S') 
+  (hf : function.surjective f) (hg : function.surjective g)
+  {I : ideal R} (hI : divided_powers I) 
+  {J : ideal S} (hJ : divided_powers J)
+  {I' : ideal R'} (hI' : divided_powers I') 
+  {J' : ideal S'} (hJ' : divided_powers J')
+  (hf' : is_pd_morphism hI hI' f) (hg' : is_pd_morphism hJ hJ' g)
+  (hRS : cond_τ A hI hJ) : cond_τ A hI' hJ' :=
+sorry
+
+-- Roby, lemma 7
+lemma cond_Q_and_cond_T_free_imply_cond_T (A : Type*) [comm_ring A]
+  (hQ : cond_Q A) (hT_free: cond_T_free A) : cond_T A := 
+sorry
+
+/- Requires to prove that divided_power_algebra is compatible with extension of scalars -/
+def dp_scalar_extension (A : Type*) [comm_ring A] (R : Type*) [comm_ring R] [algebra A R]
+  (M : Type*) [add_comm_group M] [module A M] [module R M] [is_scalar_tower A R M] :
+  R ⊗[A] (divided_power_algebra A M) →ₐ[R] divided_power_algebra R M := 
+sorry
+
+def dp_scalar_extension_equiv (A : Type*) [comm_ring A] (R : Type*) [comm_ring R] [algebra A R]
+  (M : Type*) [add_comm_group M] [module A M] [module R M] [is_scalar_tower A R M] :
+  R ⊗[A] (divided_power_algebra A M) ≃ₐ[R] divided_power_algebra R M := 
+sorry
+
+
+-- Roby, lemma 8
+lemma cond_T_and_cond_D_imply_cond_D' (A : Type*) [comm_ring A] (R : Type*)
+  [comm_ring R] [algebra A R]: cond_D R :=
+sorry
+
+-- To be continued
+end Proofs
+
+theorem roby_δ (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M] [module A M] :
+  divided_power_algebra.cond_δ A M :=
+sorry
+
+lemma roby_D (A : Type*) [comm_ring A] : divided_power_algebra.cond_D A :=
+begin
+introsI M _ _, exact roby_δ A M
+end
+
+theorem roby_τ (A R S : Type*) [comm_ring A] [comm_ring R] [algebra A R] [comm_ring S] 
+  [algebra A S] {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J) :
+  cond_τ A hI hJ :=
+sorry
+
+lemma roby_T (A : Type*) [comm_ring A] : cond_T A :=
+begin
+introsI R S _ _ _ _ I J hI hJ, exact roby_τ A R S hI hJ,
+end
+
+open divided_power_algebra
+
 namespace divided_power_algebra
 
 -- Part of Roby65 Thm 1
