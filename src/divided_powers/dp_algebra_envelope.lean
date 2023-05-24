@@ -25,7 +25,7 @@ variables {A B : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) [com
 
 section included
 
-variables (hIJ : (algebra_map A B)'' I ⊆ J)
+variables (hIJ : I.map (algebra_map A B) ≤ J)
 
 inductive rel1 : _root_.rel (divided_power_algebra B J) (divided_power_algebra B J)
 | rel {x : J} : rel1 (ι B x) (algebra_map _ _ (x : B))
@@ -36,8 +36,8 @@ include hIJ
 
 inductive rel2 : _root_.rel (divided_power_algebra B J) (divided_power_algebra B J)
 | rel {x : I} {n : ℕ} : rel2
-  (dp B n (⟨(algebra_map A B x), hIJ ( set.mem_image_of_mem _ x.2)⟩ : J))
-  (algebra_map _ _ (algebra_map A B (dpow hI n x ))) --(algebra_map _ _ (x : B))
+  (dp B n (⟨(algebra_map A B x), hIJ (ideal.mem_map_of_mem _ x.2)⟩ : J))
+  (algebra_map _ _ (algebra_map A B (dpow hI n x )))
 
 noncomputable def J2 : ideal (divided_power_algebra B J) := of_rel (rel2 hI J hIJ)
 
@@ -79,7 +79,7 @@ variables (I)
 
 def J' : ideal B := J + I.map (algebra_map A B)
 
-lemma sub_ideal_J' :  (algebra_map A B) '' I ⊆  J' I J := sorry
+lemma sub_ideal_J' :  I.map (algebra_map A B) ≤ J' I J := sorry
 
 variables {I}
 
