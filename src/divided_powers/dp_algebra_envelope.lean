@@ -75,10 +75,8 @@ variables (I)
 def J' : ideal B := J + I.map (algebra_map A B)
 
 lemma sub_ideal_J' :  I.map (algebra_map A B) ≤ J' I J := 
-begin
-  rw J',
-  sorry
-end
+le_sup_of_le_right (le_refl _)
+
 variables {I}
 
 def dp_envelope : Type v := 
