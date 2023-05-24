@@ -1,4 +1,5 @@
 import divided_powers.dp_algebra
+import algebra_comp
 
 open divided_powers ideal divided_power_algebra
 
@@ -52,9 +53,11 @@ noncomputable instance : comm_ring (dp_envelope hI J hIJ) := ideal.quotient.comm
 
 noncomputable instance : algebra B (dp_envelope hI J hIJ) := ideal.quotient.algebra _
 
-instance algebra' : algebra A (dp_envelope hI J hIJ) := sorry
+noncomputable instance algebra' : algebra A (dp_envelope hI J hIJ) := 
+algebra.comp A B (dp_envelope hI J hIJ)
 
-instance : is_scalar_tower A B (dp_envelope hI J hIJ) := sorry
+instance : is_scalar_tower A B (dp_envelope hI J hIJ) :=
+is_scalar_tower.comp A B (dp_envelope hI J hIJ)
 
 noncomputable def dp_ideal : ideal (dp_envelope hI J hIJ) :=
 (map (ideal.quotient.mk (J12 hI J hIJ)) (aug_ideal B J))
@@ -86,9 +89,11 @@ noncomputable instance : comm_ring (dp_envelope hI J) := ideal.quotient.comm_rin
 
 noncomputable instance : algebra B (dp_envelope hI J) := ideal.quotient.algebra _
 
-instance algebra' : algebra A (dp_envelope hI J) := sorry
+noncomputable instance algebra' : algebra A (dp_envelope hI J) := 
+algebra.comp A B (dp_envelope hI J)
 
-instance : is_scalar_tower A B (dp_envelope hI J) := sorry
+instance : is_scalar_tower A B (dp_envelope hI J) := 
+is_scalar_tower.comp A B (dp_envelope hI J)
 
 noncomputable def dp_ideal : ideal (dp_envelope hI J) :=
 (ideal.map (ideal.quotient.mk (J12 hI (J' I J) (sub_ideal_J' I J))) (aug_ideal B (J' I J)))
