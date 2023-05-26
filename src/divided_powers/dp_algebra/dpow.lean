@@ -79,7 +79,6 @@ def i_2 : S →ₐ R ⊗[A] S := algebra.tensor_product.include_right
 variables {R S} (I J)
 def K : ideal (R ⊗[A] S) := (I.map (i_1 A R S)) ⊔ (J.map (i_2 A R S))
 
--- namespace divided_powers
 
 variables {I J}
 /- Lemma 1 : uniqueness of the dp structure on R ⊗ S for I + J -/
@@ -111,8 +110,6 @@ def cond_T (A : Type*) [comm_ring A] : Prop := ∀ {R S : Type*} [comm_ring R] [
 by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
 cond_τ A hI hJ 
 
-#check cond_T
-
 section free
 
 -- hR_free, hS_free are not used for the def (they might be needed at lemmas about cond_T_free)
@@ -121,8 +118,6 @@ def cond_T_free (A : Type*) [comm_ring A] : Prop := ∀ {R S : Type*} [comm_ring
 by exactI ∀ (hR_free : module.free A R) (hS_free : module.free A S),
 by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
 cond_τ A hI hJ
-
-#check cond_T_free 
 
 /- def cond_Q (A R : Type*) [comm_ring A] [comm_ring R] /- [algebra A R] not used -/
   {I : ideal R} (hI : divided_powers I) : Prop := 
