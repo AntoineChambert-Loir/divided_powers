@@ -24,6 +24,50 @@ begin
     exact le_antisymm h hI, },
 end
 
+section module
+
+variables (R : Type*) [comm_ring R] 
+ (R' : Type*) [comm_ring R'] 
+ (M : Type*) [add_comm_group M] [module R M] [module R' M] 
+ (N : Type*) [add_comm_group N] [module R N] [module R' N] 
+
+variable [tensor_product.compatible_smul R' R M N]
+variables [smul_comm_class R' R M] [smul_comm_class R' R N] 
+
+-- variables [algebra R R'] [is_scalar_tower R R' M] [is_scalar_tower R R' N]
+
+example : module R (M ⊗[R'] N) := infer_instance
+
+example : smul_comm_class R' R M := infer_instance 
+
+def h_aux : M → N →ₗ[R] (M ⊗[R'] N) := λ m, {
+  to_fun := λ n, m ⊗ₜ[R'] n, 
+  map_add' := tensor_product.tmul_add m, 
+  map_smul' := λ r n, by simp only [tensor_product.tmul_smul, ring_hom.id_apply],}
+
+variables (x : M) (y : N)
+
+variables {R R' M N}
+lemma h_aux_apply (m : M) (n : N) : h_aux R R' M N m n = m ⊗ₜ[R'] n := rfl
+
+def h : M →ₗ[R] N →ₗ[R] (M ⊗[R'] N) := {
+  to_fun := h_aux R R' M N,
+  map_add' := λ m m',
+  begin 
+    ext n, simp only [h_aux_apply, linear_map.add_apply, tensor_product.add_tmul],
+  end,
+  map_smul' := λ r m, linear_map.ext (λ n, 
+  begin
+    simp only [h_aux_apply, ring_hom.id_apply, linear_map.smul_apply],
+    refl,
+  end) }
+
+
+end module
+
+section algebra
+
+
 variables (R : Type*) [comm_ring R] 
  (R' : Type*) [comm_ring R'] 
  (M : Type*) [comm_ring M] [algebra R M] [algebra R' M] 
@@ -60,7 +104,7 @@ example : comm_ring (M ⊗[R'] M) :=  infer_instance
 
 -- instance : algebra R (M ⊗[R] N) := tensor_product.algebra' R R' M N 
 
-def tensor_product.include_left' : M →ₐ[R] (M ⊗[R'] N) := {
+def algebra.tensor_product.include_left' : M →ₐ[R] (M ⊗[R'] N) := {
   to_fun := algebra.tensor_product.include_left,
   map_one' := ring_hom.map_one _, -- rfl,
   map_mul' := ring_hom.map_mul _, --  λ x y, by simp only [algebra.tensor_product.include_left_apply, algebra.tensor_product.tmul_mul_tmul, mul_one],
@@ -91,7 +135,6 @@ commutes' := λ a, by {
   simp only [algebra.tensor_product.include_right_apply,
     algebra.algebra_map_eq_smul_one, tensor_product.tmul_smul], 
   refl,} }
-
 
 def tensor_product.can  : (M ⊗[R] N) →ₐ[R] (M ⊗[R'] N) :=
 begin
@@ -230,3 +273,5 @@ begin
 end
 
 end is_scalar_tower
+
+end algebra
