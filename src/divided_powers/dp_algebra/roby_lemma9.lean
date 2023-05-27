@@ -3,6 +3,9 @@
 import ring_theory.tensor_product
 import ring_theory.ideal.quotient_operations
 import algebra.algebra.subalgebra.basic
+-- import ...generalisation.generalisation_linter
+
+
 
 open_locale tensor_product
 local notation  M ` ⊗[`:100 R `] `:0 N:100 := tensor_product R M N
@@ -27,74 +30,6 @@ begin
 end
 
 end ring_hom
-
-section module
-
-variables (R : Type*) [comm_semiring R] 
- (R' : Type*) [comm_semiring R'] 
- (M : Type*) [add_comm_monoid M] [module R M] [module R' M] 
- (N : Type*) [add_comm_monoid N] [module R N] [module R' N] 
-
-variable [tensor_product.compatible_smul R' R M N]
-variables [smul_comm_class R' R M] [smul_comm_class R' R N] 
-
--- variables [algebra R R'] [is_scalar_tower R R' M] [is_scalar_tower R R' N]
-
-example : module R (M ⊗[R'] N) := infer_instance
-
-example : smul_comm_class R' R M := infer_instance 
-
-def h_aux : M → N →ₗ[R] (M ⊗[R'] N) := λ m, {
-  to_fun := λ n, m ⊗ₜ[R'] n, 
-  map_add' := tensor_product.tmul_add m, 
-  map_smul' := λ r n, by simp only [tensor_product.tmul_smul, ring_hom.id_apply],}
-
-variables (x : M) (y : N)
-
-lemma h_aux_apply (m : M) (n : N) : h_aux R R' M N m n = m ⊗ₜ[R'] n := rfl
-
-def hbil : M →ₗ[R] N →ₗ[R] (M ⊗[R'] N) := {
-  to_fun := h_aux R R' M N,
-  map_add' := λ m m',
-  begin 
-    ext n, simp only [h_aux_apply, linear_map.add_apply, tensor_product.add_tmul],
-  end,
-  map_smul' := λ r m, linear_map.ext (λ n, 
-  begin
-    simp only [h_aux_apply, ring_hom.id_apply, linear_map.smul_apply],
-    refl,
-  end) }
-
-lemma hbil_apply (m : M) (n : N) : hbil R R' M N m n = m ⊗ₜ[R'] n := rfl
-
-def htens : M ⊗[R] N →ₗ[R] M ⊗[R'] N := tensor_product.lift (hbil R R' M N)
-
-lemma htens_apply (m : M) (n : N) : htens R R' M N (m ⊗ₜ[R] n) = m ⊗ₜ[R'] n := rfl 
-
-/- section functoriality
-
-variables
- (M' : Type*) [add_comm_monoid M'] [module R M'] [module R' M'] 
- (N' : Type*) [add_comm_monoid N'] [module R N'] [module R' N'] 
-variable [tensor_product.compatible_smul R' R M' N']
-variables [smul_comm_class R' R M'] [smul_comm_class R' R N'] 
-
-end functoriality
- -/
-end module
-/- 
-section algebra
-
-variables (R : Type*) [comm_semiring R] 
- (R' : Type*) [comm_semiring R'] 
- (M : Type*) [comm_semiring M] [module R M] [module R' M] 
- (N : Type*) [comm_semiring N] [module R N] [module R' N] 
-
-variable [tensor_product.compatible_smul R' R M N]
-variables [smul_comm_class R' R M] [smul_comm_class R' R N] 
-
-
-end algebra -/
 
 section algebra 
 
@@ -242,11 +177,12 @@ def can  : (M ⊗[R] N) →ₐ[R] (M ⊗[R'] N) :=
 begin
   have hl := (include_left' R R' M N),
   have hr := (include_right' R R' M N),
-  have := @product_map R M N (M ⊗[R'] N) _ _ _ _ _ _,
   convert product_map hl hr, 
   -- product_map (include_left' R R' M N) (include_right' R R' M N),
   apply algebra'_eq_algebra, 
 end
+
+#check tensor_product.algebra 
 
 /- The following lemma should be straightforward, 
 but the `convert` in the definition of `tensor_product.can`
@@ -254,11 +190,36 @@ leads to a `cast _` which I can't unfold.   -/
 lemma can_apply (m : M) (n: N) : 
   can R R' M N (m ⊗ₜ[R] n) = m ⊗ₜ[R'] n := 
 begin
-  simp only [can], 
+
+   simp only [can], 
   simp only [eq_mpr_eq_cast], 
   simp_rw [include_left', include_right', include_left, include_right],
-  simp only [ring_hom.to_fun_eq_coe, alg_hom.coe_mk],
-  simp only [product_map],
+--  simp only [ring_hom.to_fun_eq_coe, alg_hom.coe_mk],
+  simp only [product_map, lmul', map, tensor_product.map, alg_hom_of_linear_map_tensor_product, tensor_product.lift, include_left_ring_hom, linear_map.mul'],
+
+simp only [add_monoid_hom.comp, alg_hom.comp, linear_map.comp, linear_map.compl₂, linear_map.lcompₛₗ],
+simp only [alg_hom.coe_mk, linear_map.coe_mk, add_monoid_hom.to_fun_eq_coe, alg_hom.to_ring_hom_eq_coe, ring_hom.to_fun_eq_coe,
+  ring_hom.coe_comp, alg_hom.coe_to_ring_hom],
+  simp only [tensor_product.lift_aux],
+  simp,
+
+
+  /-  
+  simp only [alg_hom.comp, lmul'],
+  simp only [ring_hom.to_fun_eq_coe, alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, map],
+  simp only [tensor_product.map, alg_hom_of_linear_map_tensor_product, tensor_product.lift],
+
+  simp only [alg_hom.coe_mk, linear_map.to_fun_eq_coe, add_monoid_hom.to_fun_eq_coe],
+  simp only [linear_map.mul', tensor_product.lift],
+simp only [add_monoid_hom.to_fun_eq_coe, linear_map.coe_mk],
+simp only [include_left_ring_hom],
+simp only [ring_hom.coe_mk],
+simp only [alg_hom.to_linear_map],
+simp only [linear_map.mul],
+simp only [alg_hom.coe_mk],
+simp only [linear_map.comp, add_monoid_hom.comp],
+simp only [linear_map.coe_mk],
+simp only [ring_hom.comp, alg_hom.coe_mk, ring_hom.coe_mk, alg_hom.coe_to_ring_hom],-/
 sorry,
 end
 
@@ -299,7 +260,9 @@ end tensor_product_compatible
 
 section is_scalar_tower
 
-variables [algebra R R'] [is_scalar_tower R R' M] [is_scalar_tower R R' N]
+variables [algebra R R'] [is_scalar_tower R R' M] 
+-- [is_scalar_tower R R' N]
+variable [tensor_product.compatible_smul R' R M N]
 
 def can'_left : 
 M →ₐ[R'] (M ⊗[R] N) ⧸ (can_ker R R' M N) := 
@@ -403,3 +366,26 @@ end comm_ring
 end algebra.tensor_product
 
 end algebra
+
+#exit 
+
+/- Checking 21 declarations (plus 79 automatically generated ones) in the current file with 1 linters -/
+
+/- The `generalisation_linter` linter reports: -/
+/- typeclass generalisations may be possible -/
+#check @h_aux /- _inst_11: smul_comm_class ↝
+ -/
+#check @algebra.tensor_product.left_algebra' /- _inst_7: algebra ↝
+ -/
+#check @algebra.tensor_product.can_ker /- _inst_2: comm_ring ↝ comm_semiring module
+_inst_3: comm_ring ↝ distrib_mul_action module ring
+_inst_5: algebra ↝ has_smul module
+_inst_6: comm_ring ↝ distrib_mul_action module ring
+_inst_8: algebra ↝ has_smul module
+_inst_9: smul_comm_class ↝
+_inst_10: tensor_product.compatible_smul ↝
+ -/
+#check @algebra.tensor_product.can'_left /- _inst_11: is_scalar_tower ↝ tensor_product.compatible_smul
+ -/
+#check @algebra.tensor_product.can'_right /- _inst_11: is_scalar_tower ↝ tensor_product.compatible_smul
+ -/
