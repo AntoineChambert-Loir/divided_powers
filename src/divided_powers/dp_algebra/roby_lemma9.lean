@@ -1,6 +1,5 @@
 
-
-import ring_theory.tensor_product
+import ...ring_theory.tensor_product
 import ring_theory.ideal.quotient_operations
 import algebra.algebra.subalgebra.basic
 -- import ...generalisation.generalisation_linter
@@ -31,6 +30,154 @@ end
 
 end ring_hom
 
+variables (R : Type*) [comm_ring R] 
+ (S : Type*) [comm_ring S] 
+
+variables (M : Type*) [comm_ring M] [algebra R M] [algebra S M] 
+ (N : Type*) [comm_ring N] [algebra R N] [algebra S N]
+
+
+variables [algebra R S] [is_scalar_tower R S M] [is_scalar_tower R S N]
+
+open algebra.tensor_product
+
+def φ : (M ⊗[R] N) →ₐ[R] (M ⊗[S] N) :=
+product_map (include_left) (include_right)
+
+
+/- The following lemma should be straightforward, 
+but the `convert` in the definition of `tensor_product.can`
+leads to a `cast _` which I can't unfold.   -/
+lemma φ_apply (m : M) (n: N) : 
+  φ R S M N (m ⊗ₜ[R] n) = m ⊗ₜ[S] n := 
+  by simp only [φ, product_map_apply_tmul, include_left_apply, include_right_apply, tmul_mul_tmul, _root_.mul_one, _root_.one_mul]
+
+def kerφ : ideal (M ⊗[R] N) :=
+  ideal.span ((λ (r : S), ((r • (1 : M)) ⊗ₜ[R] (1 : N)) - ((1 : M) ⊗ₜ[R] (r • (1 : N)))) '' ⊤) 
+
+example : N →ₐ[R] M ⊗[R] N :=
+include_right
+
+example : N →ₐ[R] M ⊗[R] N := include_right
+
+example : N →ₐ[S] M ⊗[S] N := include_right
+
+def ψ_left : 
+M →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) := 
+  (ideal.quotient.mkₐ S (kerφ R S M N)).comp
+    (algebra.tensor_product.include_left)
+
+def ψ_right' : 
+N →ₐ[R] (M ⊗[R] N) ⧸ (kerφ R S M N) := 
+  (ideal.quotient.mkₐ R (kerφ R S M N)).comp (include_right) 
+
+lemma is_S_linear : is_linear_map S (ψ_right' R S M N) :=
+begin
+  apply is_linear_map.mk,
+  { exact alg_hom.map_add _, }, 
+  intros r n, 
+  simp [ψ_right', include_right],
+  rw ← ideal.quotient.mkₐ_eq_mk S,
+  rw ← alg_hom.map_smul, 
+  simp only [ideal.quotient.mkₐ_eq_mk],
+  apply symm,
+  rw ideal.quotient.eq ,
+  suffices : r • (1 : M) ⊗ₜ[R] n - (1 : M) ⊗ₜ[R] (r • n) 
+    = (r • (1 : M) ⊗ₜ[R] (1 : N) - (1 : M) ⊗ₜ[R] (r • (1 : N))) * ((1 : M) ⊗ₜ[R] n),
+  rw this, 
+  refine ideal.mul_mem_right ((1 : M) ⊗ₜ[R] n) _ _,
+  apply ideal.subset_span,
+  use ⟨r, set.mem_univ r, rfl⟩,
+
+  simp only [sub_mul, algebra.smul_mul_assoc, tmul_mul_tmul, comm_ring.one_mul, comm_ring.mul_one],
+end
+
+def ψ_right : 
+N →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) := {
+to_fun := ψ_right' R S M N, 
+map_zero' := (is_S_linear R S M N).map_zero,
+map_one' := rfl, 
+map_add' := (is_S_linear R S M N).map_add,
+map_mul' := alg_hom.map_mul _, 
+commutes' := λ r, by simp only [algebra.algebra_map_eq_smul_one, (is_S_linear R S M N).map_smul, alg_hom.map_one] }
+
+def ψ : (M ⊗[S] N) →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) :=
+product_map (ψ_left R S M N) (ψ_right R S M N)
+
+lemma ψ_apply (m : M) (n : N) : ψ R S M N (m ⊗ₜ[S] n) 
+  = ideal.quotient.mk _ (m ⊗ₜ[R] n) := 
+begin
+  simp only [ψ, ψ_left, ψ_right', ψ_right], 
+  simp only [alg_hom.coe_comp, ideal.quotient.mkₐ_eq_mk, product_map_apply_tmul, function.comp_app, include_left_apply,
+  alg_hom.coe_mk, include_right_apply],
+  rw ← ring_hom.map_mul,
+  simp only [tmul_mul_tmul, _root_.mul_one, _root_.one_mul],
+end
+
+example : (φ R S M N).to_ring_hom.ker = kerφ R S M N :=
+begin
+  suffices h : kerφ R S M N ≤ ring_hom.ker (φ R S M N).to_ring_hom, 
+  rw ring_hom.ker_eq_ideal_iff,
+  use h,
+  apply function.has_left_inverse.injective , 
+--  apply function.bijective.injective,
+--  rw function.bijective_iff_has_inverse, 
+  use ψ R S M N,
+--   split,
+  { -- left_inverse
+    intro z,
+    obtain ⟨y, rfl⟩ := ideal.quotient.mk_surjective z, 
+    simp only [alg_hom.to_ring_hom_eq_coe, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom],
+
+    apply tensor_product.induction_on y,
+    simp only [ring_hom.map_zero, alg_hom.map_zero],
+    intros m n, simp only [ψ_apply, φ_apply],
+    intros x y hx hy, 
+    simp only [ring_hom.map_add, alg_hom.map_add, ← ideal.quotient.mkₐ_eq_mk, hx, hy], },
+  -- { -- right_inverse  sorry }
+
+  -- h
+  simp only [kerφ],
+  rw ideal.span_le,
+  intros z hz,
+  simp only [set.top_eq_univ, set.image_univ, set.mem_range] at hz,
+  obtain ⟨r, rfl⟩ := hz,
+  simp only [set_like.mem_coe],
+  simp only [ring_hom.sub_mem_ker_iff],
+  simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom],
+  simp only [φ_apply],
+  simp only [tensor_product.tmul_smul],
+  refl,
+end
+
+
+
+#exit 
+
+/- Checking 21 declarations (plus 79 automatically generated ones) in the current file with 1 linters -/
+
+/- The `generalisation_linter` linter reports: -/
+/- typeclass generalisations may be possible -/
+#check @h_aux /- _inst_11: smul_comm_class ↝
+ -/
+#check @algebra.tensor_product.left_algebra' /- _inst_7: algebra ↝
+ -/
+#check @algebra.tensor_product.can_ker /- _inst_2: comm_ring ↝ comm_semiring module
+_inst_3: comm_ring ↝ distrib_mul_action module ring
+_inst_5: algebra ↝ has_smul module
+_inst_6: comm_ring ↝ distrib_mul_action module ring
+_inst_8: algebra ↝ has_smul module
+_inst_9: smul_comm_class ↝
+_inst_10: tensor_product.compatible_smul ↝
+ -/
+#check @algebra.tensor_product.can'_left /- _inst_11: is_scalar_tower ↝ tensor_product.compatible_smul
+ -/
+#check @algebra.tensor_product.can'_right /- _inst_11: is_scalar_tower ↝ tensor_product.compatible_smul
+ -/
+
+
+
+/- 
 section algebra 
 
 namespace algebra.tensor_product
@@ -171,221 +318,4 @@ mul_comm := λ a b,
     { intros x y hx hy, simp only [mul_add, add_mul, hx, hy], },
   end,
   ..tensor_product.semiring,
-}
-
-def can  : (M ⊗[R] N) →ₐ[R] (M ⊗[R'] N) :=
-begin
-  have hl := (include_left' R R' M N),
-  have hr := (include_right' R R' M N),
-  convert product_map hl hr, 
-  -- product_map (include_left' R R' M N) (include_right' R R' M N),
-  apply algebra'_eq_algebra, 
-end
-
-#check tensor_product.algebra 
-
-/- The following lemma should be straightforward, 
-but the `convert` in the definition of `tensor_product.can`
-leads to a `cast _` which I can't unfold.   -/
-lemma can_apply (m : M) (n: N) : 
-  can R R' M N (m ⊗ₜ[R] n) = m ⊗ₜ[R'] n := 
-begin
-
-   simp only [can], 
-  simp only [eq_mpr_eq_cast], 
-  simp_rw [include_left', include_right', include_left, include_right],
---  simp only [ring_hom.to_fun_eq_coe, alg_hom.coe_mk],
-  simp only [product_map, lmul', map, tensor_product.map, alg_hom_of_linear_map_tensor_product, tensor_product.lift, include_left_ring_hom, linear_map.mul'],
-
-simp only [add_monoid_hom.comp, alg_hom.comp, linear_map.comp, linear_map.compl₂, linear_map.lcompₛₗ],
-simp only [alg_hom.coe_mk, linear_map.coe_mk, add_monoid_hom.to_fun_eq_coe, alg_hom.to_ring_hom_eq_coe, ring_hom.to_fun_eq_coe,
-  ring_hom.coe_comp, alg_hom.coe_to_ring_hom],
-  simp only [tensor_product.lift_aux],
-  simp,
-
-
-  /-  
-  simp only [alg_hom.comp, lmul'],
-  simp only [ring_hom.to_fun_eq_coe, alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, map],
-  simp only [tensor_product.map, alg_hom_of_linear_map_tensor_product, tensor_product.lift],
-
-  simp only [alg_hom.coe_mk, linear_map.to_fun_eq_coe, add_monoid_hom.to_fun_eq_coe],
-  simp only [linear_map.mul', tensor_product.lift],
-simp only [add_monoid_hom.to_fun_eq_coe, linear_map.coe_mk],
-simp only [include_left_ring_hom],
-simp only [ring_hom.coe_mk],
-simp only [alg_hom.to_linear_map],
-simp only [linear_map.mul],
-simp only [alg_hom.coe_mk],
-simp only [linear_map.comp, add_monoid_hom.comp],
-simp only [linear_map.coe_mk],
-simp only [ring_hom.comp, alg_hom.coe_mk, ring_hom.coe_mk, alg_hom.coe_to_ring_hom],-/
-sorry,
-end
-
-end comm_semiring
-
-end semiringR
-
-section comm_ring
-
-variables (R : Type*) [comm_ring R] 
- (R' : Type*) [comm_ring R'] 
-
-variables (M : Type*) [comm_ring M] [algebra R M] [algebra R' M] 
- (N : Type*) [comm_ring N] [algebra R N] [algebra R' N] 
-
-section tensor_product_compatible
-
-variables [smul_comm_class R' R M] 
-  -- [smul_comm_class R' R N] 
-  [tensor_product.compatible_smul R' R M N]
-
-example : comm_ring (M ⊗[R] N) := infer_instance -- tensor_product.comm_ring
-
-def can_ker : ideal (M ⊗[R] N) :=
-  ideal.span ((λ (r : R'), ((r • (1 : M)) ⊗ₜ[R] (1 : N)) - ((1 : M) ⊗ₜ[R] (r • (1 : N)))) '' ⊤) 
-
-example : N →ₐ[R] M ⊗[R] N :=
-begin
-  convert @include_right R _ M _ _ N _ _, 
-  apply algebra'_eq_algebra, 
-end
-
-example : N →ₐ[R] M ⊗[R] N := include_right' R R M N
-
-example : N →ₐ[R'] M ⊗[R'] N := include_right' R' R' M N
-
-end tensor_product_compatible
-
-section is_scalar_tower
-
-variables [algebra R R'] [is_scalar_tower R R' M] 
--- [is_scalar_tower R R' N]
-variable [tensor_product.compatible_smul R' R M N]
-
-def can'_left : 
-M →ₐ[R'] (M ⊗[R] N) ⧸ (can_ker R R' M N) := 
-  (ideal.quotient.mkₐ R' (can_ker R R' M N)).comp
-    (include_left' R' R M N)
-
-def can'_right : 
-N →ₐ[R] (M ⊗[R] N) ⧸ (can_ker R R' M N) := 
-  (ideal.quotient.mkₐ R (can_ker R R' M N)).comp
-    (include_right' R R M N) 
-
-lemma is_R'_linear : is_linear_map R' (can'_right R R' M N) :=
-begin
-  apply is_linear_map.mk,
-  { exact alg_hom.map_add _, }, 
-  intros r n, 
-  simp [can'_right, include_right'],
-  rw ← ideal.quotient.mkₐ_eq_mk R',
-  rw ← alg_hom.map_smul, 
-  simp only [ideal.quotient.mkₐ_eq_mk],
-  apply symm,
-  rw ideal.quotient.eq ,
-  simp only [can_ker],
-  suffices : r • (1 : M) ⊗ₜ[R] n - (1 : M) ⊗ₜ[R] (r • n) 
-    = (r • (1 : M) ⊗ₜ[R] (1 : N) - (1 : M) ⊗ₜ[R] (r • (1 : N))) * ((1 : M) ⊗ₜ[R] n),
-  rw this, 
---   suffices : (r • (1 : M) ⊗ₜ[R] (1 : N) - (1 : M) ⊗ₜ[R] (r • (1 : N))) ∈ _, 
-  refine ideal.mul_mem_right ((1 : M) ⊗ₜ[R] n) _ _,
-  apply ideal.subset_span,
-  use ⟨r, set.mem_univ r, rfl⟩,
-
-  simp only [sub_mul, algebra.smul_mul_assoc, tmul_mul_tmul, comm_ring.one_mul, comm_ring.mul_one],
-end
-
-def can'_right' : 
-N →ₐ[R'] (M ⊗[R] N) ⧸ (can_ker R R' M N) := {
-to_fun := can'_right R R' M N, 
-map_zero' := (is_R'_linear R R' M N).map_zero,
-map_one' := rfl, 
-map_add' := (is_R'_linear R R' M N).map_add,
-map_mul' := alg_hom.map_mul _, 
-commutes' := λ r, by simp only [algebra.algebra_map_eq_smul_one, (is_R'_linear R R' M N).map_smul, alg_hom.map_one] }
-
-def can' : 
-(M ⊗[R'] N) →ₐ[R'] (M ⊗[R] N) ⧸ (can_ker R R' M N) :=
-begin
-  convert product_map 
-    (can'_left R R' M N) (can'_right' R R' M N),
-  apply algebra'_eq_algebra, 
-end
-
-lemma can'_apply (m : M) (n : N) : 
-  can' R R' M N (m ⊗ₜ[R'] n) 
-  = ideal.quotient.mk _ (m ⊗ₜ[R] n) := 
-begin
-  simp only [can'], 
-  simp,
-sorry
-end
-
-example : (can R R' M N).to_ring_hom.ker = (can_ker R R' M N) :=
-begin
-  suffices h : can_ker R R' M N ≤ ring_hom.ker (can R R' M N).to_ring_hom, 
-  rw ring_hom.ker_eq_ideal_iff,
-  use h,
-  apply function.has_left_inverse.injective , 
---  apply function.bijective.injective,
---  rw function.bijective_iff_has_inverse, 
-  use can' R R' M N,
---   split,
-  { -- left_inverse
-    intro z,
-    obtain ⟨y, rfl⟩ := ideal.quotient.mk_surjective z, 
-    simp only [alg_hom.to_ring_hom_eq_coe, ideal.quotient.lift_mk, alg_hom.coe_to_ring_hom],
-
-    apply tensor_product.induction_on y,
-    simp only [ring_hom.map_zero, alg_hom.map_zero],
-    intros m n, simp only [can'_apply, can_apply],
-    intros x y hx hy, 
-    simp only [ring_hom.map_add, alg_hom.map_add, ← ideal.quotient.mkₐ_eq_mk, hx, hy], },
-  -- { -- right_inverse  sorry }
-
-  -- h
-  simp only [can_ker],
-  rw ideal.span_le,
-  intros z hz,
-  simp only [set.top_eq_univ, set.image_univ, set.mem_range] at hz,
-  obtain ⟨r, rfl⟩ := hz,
-  simp only [set_like.mem_coe],
-  simp only [ring_hom.sub_mem_ker_iff],
-  simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom],
-  simp only [can_apply],
-  simp only [tensor_product.tmul_smul],
-  refl,
-end
-
-end is_scalar_tower
-
-end comm_ring
-
-end algebra.tensor_product
-
-end algebra
-
-#exit 
-
-/- Checking 21 declarations (plus 79 automatically generated ones) in the current file with 1 linters -/
-
-/- The `generalisation_linter` linter reports: -/
-/- typeclass generalisations may be possible -/
-#check @h_aux /- _inst_11: smul_comm_class ↝
- -/
-#check @algebra.tensor_product.left_algebra' /- _inst_7: algebra ↝
- -/
-#check @algebra.tensor_product.can_ker /- _inst_2: comm_ring ↝ comm_semiring module
-_inst_3: comm_ring ↝ distrib_mul_action module ring
-_inst_5: algebra ↝ has_smul module
-_inst_6: comm_ring ↝ distrib_mul_action module ring
-_inst_8: algebra ↝ has_smul module
-_inst_9: smul_comm_class ↝
-_inst_10: tensor_product.compatible_smul ↝
- -/
-#check @algebra.tensor_product.can'_left /- _inst_11: is_scalar_tower ↝ tensor_product.compatible_smul
- -/
-#check @algebra.tensor_product.can'_right /- _inst_11: is_scalar_tower ↝ tensor_product.compatible_smul
- -/
+} -/
