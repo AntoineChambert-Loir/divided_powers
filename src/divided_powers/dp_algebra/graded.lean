@@ -400,36 +400,34 @@ begin
       ← not_mem_support_iff.mp hf'] }
 end  
 
+lemma aug_ideal_eq_span' : 
+  aug_ideal R M = span (set.image2 (dp R) {n : ℕ | 0 < n} ⊤) := sorry
+
+
 lemma aug_ideal_eq_span :
-  span (set.image (λ nm, mk _ (X nm)) { nm : ℕ × M | 0 < nm.1 }) = aug_ideal R M := 
+--  aug_ideal R M = span (set.image (λ nm, mk _ (X nm)) { nm : ℕ × M | 0 < nm.1 }) := 
+  aug_ideal R M = span (set.image2 (dp R) {n : ℕ | 0 < n} set.univ) :=
 begin
   classical,
   apply le_antisymm,
-  { rw span_le, 
-    intros f,
-    simp only [mk_eq_mk, set.mem_image, set.mem_set_of_eq, prod.exists, exists_and_distrib_left, 
-      set_like.mem_coe, forall_exists_index, and_imp],
-    intros n hn m hf, 
-    rw [← hf, aug_ideal, ring_hom.mem_ker, algebra_map_inv, lift_eq],
-    simp_rw linear_map.zero_apply,
-    rw [eval₂_X, divided_powers.dpow_eval_zero _ (ne_of_gt hn)] },
   { intros f0 hf0,
     obtain ⟨⟨f, hf⟩, rfl⟩ := divided_power_algebra.surjective_of_supported R f0,
     have hf0' : coeff 0 f = 0 := coeff_zero_of_mem_aug_ideal R M hf hf0,
-    simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, 
-      set_like.coe_mk] at hf0 ⊢,
-    rw [set.image_comp, ← map_span (mk (relI R M)), f.as_sum],
-    apply ideal.mem_map_of_mem _ (sum_mem _ _),
+    simp only [alg_hom.coe_comp, mkₐ_eq_mk, subalgebra.coe_val, function.comp_app, set_like.coe_mk] at hf0 ⊢,
+    rw f.as_sum, rw map_sum, 
+    refine ideal.sum_mem _ _,
     intros c hc, 
     rw [monomial_eq, finsupp.prod],
+    simp only [_root_.map_mul], 
     refine mul_mem_left _ _ _,
     suffices supp_ss : ↑(c.support) ⊆ {nm : ℕ × M | 0 < nm.fst},
     { by_cases hc0 : c.support.nonempty,
-      { obtain ⟨nm, hnm⟩ := hc0,
+      { obtain ⟨⟨n, m⟩, hnm⟩ := hc0,
         rw finset.prod_eq_mul_prod_diff_singleton hnm,
+        simp only [_root_.map_mul, map_pow],
         apply mul_mem_right _ _ 
           (pow_mem_of_mem _ _ _ (nat.pos_of_ne_zero (finsupp.mem_support_iff.mp hnm))),
-        exact subset_span ⟨nm, ⟨(supp_ss hnm), rfl⟩⟩ }, 
+        exact subset_span ⟨n, m, by simpa only using supp_ss hnm, set.mem_univ _, rfl⟩, }, 
       { -- cas où c.support est vide : c = 0 ; contradiction
         rw [not_nonempty_iff_eq_empty, finsupp.support_eq_empty] at hc0,
         rw hc0 at hc, 
@@ -440,6 +438,14 @@ begin
       simp only [mem_vars, mem_coe, mem_support_iff, ne.def, finsupp.mem_support_iff, exists_prop],
       rw [mem_coe, finsupp.mem_support_iff] at hnm,
       exact ⟨c,⟨mem_support_iff.mp hc, hnm⟩⟩ }}, 
+  { rw span_le, 
+    intros f,
+    simp only [set.mem_image2, set.mem_set_of_eq, set.mem_univ, true_and, exists_and_distrib_left, set_like.mem_coe,
+  forall_exists_index, and_imp], 
+    intros n hn m hf, 
+    rw [← hf, mem_aug_ideal_iff, algebra_map_inv, lift_dp_eq],
+    simp_rw linear_map.zero_apply,
+    rw [divided_powers.dpow_eval_zero _ (ne_of_gt hn)] },
 end
 
 lemma right_inv' [decidable_eq R] [decidable_eq M] (x : R) :

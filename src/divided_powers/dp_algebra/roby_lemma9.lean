@@ -1,5 +1,5 @@
 
-import ...ring_theory.tensor_product
+import ...for_mathlib.ring_theory.tensor_product
 import ring_theory.ideal.quotient_operations
 import algebra.algebra.subalgebra.basic
 -- import ...generalisation.generalisation_linter
@@ -44,13 +44,18 @@ open algebra.tensor_product
 def φ : (M ⊗[R] N) →ₐ[R] (M ⊗[S] N) :=
 product_map (include_left) (include_right)
 
-
-/- The following lemma should be straightforward, 
-but the `convert` in the definition of `tensor_product.can`
-leads to a `cast _` which I can't unfold.   -/
 lemma φ_apply (m : M) (n: N) : 
   φ R S M N (m ⊗ₜ[R] n) = m ⊗ₜ[S] n := 
   by simp only [φ, product_map_apply_tmul, include_left_apply, include_right_apply, tmul_mul_tmul, _root_.mul_one, _root_.one_mul]
+
+lemma φ_surjective : function.surjective (φ R S M N) :=
+begin
+  intro z, 
+  apply tensor_product.induction_on z, 
+  use 0, simp only [map_zero],
+  intros m n, use m ⊗ₜ n, simp only [φ_apply], 
+  rintros _ _ ⟨x, rfl⟩ ⟨y, rfl⟩, use x + y, simp only [map_add],
+end
 
 def kerφ : ideal (M ⊗[R] N) :=
   ideal.span ((λ (r : S), ((r • (1 : M)) ⊗ₜ[R] (1 : N)) - ((1 : M) ⊗ₜ[R] (r • (1 : N)))) '' ⊤) 

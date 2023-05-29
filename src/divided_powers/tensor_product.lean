@@ -1,6 +1,8 @@
 
-import ring_theory.tensor_product
+import for_mathlib.ring_theory.tensor_product
 import divided_powers.basic
+
+-- This will be made in dp_algebra 
 
 namespace divided_powers
 

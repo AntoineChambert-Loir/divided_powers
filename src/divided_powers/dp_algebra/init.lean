@@ -205,6 +205,10 @@ lemma lift_eq_X (n : ℕ) (m : M) :
   lift R M hI φ hφ (mk (relI R M) (X (n, m))) = hI.dpow n (φ m) :=
 by rw [← mkₐ_eq_mk R, lift_eqₐ_X]
 
+lemma lift_dp_eq (n : ℕ) (m : M) : 
+  lift R M hI φ hφ (dp R n m) = hI.dpow n (φ m) :=
+by rw [dp_eq_mk, lift_eq_X]
+
 end lift
 
 section lift'
@@ -248,6 +252,10 @@ by simp only [lift', liftₐ_apply, lift_mk, alg_hom.coe_to_ring_hom, coe_eval�
 lemma lift'_eqₐ (p : mv_polynomial (ℕ × M) R) : lift' R S f (mkₐ R (relI R M) p) = 
   eval₂ (algebra_map R (divided_power_algebra S N)) (λ nm : ℕ × M, dp S nm.1 (f nm.2)) p := 
 by rw [mkₐ_eq_mk, lift'_eq]
+
+lemma lift'_dp_eq (n : ℕ) (m : M) : 
+  lift' R S f (dp R n m) = dp S n (f m) := 
+by rw [dp_eq_mk, lift'_eq, eval₂_X]
 
 end lift'
 
