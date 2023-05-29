@@ -285,56 +285,63 @@ begin
     exact hI.dpow_mem (ne_of_gt hn) (hφ  m), },
   { intros n a ha, 
     apply symm,
-    rw dp_uniqueness' (divided_powers' R M) hI (lift R M hI φ hφ) (aug_ideal_eq_span R M) _ n a ha,
-    rintros n a ⟨q, m, hq : 0 < q, hm, rfl⟩,
-    simp only [alg_hom.coe_to_ring_hom, lift_dp_eq],
-    rw ← dpow_ι,
-    rw hI.dpow_comp n (ne_of_gt hq) (hφ m),
-    rw (divided_powers' R M).dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m),
-    simp only [_root_.map_mul, map_nat_cast], 
-    apply congr_arg2 _ rfl, 
-    rw dpow_ι, rw lift_dp_eq, },
+    rw dp_uniqueness' (divided_powers' R M) hI (lift R M hI φ hφ) (aug_ideal_eq_span R M) _ _ n a ha,
+    { rintros a ⟨q, m, hq : 0 < q, hm, rfl⟩,
+      simp only [lift_dp_eq, alg_hom.coe_to_ring_hom], 
+      exact hI.dpow_mem (ne_of_gt hq) (hφ m), },
+    { rintros n a ⟨q, m, hq : 0 < q, hm, rfl⟩,
+      simp only [alg_hom.coe_to_ring_hom, lift_dp_eq],
+      rw ← dpow_ι,
+      rw hI.dpow_comp n (ne_of_gt hq) (hφ m),
+      rw (divided_powers' R M).dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m),
+      simp only [_root_.map_mul, map_nat_cast], 
+      apply congr_arg2 _ rfl, 
+      rw dpow_ι, rw lift_dp_eq, }, }, 
 end
 
-lemma lift'_eq_dp_lift (R : Type*) [comm_ring R] {M : Type*} [add_comm_group M] [module R M]
-  (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N]
-  [module S N] [is_scalar_tower R S N] [algebra R (divided_power_algebra S N)]
-  [is_scalar_tower R S (divided_power_algebra S N)] (f : M →ₗ[R] N) : 
-  let φ : M →ₗ[R] divided_power_algebra S N := ((ι S).restrict_scalars R).comp f  in
-  let hφ : ∀ m, φ m ∈ aug_ideal S N := sorry in  
-  lift' R S f = divided_power_algebra.lift R M (divided_powers' S N) φ hφ := 
-  begin 
-  intros φ hφ,
+lemma lift'_eq_dp_lift (R : Type*) [comm_ring R] 
+  {M : Type*} [add_comm_group M] [module R M]
+  (S : Type*) [comm_ring S] [algebra R S] 
+  {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
+  (f : M →ₗ[R] N) : 
+  ∃ (hφ: ∀ m, ((ι S).restrict_scalars R).comp f m ∈ aug_ideal S N), 
+  lift' R S f = divided_power_algebra.lift R M (divided_powers' S N) (((ι S).restrict_scalars R).comp f) hφ := 
+begin 
+  suffices hφ : ∀ m, ((ι S).restrict_scalars R).comp f m ∈ aug_ideal S N,
+  use hφ,
   ext a,
+  obtain ⟨p, rfl⟩ := ideal.quotient.mk_surjective a, 
+  rw p.as_sum, 
+  simp only [map_sum],
+  apply congr_arg2 _ rfl, 
+  ext, 
+  rw [monomial_eq, finsupp.prod],
+  simp only [mv_polynomial.C_eq_smul_one, algebra.smul_mul_assoc, one_mul],
+  simp only [← mkₐ_eq_mk R (relI R M), map_smul],
+  apply congr_arg2 (•) rfl,
+  simp only [map_prod], 
+  apply congr_arg2 _ rfl,
+  ext ⟨n, m⟩, 
+  simp only [mkₐ_eq_mk, map_pow],
+  apply congr_arg2 _ _ rfl,
+  rw ← dp_eq_mk R n m, 
+  rw lift'_dp_eq, rw lift_dp_eq, 
+  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, function.comp_app, dpow_ι], 
 
-  
-
-  sorry
-
-  end
-
-
-
+  intro m,
+  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, function.comp_app, ι_mem_aug_ideal S N (f m)],
+end
 
 theorem roby_prop_8 (R : Type*) [comm_ring R] {M : Type*} [add_comm_group M] [module R M]
   (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N]
-  [module S N] [is_scalar_tower R S N] [algebra R (divided_power_algebra S N)]
-  [is_scalar_tower R S (divided_power_algebra S N)] (f : M →ₗ[R] N) :
+  [module S N] [is_scalar_tower R S N] (f : M →ₗ[R] N) :
   is_pd_morphism (divided_powers' R M) (divided_powers' S N) 
     (divided_power_algebra.lift' R S f) := 
 begin
-  split,
-  simp only [aug_ideal_eq_span],
-  rw ideal.map_span,
-  rw ideal.span_le, 
-  rintros b ⟨a, ⟨q, m, hq : 0 < q, hm, rfl⟩, rfl⟩,
-  simp only [alg_hom.coe_to_ring_hom, set_like.mem_coe, lift'_dp_eq],
-  exact ideal.subset_span ⟨q, f m, hq, set.mem_univ _, rfl⟩,
-
-  intros n a ha,
-
+  obtain ⟨hφ, h⟩ := lift'_eq_dp_lift R S f, 
+  rw h,
+  apply roby_theorem_2,
 end
-
 
 end divided_power_algebra
 

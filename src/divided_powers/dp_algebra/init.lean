@@ -72,9 +72,13 @@ namespace divided_power_algebra
 open mv_polynomial
 
 /-- If `R` is a `k`-algebra, then `divided_power_algebra R M` inherits a `k`-algebra structure. -/
-def algebra' (k : Type*) [comm_ring k] [algebra k R] : 
+instance algebra' (k : Type*) [comm_ring k] [algebra k R] : 
   algebra k (divided_power_algebra R M) :=
-ring_hom.to_algebra (ring_hom.comp (algebra_map R (divided_power_algebra R M)) (algebra_map k R))
+ideal.quotient.algebra k  
+
+instance (k : Type*) [comm_ring k] [algebra k R] : 
+  is_scalar_tower k R (divided_power_algebra R M) :=
+quotient.is_scalar_tower k R (relI R M)
 
 variables {R M}
 

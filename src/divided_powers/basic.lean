@@ -355,7 +355,7 @@ def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
 /- Roby65, Proposition 3.  (TODO: rename?) -/
 def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
   (hI : divided_powers I) (hJ : divided_powers J) {f : A →+* B} {S : set A} (hS : I = ideal.span S)
-  (hf : I.map f ≤ J) (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
+  (hf : I.map f ≤ J) (h : ∀ (n : ℕ) (x ∈ S), f (hI.dpow n x) = hJ.dpow n (f x)) : 
   pd_morphism hI hJ := 
 { to_ring_hom := f,
   ideal_comp  := hf,
@@ -365,7 +365,7 @@ def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A
     { intros y hy,
       simp only [set_like.mem_coe, pd_morphism_ideal, submodule.mem_mk, set.mem_sep_iff,
         set_like.mem_coe], 
-      exact ⟨by {rw hS, exact ideal.subset_span hy}, h ⟨y, hy⟩⟩ },
+      exact ⟨by {rw hS, exact ideal.subset_span hy}, (λ n, h n y hy)⟩ },
     rw [← ideal.span_le, ← hS] at hS',
     exact ((hS' hx).2 n).symm,
   end }
@@ -382,9 +382,17 @@ instance {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) :
 lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} 
   (hI : divided_powers I) {J : ideal B} (hJ : divided_powers J) {f : A →+* B} {S : set A} 
   (hS : I = ideal.span S) (hf : I.map f ≤ J)
-  (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
+  (h : ∀ (n : ℕ) (x ∈ S), f (hI.dpow n x) = hJ.dpow n (f x)) : 
   (pd_morphism_from_gens hI hJ hS hf h).to_ring_hom = f :=
 rfl
+
+/- lemma pd_morphism_from_gens_apply {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} 
+  (hI : divided_powers I) {J : ideal B} (hJ : divided_powers J) {f : A →+* B} {S : set A} 
+  (hS : I = ideal.span S) (hf : I.map f ≤ J)
+  (h : ∀ (n : ℕ) (x ∈ S), f (hI.dpow n x) = hJ.dpow n (f x)) (a : A) : 
+  (pd_morphism_from_gens hI hJ hS hf h) a = f a:=
+rfl
+-/
 
 /- Roby65, corollary after proposition 3 -/
 /-- Uniqueness of a divided powers given its values on a generating set -/
@@ -400,16 +408,31 @@ begin
   simp only [pd_id_id] at this,  exact this.symm, 
   { intro x,refl, },
   { rw [hI.dpow_null ha, hI'.dpow_null ha], },
-  { rintros ⟨a, ha⟩ n, 
+  { intros n a ha, 
     simp only [subtype.coe_mk, ring_hom.id_apply],
     exact hdp n a ha, },
   { simp only [ideal.map_id, le_refl], },
 end
 
 /- Generalization -/
-lemma dp_uniqueness' {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B} (hI :divided_powers I) (hJ : divided_powers J) (f : A →+* B) {S : set A} (hS : I = ideal.span S)
+lemma dp_uniqueness' {A B : Type*} [comm_ring A] [comm_ring B] 
+  {I : ideal A} {J : ideal B} (hI :divided_powers I) (hJ : divided_powers J) 
+  (f : A →+* B) 
+  {S : set A} (hS : I = ideal.span S) (hS' : ∀ s ∈ S, f s ∈ J)
   (hdp : ∀ (n : ℕ) (a ∈ S), f(hI.dpow n a) = hJ.dpow n (f a)) :
-  ∀ (n) (a ∈ I), f (hI.dpow n a)  = hJ.dpow n (f a) := sorry
+  ∀ (n) (a ∈ I), f (hI.dpow n a)  = hJ.dpow n (f a) := 
+begin
+  suffices : I.map f ≤ J,
+  let pd_f := pd_morphism_from_gens hI hJ hS this hdp,
+  intros n a ha,
+  rw ← pd_morphism_from_gens_coe hI hJ hS this hdp,
+  rw pd_f.dpow_comp n a ha,
+
+  rw hS, rw ideal.map_span, 
+  rw ideal.span_le,
+  rintros b ⟨a, has, rfl⟩, 
+  exact hS' a has, 
+end
 
 -- For the moment, the notation does not work
 -- notation `p(` A `,` I, `,` hI `)` →ₚ  `(` B `,` J, `,` hJ `)` := pd_morphism hI hJ
