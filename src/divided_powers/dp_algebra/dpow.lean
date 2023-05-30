@@ -149,13 +149,37 @@ include M  h -/
 -- Roby, lemma 3
 lemma cond_D_uniqueness {M : Type*} [add_comm_group M] [module R M] 
   (h : divided_powers (aug_ideal R M))
-  (hh : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x)
+  (hh : ∀ (n : ℕ) (x : M), h.dpow n (ι R x) = dp R n x)
   {S : Type*} [comm_ring S]
   [algebra R S] {J : ideal S} (hJ : divided_powers J) (f : M →ₗ[R] S) 
   (hf : ∀ m, f m ∈ J) :
   is_pd_morphism h hJ (divided_power_algebra.lift R M hJ f hf)  := 
-sorry
-
+begin
+  split,
+  { rw aug_ideal_eq_span, 
+    rw ideal.map_span,
+    rw ideal.span_le,
+    intro s,
+    rintro ⟨a,⟨n, m, hn : 0 < n, hm, rfl⟩, rfl⟩,
+    simp only [alg_hom.coe_to_ring_hom, set_like.mem_coe],
+    rw lift_dp_eq,
+    apply hJ.dpow_mem (ne_of_gt hn) (hf m), },
+  { intros n a ha,
+--    simp only [alg_hom.coe_to_ring_hom], 
+    apply symm,
+    rw dp_uniqueness' h hJ (lift R M hJ f hf) (aug_ideal_eq_span R M) _ _ n a ha,
+    { rintros a ⟨q, m, hq : 0 < q, hm, rfl⟩,
+      simp only [alg_hom.coe_to_ring_hom, lift_dp_eq],
+      exact hJ.dpow_mem (ne_of_gt hq) (hf m), },
+    { rintros n a ⟨q, m, hq : 0 < q, hm, rfl⟩,
+      simp only [alg_hom.coe_to_ring_hom, lift_dp_eq], 
+      rw hJ.dpow_comp n (ne_of_gt hq) (hf m),
+      rw ← hh q m, 
+      rw h.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m),
+      simp only [_root_.map_mul, map_nat_cast],
+      apply congr_arg2 _ rfl,
+      rw hh, rw lift_dp_eq, }, },
+end
 
 -- Roby, lemma 4
 lemma T_free_and_D_to_Q (A : Type*) [comm_ring A] 
@@ -275,28 +299,9 @@ theorem roby_theorem_2 (R : Type*) [comm_ring R] (M : Type*) [add_comm_group M] 
   (hφ : ∀ m, φ m ∈ I) : 
   is_pd_morphism (divided_powers' R M) hI (divided_power_algebra.lift R M hI φ hφ) :=
 begin
-  split,
-  { -- simp only [ideal.map, ideal.span_le], 
-    rw aug_ideal_eq_span,  
-    rw map_span,
-    rw ideal.span_le,
-    rintros x ⟨a, ⟨n,m,⟨hn : 0 < n, h, rfl⟩⟩, rfl⟩,
-    simp only [lift_dp_eq, alg_hom.coe_to_ring_hom, set_like.mem_coe],
-    exact hI.dpow_mem (ne_of_gt hn) (hφ  m), },
-  { intros n a ha, 
-    apply symm,
-    rw dp_uniqueness' (divided_powers' R M) hI (lift R M hI φ hφ) (aug_ideal_eq_span R M) _ _ n a ha,
-    { rintros a ⟨q, m, hq : 0 < q, hm, rfl⟩,
-      simp only [lift_dp_eq, alg_hom.coe_to_ring_hom], 
-      exact hI.dpow_mem (ne_of_gt hq) (hφ m), },
-    { rintros n a ⟨q, m, hq : 0 < q, hm, rfl⟩,
-      simp only [alg_hom.coe_to_ring_hom, lift_dp_eq],
-      rw ← dpow_ι,
-      rw hI.dpow_comp n (ne_of_gt hq) (hφ m),
-      rw (divided_powers' R M).dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m),
-      simp only [_root_.map_mul, map_nat_cast], 
-      apply congr_arg2 _ rfl, 
-      rw dpow_ι, rw lift_dp_eq, }, }, 
+  apply cond_D_uniqueness,
+  intros m n,
+  rw dpow_ι,
 end
 
 lemma lift'_eq_dp_lift (R : Type*) [comm_ring R] 
