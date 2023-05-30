@@ -42,7 +42,8 @@ end
 def cond_δ : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
   ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x 
 
-def cond_D (R : Type*) [_inst_1 : comm_ring R] := 
+universe w
+def cond_D (R : Type w) [_inst_1 : comm_ring R] := 
   ∀ (M : Type*) [add_comm_group M], by exactI ∀ [module R M],
   by exactI cond_δ R M
 
@@ -190,17 +191,106 @@ end
 lemma T_free_and_D_to_Q (A : Type*) [comm_ring A] 
   (hT_free : cond_T_free A) (hD : cond_D A) : cond_Q A :=
 begin
+  classical,
   -- simp only [cond_Q],
   intros S _ _ I hI, 
+  resetI,
+
   let R := mv_polynomial S A,
-  let M := (I →₀ R), 
-  let ΓM := divided_power_algebra R M, 
+  -- R = A[S] →ₐ[A] S, morphisme de A-algèbres
+  letI : algebra R S := ring_hom.to_algebra
+    (mv_polynomial.aeval id).to_ring_hom,
+  have mapRS : algebra_map R S = (mv_polynomial.aeval id).to_ring_hom := ring_hom.algebra_map_to_algebra _,
+  resetI,
+  haveI : is_scalar_tower A R S := {
+  smul_assoc := λ a r s, 
+  begin 
+    simp only [algebra.smul_def, mapRS], 
+    simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, _root_.map_mul, alg_hom.commutes],
+    rw ← mul_assoc, 
+  end, },
+  let hR := divided_powers_bot R, 
+  resetI,
+
+  let M := (↥I →₀ A),
+  -- have : module A M := finsupp.module ↥I A,
+  let f : M →ₗ[A] S := {
+  to_fun := λ p, finsupp.sum p (λ (i : I) (r : A), r • (i : S)),
+  map_add' := λ p q, 
+  begin
+    rw finsupp.sum_add_index, 
+    rintros ⟨a, ha⟩ ha', rw zero_smul, 
+    rintros ⟨a, ha⟩ ha' r r', rw add_smul,
+  end,
+  map_smul' := λ r p, 
+  begin
+    rw [ring_hom.id_apply, finsupp.smul_sum, finsupp.sum_smul_index], 
+    apply congr_arg2 _ rfl,
+    ext i q, rw ← smul_assoc, congr,
+    intro i, rw zero_smul, 
+  end, },
+  have hf : ∀ p, f p ∈ I,
+  { intro p, simp only [f, finsupp.sum], 
+    apply ideal.sum_mem, 
+    rintro ⟨a, ha⟩ ha', 
+    simp only [subtype.coe_mk],
+    rw ← algebra_map_smul S,
+    rw smul_eq_mul, 
+    exact I.mul_mem_left _ ha,
+    apply_instance, apply_instance, },
+
   simp only [cond_D] at hD,
   -- I can't do `specialize hD M` because the universes don't match
-  suffices : cond_δ R M, 
+  suffices : cond_δ A M, 
   simp only [cond_δ] at this,
   obtain ⟨hM, hM_eq⟩ := this,
+  
+  let T := tensor_product A R (divided_power_algebra A M),
+  suffices : ∃ T [comm_ring T], by exactI ∃ [algebra A T],
+    by exactI ∃ [module.free A T] (f : T →ₐ[A] S) (J : ideal T) (hJ : divided_powers J) (hf : hJ.is_pd_morphism hI ↑f), function.surjective f,
+  sorry,
+
+  use T,
+  use (by apply_instance),
+  use (by apply_instance),
+  split, sorry,
+  use algebra.tensor_product.product_map (is_scalar_tower.to_alg_hom A R S) (divided_power_algebra.lift A M hI f hf),
+
+
+  simp only [cond_T_free] at hT_free,
+  suffices : cond_τ A hR hM,
+  simp only [cond_τ] at this,
+  obtain ⟨hK, hR_pd, hM_pd⟩ := this,
+  use K A ⊥ (aug_ideal A M),
+  use hK,
+  split,
+  { split,
+    sorry,
+    sorry, },
+  { rw ← (algebra.range_top_iff_surjective _),
+    rw algebra.tensor_product.product_map_range, 
+    suffices : (is_scalar_tower.to_alg_hom A R S).range = ⊤,
+    rw [this, top_sup_eq],
+    rw algebra.range_top_iff_surjective,
+    intro s, use mv_polynomial.X s, 
+    simp only [mapRS, is_scalar_tower.coe_to_alg_hom', alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, aeval_X, id.def], },
+  { sorry, },
+  { sorry, },
+
 end
+
+example {A R S : Type*} [comm_ring A] [comm_ring R]
+ [comm_ring S] [algebra A R] [algebra A S] (f : R →ₐ[A] S) :
+function.surjective f ↔ f.range = ⊤ := 
+begin
+refine (algebra.range_top_iff_surjective f).symm,
+end
+
+-- algebra.tensor_product.product_map_range
+ 
+example {A R S T : Type*} [comm_ring A] [comm_ring R]
+ [comm_ring S] [comm_ring T] [algebra A R] [algebra A S] [algebra A T] (f : R →ₐ[A] T) (g : S →ₐ[A] T) :
+ false := sorry
 
 
 -- Roby, lemma 5
