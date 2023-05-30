@@ -68,15 +68,9 @@ example : N →ₐ[R] M ⊗[R] N := include_right
 
 example : N →ₐ[S] M ⊗[S] N := include_right
 
-def ψ_left' : 
-M →ₐ[R] (M ⊗[R] N) ⧸ (kerφ R S M N) := 
-  ((ideal.quotient.mkₐ S (kerφ R S M N)).restrict_scalars R).comp 
-    (algebra.tensor_product.include_left)
-
 def ψ_left : M →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) := {
 commutes' := λ s,
 begin
-
   simp only [alg_hom.to_fun_eq_coe, alg_hom.coe_comp, alg_hom.coe_restrict_scalars',  function.comp_app, include_left_apply], 
   simp only [algebra.algebra_map_eq_smul_one],
   suffices : (s • (1 : M)) ⊗ₜ[R] (1 : N) = s • 1, 
@@ -85,54 +79,33 @@ begin
 end .. ((ideal.quotient.mkₐ S (kerφ R S M N)).restrict_scalars R).comp 
     (algebra.tensor_product.include_left) } -- ψ_left' R S M N }
 
-def ψ_right' : 
-N →ₐ[R] (M ⊗[R] N) ⧸ (kerφ R S M N) := 
-  (ideal.quotient.mkₐ R (kerφ R S M N)).comp (include_right) 
-
-lemma is_S_linear : is_linear_map S (ψ_right' R S M N) :=
+def ψ_right : N →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) := {
+commutes' := λ s,
 begin
-  apply is_linear_map.mk,
-  { exact alg_hom.map_add _, }, 
-  intros r n, 
-  simp [ψ_right', include_right],
-  rw ← ideal.quotient.mkₐ_eq_mk S,
-  rw ← alg_hom.map_smul, 
+  simp only [alg_hom.to_fun_eq_coe, alg_hom.coe_comp, ideal.quotient.mkₐ_eq_mk, function.comp_app,
+  include_right_apply],
+  simp only [algebra.algebra_map_eq_smul_one],
+  rw [← (ideal.quotient.mk (kerφ R S M N)).map_one, ← ideal.quotient.mkₐ_eq_mk S, ← alg_hom.map_smul], 
   simp only [ideal.quotient.mkₐ_eq_mk],
   apply symm,
   rw ideal.quotient.eq ,
-  suffices : r • (1 : M) ⊗ₜ[R] n - (1 : M) ⊗ₜ[R] (r • n) 
-    = (r • (1 : M) ⊗ₜ[R] (1 : N) - (1 : M) ⊗ₜ[R] (r • (1 : N))) * ((1 : M) ⊗ₜ[R] n),
-  rw this, 
-  refine ideal.mul_mem_right ((1 : M) ⊗ₜ[R] n) _ _,
-  apply ideal.subset_span,
-  use ⟨r, set.mem_univ r, rfl⟩,
-
-  simp only [sub_mul, algebra.smul_mul_assoc, tmul_mul_tmul, comm_ring.one_mul, comm_ring.mul_one],
-end
-
-def ψ_right : 
-N →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) := {
-to_fun := ψ_right' R S M N, 
-map_zero' := (is_S_linear R S M N).map_zero,
-map_one' := rfl, 
-map_add' := (is_S_linear R S M N).map_add,
-map_mul' := alg_hom.map_mul _, 
-commutes' := λ r, by simp only [algebra.algebra_map_eq_smul_one, (is_S_linear R S M N).map_smul, alg_hom.map_one] }
-
+  exact ideal.subset_span ⟨s, set.mem_univ s, rfl⟩,
+end .. (ideal.quotient.mkₐ R (kerφ R S M N)).comp (include_right) }
+  
 def ψ : (M ⊗[S] N) →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) :=
 product_map (ψ_left R S M N) (ψ_right R S M N)
 
 lemma ψ_apply (m : M) (n : N) : ψ R S M N (m ⊗ₜ[S] n) 
   = ideal.quotient.mk _ (m ⊗ₜ[R] n) := 
 begin
-  simp only [ψ, ψ_left, ψ_right', ψ_right], 
-  simp only [alg_hom.coe_comp, ideal.quotient.mkₐ_eq_mk, product_map_apply_tmul, function.comp_app, include_left_apply,
-  alg_hom.coe_mk, include_right_apply],
+  simp only [ψ, ψ_left, ψ_right], 
+  simp only [alg_hom.to_fun_eq_coe, alg_hom.coe_comp, alg_hom.coe_restrict_scalars', ideal.quotient.mkₐ_eq_mk,
+  product_map_apply_tmul, alg_hom.coe_mk, function.comp_app, include_left_apply, include_right_apply],
   rw ← ring_hom.map_mul,
   simp only [tmul_mul_tmul, _root_.mul_one, _root_.one_mul],
 end
 
-example : (φ R S M N).to_ring_hom.ker = kerφ R S M N :=
+lemma kerφ_eq : (φ R S M N).to_ring_hom.ker = kerφ R S M N :=
 begin
   suffices h : kerφ R S M N ≤ ring_hom.ker (φ R S M N).to_ring_hom, 
   rw ring_hom.ker_eq_ideal_iff,
