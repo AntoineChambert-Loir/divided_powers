@@ -65,6 +65,8 @@ namespace divided_power_algebra
 
 open divided_power_algebra
 
+section tensor_product
+
 open_locale tensor_product
 
 variables (A R S : Type*) [comm_ring A] [comm_ring R] [algebra A R] [comm_ring S] [algebra A S] 
@@ -108,6 +110,8 @@ def cond_T (A : Type*) [comm_ring A] : Prop := ∀ (R S : Type*)[comm_ring R] [c
 by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
 cond_τ A hI hJ 
 
+end tensor_product
+
 section free
 
 -- hR_free, hS_free are not used for the def (they might be needed at lemmas about cond_T_free)
@@ -124,21 +128,22 @@ cond_τ A hI hJ
   function.surjective f.to_ring_hom
  -/
 
+
 def cond_Q (A : Type*) [comm_ring A] : Prop := 
 ∀ (R : Type*) [comm_ring R],
-by exactI ∀ [algebra A R] {I : ideal R} (hI : divided_powers I),
+by exactI ∀ [algebra A R] (I : ideal R) (hI : divided_powers I),
 ∃ (T : Type*) [comm_ring T], 
   by exactI ∃ [algebra A T], 
   by exactI ∃ [module.free A T] 
   (f : T →ₐ[A] R)  
-  {J : ideal T} (hJ : divided_powers J) (hf : is_pd_morphism hJ hI f),
+  (J : ideal T) (hJ : divided_powers J) (hf : is_pd_morphism hJ hI f),
   function.surjective f
   
 end free
 
-.
-
 section Proofs
+
+variables {R : Type*} [comm_ring R] 
 
 open divided_power_algebra
 
@@ -184,7 +189,19 @@ end
 -- Roby, lemma 4
 lemma T_free_and_D_to_Q (A : Type*) [comm_ring A] 
   (hT_free : cond_T_free A) (hD : cond_D A) : cond_Q A :=
-sorry
+begin
+  -- simp only [cond_Q],
+  intros S _ _ I hI, 
+  let R := mv_polynomial S A,
+  let M := (I →₀ R), 
+  let ΓM := divided_power_algebra R M, 
+  simp only [cond_D] at hD,
+  -- I can't do `specialize hD M` because the universes don't match
+  suffices : cond_δ R M, 
+  simp only [cond_δ] at this,
+  obtain ⟨hM, hM_eq⟩ := this,
+end
+
 
 -- Roby, lemma 5
 lemma ker_tens (A : Type*) [comm_ring A] {R S R' S' : Type*} 
