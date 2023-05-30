@@ -36,17 +36,18 @@ variables (R : Type*) [comm_ring R]
 variables (M : Type*) [comm_ring M] [algebra R M] [algebra S M] 
  (N : Type*) [comm_ring N] [algebra R N] [algebra S N]
 
+variables [algebra R S] [is_scalar_tower R S M] [is_scalar_tower R S N] 
+-- [tensor_product.compatible_smul R S M N]
 
-variables [algebra R S] [is_scalar_tower R S M] [is_scalar_tower R S N]
-
-open algebra.tensor_product
+open algebra.tensor_product tensor_product
 
 def φ : (M ⊗[R] N) →ₐ[R] (M ⊗[S] N) :=
-product_map (include_left) (include_right)
+algebra.tensor_product.product_map (algebra.tensor_product.include_left.restrict_scalars R) (algebra.tensor_product.include_right.restrict_scalars R)
 
 lemma φ_apply (m : M) (n: N) : 
   φ R S M N (m ⊗ₜ[R] n) = m ⊗ₜ[S] n := 
-  by simp only [φ, product_map_apply_tmul, include_left_apply, include_right_apply, tmul_mul_tmul, _root_.mul_one, _root_.one_mul]
+by simp only [φ, product_map_apply_tmul, alg_hom.coe_restrict_scalars', include_left_apply, include_right_apply, tmul_mul_tmul,
+  _root_.mul_one, _root_.one_mul]
 
 lemma φ_surjective : function.surjective (φ R S M N) :=
 begin
@@ -67,10 +68,22 @@ example : N →ₐ[R] M ⊗[R] N := include_right
 
 example : N →ₐ[S] M ⊗[S] N := include_right
 
-def ψ_left : 
-M →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) := 
-  (ideal.quotient.mkₐ S (kerφ R S M N)).comp
+def ψ_left' : 
+M →ₐ[R] (M ⊗[R] N) ⧸ (kerφ R S M N) := 
+  ((ideal.quotient.mkₐ S (kerφ R S M N)).restrict_scalars R).comp 
     (algebra.tensor_product.include_left)
+
+def ψ_left : M →ₐ[S] (M ⊗[R] N) ⧸ (kerφ R S M N) := {
+commutes' := λ s,
+begin
+
+  simp only [alg_hom.to_fun_eq_coe, alg_hom.coe_comp, alg_hom.coe_restrict_scalars',  function.comp_app, include_left_apply], 
+  simp only [algebra.algebra_map_eq_smul_one],
+  suffices : (s • (1 : M)) ⊗ₜ[R] (1 : N) = s • 1, 
+  rw [this, alg_hom.map_smul, alg_hom.map_one], 
+  refl,
+end .. ((ideal.quotient.mkₐ S (kerφ R S M N)).restrict_scalars R).comp 
+    (algebra.tensor_product.include_left) } -- ψ_left' R S M N }
 
 def ψ_right' : 
 N →ₐ[R] (M ⊗[R] N) ⧸ (kerφ R S M N) := 
