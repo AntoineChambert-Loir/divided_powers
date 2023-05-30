@@ -318,7 +318,15 @@ structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
 (dpow_comp : ∀ (n : ℕ) (a ∈ I), 
   hJ.dpow n (to_ring_hom a) = to_ring_hom (hI.dpow n a))
 
---TODO: add funlike
+def pd_morphism_fun_like {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
+  (hI : divided_powers I) (hJ : divided_powers J) : 
+  fun_like (pd_morphism hI hJ) A (λ _x : A, B) := {
+coe := λ h, h.to_ring_hom,
+coe_injective' := λ h h' hh', 
+begin 
+  cases h, cases h', congr,
+  dsimp at hh', ext, rw hh',
+end }
 
 /- Roby65, Proposition 2. (TODO: rename?)-/
 def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
