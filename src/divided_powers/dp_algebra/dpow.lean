@@ -9,6 +9,8 @@ import ring_theory.tensor_product
 
 noncomputable theory
 
+universes u v v₁ v₂ w 
+
 section 
 
 
@@ -39,15 +41,13 @@ begin
     h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), h1 m,  h1' m], 
 end
 
-universes u v v₁ v₂ w 
-def cond_δ (R : Type u) [comm_ring R] (M : Type v) [add_comm_group M] [module R M] :
-  Prop :=
-  ∃ (h : divided_powers (aug_ideal R M)), 
-  ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x 
+
+def cond_δ (R : Type u) [comm_ring R] (M : Type u) [add_comm_group M] [module R M] : Prop :=
+∃ (h : divided_powers (aug_ideal R M)), ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x 
 
 def cond_D (R : Type u) [comm_ring R] : Prop :=
-∀ (M : Type v) [add_comm_group M], by exactI ∀ [module R M],
-by exactI cond_δ R M 
+∀ (M : Type u) [add_comm_group M], by exactI ∀ [module R M], by exactI cond_δ R M 
+
 
 end divided_power_algebra
 
@@ -105,8 +105,6 @@ begin
     le_sup_right hK hK' hJK hJK',
 end
 
-universes u v v₁ v₂ w 
-
 def cond_τ (A : Type u) [comm_ring A] {R : Type v₁} [comm_ring R] [algebra A R] 
   {S : Type v₂} [comm_ring S] [algebra A S] 
   {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J) : Prop :=
@@ -125,8 +123,6 @@ section free
 
 -- hR_free, hS_free are not used for the def (they might be needed at lemmas about cond_T_free)
 
-universes u v v₁ v₂ w 
-
 def cond_T_free (A : Type u) [comm_ring A] : Prop := 
 ∀ (R : Type v₁) [comm_ring R] (S : Type v₂) [comm_ring S], 
 by exactI ∀ [algebra A R] [algebra A S],
@@ -142,9 +138,9 @@ cond_τ A hI hJ
  -/
 
 def cond_Q (A : Type u) [comm_ring A] : Prop := 
-∀ (R : Type v) [comm_ring R],
+∀ (R : Type u) [comm_ring R],
 by exactI ∀ [algebra A R] (I : ideal R) (hI : divided_powers I),
-∃ (T : Type (max u v)) [comm_ring T], 
+∃ (T : Type u) [comm_ring T], 
   by exactI ∃ [algebra A T], 
   by exactI ∃ [module.free A T] 
   (f : T →ₐ[A] R)  
@@ -160,7 +156,8 @@ variables {R : Type*} [comm_ring R]
 open divided_power_algebra
 
 /- 
-variables {M : Type*} [add_comm_group M] [module R M] (h : divided_powers (aug_ideal R M))(hh : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x)
+variables {M : Type*} [add_comm_group M] [module R M] (h : divided_powers (aug_ideal R M))
+(hh : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x)
 include M  h -/
 
 -- Roby, lemma 3
@@ -199,7 +196,7 @@ begin
 end
 
 -- Roby, lemma 4
-lemma T_free_and_D_to_Q (A : Type*) [comm_ring A] :
+lemma T_free_and_D_to_Q (A : Type u) [comm_ring A] :
   cond_T_free A → cond_D A → cond_Q A :=
 begin
   intros hT_free hD, 
@@ -212,13 +209,15 @@ begin
   -- R = A[S] →ₐ[A] S, morphisme de A-algèbres
   letI : algebra R S := ring_hom.to_algebra
     (mv_polynomial.aeval id).to_ring_hom,
-  have mapRS : algebra_map R S = (mv_polynomial.aeval id).to_ring_hom := ring_hom.algebra_map_to_algebra _,
+  have mapRS : algebra_map R S = (mv_polynomial.aeval id).to_ring_hom := 
+  ring_hom.algebra_map_to_algebra _,
   resetI,
   haveI : is_scalar_tower A R S := {
   smul_assoc := λ a r s, 
   begin 
     simp only [algebra.smul_def, mapRS], 
-    simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, _root_.map_mul, alg_hom.commutes],
+    simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, _root_.map_mul, 
+      alg_hom.commutes],
     rw ← mul_assoc, 
   end, },
   suffices dec_eq_R : decidable_eq R, haveI := dec_eq_R , 
@@ -253,6 +252,8 @@ begin
     exact I.mul_mem_left _ ha,
     apply_instance, apply_instance, },
 
+  specialize hD M,
+
   -- I can't do `specialize hD M` because the universes don't match
   suffices : cond_δ A M, 
   simp only [cond_δ] at this,
@@ -261,14 +262,16 @@ begin
   let T := tensor_product A R (divided_power_algebra A M),
   -- because universes don't match
   suffices : ∃ (T : Type*) [comm_ring T], by exactI ∃ [algebra A T],
-    by exactI ∃ [module.free A T] (f : T →ₐ[A] S) (J : ideal T) (hJ : divided_powers J) (hf : hJ.is_pd_morphism hI ↑f), function.surjective f,
+    by exactI ∃ [module.free A T] (f : T →ₐ[A] S) (J : ideal T) (hJ : divided_powers J) 
+      (hf : hJ.is_pd_morphism hI ↑f), function.surjective f,
   sorry,
 
   use T,
   use (by apply_instance),
   use (by apply_instance),
   split, sorry,
-  use algebra.tensor_product.product_map (is_scalar_tower.to_alg_hom A R S) (divided_power_algebra.lift A M hI f hf),
+  use algebra.tensor_product.product_map (is_scalar_tower.to_alg_hom A R S) 
+    (divided_power_algebra.lift A M hI f hf),
 
   suffices : cond_τ A hR hM,
   simp only [cond_τ] at this,
@@ -285,7 +288,8 @@ begin
     rw [this, top_sup_eq],
     rw algebra.range_top_iff_surjective,
     intro s, use mv_polynomial.X s, 
-    simp only [mapRS, is_scalar_tower.coe_to_alg_hom', alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, aeval_X, id.def], },
+    simp only [mapRS, is_scalar_tower.coe_to_alg_hom', alg_hom.to_ring_hom_eq_coe, 
+      alg_hom.coe_to_ring_hom, aeval_X, id.def], },
   
   { simp only [cond_T_free] at hT_free, 
 
@@ -296,6 +300,8 @@ begin
   sorry, sorry,
 end
 
+#exit
+
 example {A R S : Type*} [comm_ring A] [comm_ring R]
  [comm_ring S] [algebra A R] [algebra A S] (f : R →ₐ[A] S) :
 function.surjective f ↔ f.range = ⊤ := 
@@ -305,9 +311,8 @@ end
 
 -- algebra.tensor_product.product_map_range
  
-example {A R S T : Type*} [comm_ring A] [comm_ring R]
- [comm_ring S] [comm_ring T] [algebra A R] [algebra A S] [algebra A T] (f : R →ₐ[A] T) (g : S →ₐ[A] T) :
- false := sorry
+example {A R S T : Type*} [comm_ring A] [comm_ring R] [comm_ring S] [comm_ring T] [algebra A R]
+  [algebra A S] [algebra A T] (f : R →ₐ[A] T) (g : S →ₐ[A] T) : false := sorry
 
 
 -- Roby, lemma 5
@@ -353,14 +358,15 @@ sorry
 
 
 -- Roby, lemma 8
-lemma cond_T_and_cond_D_imply_cond_D' (A : Type*) [comm_ring A] (R : Type*) [comm_ring R] [algebra A R] 
-(hT : cond_T A) (hD : cond_D A) : cond_D R :=
+lemma cond_T_and_cond_D_imply_cond_D' (A : Type*) [comm_ring A] (R : Type*) [comm_ring R]
+  [algebra A R] (hT : cond_T A) (hD : cond_D A) : cond_D R :=
 sorry
 
 -- Roby, lemma 9 is in roby9
 
 -- Roby, lemma 10
-lemma cond_T_implies_cond_T'_free (A : Type*)[comm_ring A] (R : Type*) [comm_ring R] [algebra A R] (hA : cond_T A) : cond_T_free R := sorry
+lemma cond_T_implies_cond_T'_free (A : Type*)[comm_ring A] (R : Type*) [comm_ring R] [algebra A R] 
+  (hA : cond_T A) : cond_T_free R := sorry
 
 -- Roby, lemma 11
 lemma cond_T_free_int : cond_T_free ℤ := sorry
@@ -376,7 +382,8 @@ lemma cond_T_int : cond_T ℤ := cond_Q_and_cond_T_free_imply_cond_T ℤ (cond_Q
 lemma cond_D_holds (A : Type*) [comm_ring A] : cond_D A :=
 cond_T_and_cond_D_imply_cond_D' ℤ A  cond_T_int cond_D_int
 
-lemma cond_T_free_holds (A : Type*) [comm_ring A] : cond_T_free A := cond_T_implies_cond_T'_free ℤ A cond_T_int
+lemma cond_T_free_holds (A : Type*) [comm_ring A] : cond_T_free A := 
+cond_T_implies_cond_T'_free ℤ A cond_T_int
 
 lemma cond_Q_holds (A : Type*) [comm_ring A] : cond_Q A := 
 T_free_and_D_to_Q A (cond_T_free_holds A) (cond_D_holds A) 
@@ -434,7 +441,8 @@ lemma lift'_eq_dp_lift (R : Type*) [comm_ring R]
   {N : Type*} [add_comm_group N] [module R N] [module S N] [is_scalar_tower R S N] 
   (f : M →ₗ[R] N) : 
   ∃ (hφ: ∀ m, ((ι S).restrict_scalars R).comp f m ∈ aug_ideal S N), 
-  lift' R S f = divided_power_algebra.lift R M (divided_powers' S N) (((ι S).restrict_scalars R).comp f) hφ := 
+  lift' R S f = divided_power_algebra.lift R M (divided_powers' S N) 
+    (((ι S).restrict_scalars R).comp f) hφ := 
 begin 
   suffices hφ : ∀ m, ((ι S).restrict_scalars R).comp f m ∈ aug_ideal S N,
   use hφ,
@@ -455,10 +463,12 @@ begin
   apply congr_arg2 _ _ rfl,
   rw ← dp_eq_mk R n m, 
   rw lift'_dp_eq, rw lift_dp_eq, 
-  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, function.comp_app, dpow_ι], 
+  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe,
+    function.comp_app, dpow_ι], 
 
   intro m,
-  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, function.comp_app, ι_mem_aug_ideal S N (f m)],
+  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, function.comp_app,
+    ι_mem_aug_ideal S N (f m)],
 end
 
 theorem roby_prop_8 (R : Type*) [comm_ring R] {M : Type*} [add_comm_group M] [module R M]
