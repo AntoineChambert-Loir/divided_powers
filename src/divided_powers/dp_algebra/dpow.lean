@@ -155,6 +155,8 @@ variables {R : Type*} [comm_ring R]
 
 open divided_power_algebra
 
+open_locale tensor_product
+
 /- 
 variables {M : Type*} [add_comm_group M] [module R M] (h : divided_powers (aug_ideal R M))
 (hh : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x)
@@ -259,7 +261,7 @@ begin
   simp only [cond_δ] at this,
   obtain ⟨hM, hM_eq⟩ := this,
   
-  let T := tensor_product A R (divided_power_algebra A M),
+  let T := R ⊗[A] (divided_power_algebra A M),
   -- because universes don't match
   suffices : ∃ (T : Type*) [comm_ring T], by exactI ∃ [algebra A T],
     by exactI ∃ [module.free A T] (f : T →ₐ[A] S) (J : ideal T) (hJ : divided_powers J) 
@@ -299,21 +301,6 @@ begin
   { sorry, },
   sorry, sorry,
 end
-
-#exit
-
-example {A R S : Type*} [comm_ring A] [comm_ring R]
- [comm_ring S] [algebra A R] [algebra A S] (f : R →ₐ[A] S) :
-function.surjective f ↔ f.range = ⊤ := 
-begin
-refine (algebra.range_top_iff_surjective f).symm,
-end
-
--- algebra.tensor_product.product_map_range
- 
-example {A R S T : Type*} [comm_ring A] [comm_ring R] [comm_ring S] [comm_ring T] [algebra A R]
-  [algebra A S] [algebra A T] (f : R →ₐ[A] T) (g : S →ₐ[A] T) : false := sorry
-
 
 -- Roby, lemma 5
 lemma ker_tens (A : Type*) [comm_ring A] {R S R' S' : Type*} 
