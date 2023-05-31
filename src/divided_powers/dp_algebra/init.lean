@@ -97,6 +97,7 @@ lemma dp_eq_mkₐ (n : ℕ) (m : M) : dp R n m = mkₐ R (relI R M) (X ⟨n, m�
 lemma dp_eq_mk (n : ℕ) (m : M) : dp R n m = mk (relI R M) (X (⟨n, m⟩ : ℕ × M)) :=
 by rw [dp, mkₐ_eq_mk]
 
+
 lemma dp_zero (m : M) : dp R 0 m = 1 :=
 begin
   rw [dp, mkₐ_eq_mk, ← map_one (ideal.quotient.mk (relI R M)), ideal.quotient.eq],
@@ -107,6 +108,14 @@ lemma dp_smul (r : R) (n  : ℕ) (m : M) : dp R n (r • m) = r ^ n • dp R n m
 begin
   rw [dp, dp, ← map_smul, mkₐ_eq_mk R, ideal.quotient.eq], 
   exact sub_mem_rel_of_rel rel.smul,
+end
+
+lemma dp_null (n : ℕ) : dp R n (0 : M) = ite (n = 0) 1 0 := 
+begin
+  cases nat.eq_zero_or_pos n with hn hn,
+  { rw if_pos hn, rw hn, rw dp_zero, },
+  { rw if_neg (ne_of_gt hn), rw ← zero_smul R (0 : M),
+    rw dp_smul, rw zero_pow hn, rw zero_smul, },
 end
 
 lemma dp_mul (n p : ℕ) (m : M) : dp R n m * dp R p m = (n + p).choose n • dp R (n + p) m :=
@@ -121,6 +130,22 @@ begin
   simp only [dp, mkₐ_eq_mk, ← _root_.map_mul, ← map_sum, ideal.quotient.eq], 
   exact sub_mem_rel_of_rel rel.add,
 end
+
+lemma dp_sum_smul {ι : Type*} [decidable_eq ι] (a : ι → R) (n : ι → ℕ) (x : ι → M) 
+  (s : finset ι) (q : ℕ):
+  dp R q (s.sum (λ i, a i • x i)) = 
+    (finset.sym s q).sum (λ k, s.prod (λ i, (a i) ^ (multiset.count i k)) • s.prod (λ i, dp R (multiset.count i k) (x i))) := 
+begin
+  induction s using finset.induction with i s hi hs,
+  { simp only [sum_empty, prod_empty, one_smul, sum_const, nat.smul_one_eq_coe, dp_null],
+    induction q with q hq,
+    simp only [eq_self_iff_true, if_true, sym_zero, card_singleton, algebra_map.coe_one],
+    simp only [nat.succ_ne_zero, if_false, sym_empty, card_empty, algebra_map.coe_zero], },
+  
+  rw finset.sum_insert,
+
+end
+
 
 lemma unique_on_dp {A : Type*} [comm_ring A] [algebra R A]
   {f g : divided_power_algebra R M →ₐ[R] A} (h : ∀ n m, f (dp R n m) = g (dp R n m)) :

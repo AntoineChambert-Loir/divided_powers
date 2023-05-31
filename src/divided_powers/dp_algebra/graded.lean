@@ -68,8 +68,6 @@ def divided_power_galgebra [decidable_eq R] [decidable_eq M] :
 graded_quot_alg R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
   (divided_power_algebra.relI R M) (divided_power_algebra.relI_is_homogeneous R M)
 
-namespace divided_power_algebra
-
 open mv_polynomial
 
 section decidable_eq

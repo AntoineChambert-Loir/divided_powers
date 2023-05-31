@@ -238,14 +238,17 @@ begin
   rw [nat.multinomial_insert _ _ hi, mul_comm, nat.cast_mul, finset.sum_insert hi] }
 end
 
+-- A slightly more general result is in free.lean 
+-- TODO : can probably be simplified using exponential series
 -- Also : can it be used to deduce dpow_comp from the rest?
 /-- A generic “multinomial” theorem for divided powers — but without multinomial coefficients 
   — using only dpow_zero, dpow_add and dpow_eval_zero  -/
-lemma sum_dpow_aux (dpow : ℕ → A → A) (dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
+lemma sum_dpow_aux (dpow : ℕ → A → A) 
+  (dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
   (dpow_add : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y) =
     finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
-  (dpow_eval_zero : ∀ {n : ℕ} (hn : n ≠ 0), dpow n 0 = 0) {ι : Type*} [decidable_eq ι]
-  {s : finset ι} {x : ι → A} (hx : ∀ i ∈ s, x i ∈ I) : 
+  (dpow_eval_zero : ∀ {n : ℕ} (hn : n ≠ 0), dpow n 0 = 0) 
+  {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A} (hx : ∀ i ∈ s, x i ∈ I) : 
   ∀ (n : ℕ), dpow n (s.sum x) = 
     (finset.sym s n).sum (λ k, s.prod (λ i, dpow (multiset.count i k) (x i))) := 
 begin

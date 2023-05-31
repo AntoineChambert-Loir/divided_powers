@@ -233,13 +233,11 @@ begin
   λ s, s ⊆ c.support → (s.prod (λ i, (f i) ^ c i) ∈ 𝒜 (s.sum (λ i, c i • d i))),
   apply @finset.induction_on σ p _ c.support,
   { exact imp_intro (set_like.one_mem_graded 𝒜) },
-  { intros a s ha hs,
-    by_cases hs' : (insert a s) ⊆ c.support,  
-    { apply imp_intro,
-      rw [finset.prod_insert ha, finset.sum_insert ha],
-      exact set_like.mul_mem_graded (set_like.pow_mem_graded _ (hc a (hs' (mem_insert_self a s))))
-       (hs (subset_trans (subset_insert a s) hs')) },
-    { exact not.elim hs' }},
+  { intros a s ha hs hs',
+    rw [finset.prod_insert ha, finset.sum_insert ha],
+    exact set_like.mul_mem_graded 
+      (set_like.pow_mem_graded _ (hc a (hs' (mem_insert_self a s))))
+      (hs (subset_trans (subset_insert a s) hs')) },
   { exact subset_rfl },
 end
 
