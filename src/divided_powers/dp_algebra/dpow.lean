@@ -39,13 +39,15 @@ begin
     h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), h1 m,  h1' m], 
 end
 
-def cond_δ : Prop := ∃ (h : divided_powers (aug_ideal R M)), 
+universes u v v₁ v₂ w 
+def cond_δ (R : Type u) [comm_ring R] (M : Type v) [add_comm_group M] [module R M] :
+  Prop :=
+  ∃ (h : divided_powers (aug_ideal R M)), 
   ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x 
 
-universe w
-def cond_D (R : Type w) [_inst_1 : comm_ring R] := 
-  ∀ (M : Type*) [add_comm_group M], by exactI ∀ [module R M],
-  by exactI cond_δ R M
+def cond_D (R : Type u) [comm_ring R] : Prop :=
+∀ (M : Type v) [add_comm_group M], by exactI ∀ [module R M],
+by exactI cond_δ R M 
 
 end divided_power_algebra
 
@@ -103,13 +105,19 @@ begin
     le_sup_right hK hK' hJK hJK',
 end
 
-def cond_τ : Prop :=
+universes u v v₁ v₂ w 
+
+def cond_τ (A : Type u) [comm_ring A] {R : Type v₁} [comm_ring R] [algebra A R] 
+  {S : Type v₂} [comm_ring S] [algebra A S] 
+  {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J) : Prop :=
 ∃ hK : divided_powers (K A I J), 
   is_pd_morphism hI hK (i_1 A R S) ∧ is_pd_morphism hJ hK (i_2 A R S)
 
-def cond_T (A : Type*) [comm_ring A] : Prop := ∀ (R S : Type*)[comm_ring R] [comm_ring S], by exactI ∀ [algebra A R] [algebra A S],
+def cond_T (A : Type*) [comm_ring A] : Prop := 
+∀ (R : Type v₁)[comm_ring R] (S : Type v₂) [comm_ring S], 
+by exactI ∀ [algebra A R] [algebra A S],
 by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
-cond_τ A hI hJ 
+cond_τ A hI hJ
 
 end tensor_product
 
@@ -117,7 +125,11 @@ section free
 
 -- hR_free, hS_free are not used for the def (they might be needed at lemmas about cond_T_free)
 
-def cond_T_free (A : Type*) [comm_ring A] : Prop := ∀ (R S : Type*) [comm_ring R] [comm_ring S], by exactI ∀ [algebra A R] [algebra A S],
+universes u v v₁ v₂ w 
+
+def cond_T_free (A : Type u) [comm_ring A] : Prop := 
+∀ (R : Type v₁) [comm_ring R] (S : Type v₂) [comm_ring S], 
+by exactI ∀ [algebra A R] [algebra A S],
 by exactI ∀ (hR_free : module.free A R) (hS_free : module.free A S),
 by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
 cond_τ A hI hJ
@@ -129,11 +141,10 @@ cond_τ A hI hJ
   function.surjective f.to_ring_hom
  -/
 
-
-def cond_Q (A : Type*) [comm_ring A] : Prop := 
-∀ (R : Type*) [comm_ring R],
+def cond_Q (A : Type u) [comm_ring A] : Prop := 
+∀ (R : Type v) [comm_ring R],
 by exactI ∀ [algebra A R] (I : ideal R) (hI : divided_powers I),
-∃ (T : Type*) [comm_ring T], 
+∃ (T : Type (max u v)) [comm_ring T], 
   by exactI ∃ [algebra A T], 
   by exactI ∃ [module.free A T] 
   (f : T →ₐ[A] R)  
@@ -188,10 +199,11 @@ begin
 end
 
 -- Roby, lemma 4
-lemma T_free_and_D_to_Q (A : Type*) [comm_ring A] 
-  (hT_free : cond_T_free A) (hD : cond_D A) : cond_Q A :=
+lemma T_free_and_D_to_Q (A : Type*) [comm_ring A] :
+  cond_T_free A → cond_D A → cond_Q A :=
 begin
-  classical,
+  intros hT_free hD, 
+  -- simp only [cond_Q, cond_D, cond_T_free] at *,
   -- simp only [cond_Q],
   intros S _ _ I hI, 
   resetI,
@@ -209,9 +221,11 @@ begin
     simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, _root_.map_mul, alg_hom.commutes],
     rw ← mul_assoc, 
   end, },
+  suffices dec_eq_R : decidable_eq R, haveI := dec_eq_R , 
   let hR := divided_powers_bot R, 
   resetI,
 
+  suffices dec_eq_I : decidable_eq I, haveI := dec_eq_I,
   let M := (↥I →₀ A),
   -- have : module A M := finsupp.module ↥I A,
   let f : M →ₗ[A] S := {
@@ -239,14 +253,14 @@ begin
     exact I.mul_mem_left _ ha,
     apply_instance, apply_instance, },
 
-  simp only [cond_D] at hD,
   -- I can't do `specialize hD M` because the universes don't match
   suffices : cond_δ A M, 
   simp only [cond_δ] at this,
   obtain ⟨hM, hM_eq⟩ := this,
   
   let T := tensor_product A R (divided_power_algebra A M),
-  suffices : ∃ T [comm_ring T], by exactI ∃ [algebra A T],
+  -- because universes don't match
+  suffices : ∃ (T : Type*) [comm_ring T], by exactI ∃ [algebra A T],
     by exactI ∃ [module.free A T] (f : T →ₐ[A] S) (J : ideal T) (hJ : divided_powers J) (hf : hJ.is_pd_morphism hI ↑f), function.surjective f,
   sorry,
 
@@ -256,8 +270,6 @@ begin
   split, sorry,
   use algebra.tensor_product.product_map (is_scalar_tower.to_alg_hom A R S) (divided_power_algebra.lift A M hI f hf),
 
-
-  simp only [cond_T_free] at hT_free,
   suffices : cond_τ A hR hM,
   simp only [cond_τ] at this,
   obtain ⟨hK, hR_pd, hM_pd⟩ := this,
@@ -274,9 +286,14 @@ begin
     rw algebra.range_top_iff_surjective,
     intro s, use mv_polynomial.X s, 
     simp only [mapRS, is_scalar_tower.coe_to_alg_hom', alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, aeval_X, id.def], },
-  { sorry, },
-  { sorry, },
+  
+  { simp only [cond_T_free] at hT_free, 
 
+  
+  sorry, },
+  
+  { sorry, },
+  sorry, sorry,
 end
 
 example {A R S : Type*} [comm_ring A] [comm_ring R]
