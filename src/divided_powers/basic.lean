@@ -311,7 +311,7 @@ def is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : 
 (I.map f) ≤ J ∧  ∀ (n : ℕ) (a ∈ I), hJ.dpow n (f a) = f (hI.dpow n a)
 
 /-- The structure of a pd_morphism between rings endowed with pd-rings -/
-structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
+@[ext] structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
   (hI : divided_powers I) (hJ : divided_powers J) :=
 (to_ring_hom : A →+* B)
 (ideal_comp : I.map to_ring_hom ≤ J)
@@ -385,6 +385,14 @@ lemma pd_morphism_from_gens_coe {A B : Type*} [comm_ring A] [comm_ring B] {I : i
   (h : ∀ (x : S) (n : ℕ), f (hI.dpow n x) = hJ.dpow n (f x)) : 
   (pd_morphism_from_gens hI hJ hS hf h).to_ring_hom = f :=
 rfl
+
+def pd_morphism_of_le {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
+  {B : Type*} [comm_ring B] {J : ideal B} (hJ : divided_powers J) (f : pd_morphism hI hI) 
+  {K : ideal B} (hJK : K ≤ J) : 
+  pd_morphism hI hI :=
+{ to_ring_hom  := ring_hom.id A,
+  ideal_comp   := by simp only [ideal.map_id, le_refl],
+  dpow_comp    := λ n a ha, by simp only [ring_hom.id_apply] }
 
 /- Roby65, corollary after proposition 3 -/
 /-- Uniqueness of a divided powers given its values on a generating set -/
