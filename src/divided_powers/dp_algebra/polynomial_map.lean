@@ -72,33 +72,90 @@ instance add_comm_monoid : add_comm_monoid (polynomial_map A M N) := {
 add := has_add.add, 
 add_assoc := λ f g h,
 begin rw ext_iff, ext R _ _ m, resetI, simp only [add_def, add_assoc], end,
- zero := sorry ,
- zero_add := sorry,
- add_zero := sorry,
- nsmul := sorry,
- nsmul_zero' := sorry,
- nsmul_succ' := sorry,
- add_comm := sorry}
-
+ zero := {
+  to_fun := λ R _, by exactI λ _, by exactI 0, 
+  is_compat := λ R R' _ _ _ _ φ, rfl, },
+zero_add := λ f, 
+begin
+ rw ext_iff, ext R _ _ m, simp only [add_def, zero_add], 
+end,
+add_zero := λ f,
+begin
+ rw ext_iff, ext R _ _ m, simp only [add_def, add_zero], 
+end,
+nsmul := λ n f, {
+  to_fun := λ R _, by exactI λ _, by exactI (n • (f.to_fun R)),
+  is_compat := λ R R' _ _ _ _ φ, 
+  begin ext m, simp only [is_compat_apply, linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, function.comp_app,
+  linear_map.smul_apply, map_nsmul], end, },
+nsmul_zero' := λ f,
+begin
+  rw ext_iff, ext R _ _ m, simp only [zero_smul, linear_map.zero_apply], refl,
+end,
+nsmul_succ' := λ n f, 
+begin
+  rw ext_iff, ext R _ _m, simp only [add_def, linear_map.smul_apply, linear_map.add_apply, nat.succ_eq_one_add, add_smul, one_smul], 
+end,
+add_comm := λ f g,
+begin
+  rw ext_iff, ext R _ _ m, simp only [add_def, linear_map.add_apply],
+  rw add_comm,
+end }
 
 instance has_smul : has_smul A (polynomial_map A M N) := {
 smul := λ a f, {
   to_fun := λ R _, by exactI λ _, by exactI a • (f.to_fun R),
-  is_compat := sorry } } 
+  is_compat := λ R R' _ _ _ _ φ, 
+  begin 
+    ext m, 
+    simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, function.comp_app, linear_map.smul_apply,
+  linear_map.map_smulₛₗ, ring_hom.id_apply, is_compat_apply],
+  end } } 
 
-instance module : module A (polynomial_map A M N) := sorry 
+lemma smul_def (a : A) : (a • f).to_fun R = a • (f.to_fun R) := rfl 
+
+instance : mul_action A (polynomial_map A M N) := { 
+one_smul := λ f, 
+begin
+  rw ext_iff, ext R _ _ m, simp only [smul_def, one_smul],
+end,
+mul_smul := λ a b f,
+begin
+  rw ext_iff, ext R _ _ m, simp only [smul_def, linear_map.smul_apply, mul_smul], 
+end,}
+
+instance : distrib_mul_action A (polynomial_map A M N) := { 
+  smul_zero := λ a, by refl, 
+  smul_add := λ a f g, 
+  begin
+    rw ext_iff, ext R _ _ m, simp only [smul_def, add_def, smul_add],
+  end, }
+
+instance module : module A (polynomial_map A M N) := {
+add_smul := λ a b f,
+begin
+  rw ext_iff, ext R _ _ m, simp [smul_def,add_def, add_smul], 
+end,
+zero_smul := λ f, 
+begin  
+  rw ext_iff, ext R _ _ m, simp only [smul_def, zero_smul, linear_map.zero_apply], refl,
+end, }
+
 
 example : A ⊗[A] M ≃ₗ[A] M := tensor_product.lid A M
 example (k : ι →₀ ℕ): (mv_power_series ι A) ⊗[A] N →ₗ[A] N :=
  (tensor_product.lid A N).to_linear_map.comp ((mv_power_series.coeff A k).rtensor N)
 
-
+/-- The coefficients of a `polynomial_map` -/
 noncomputable def coeff (f : polynomial_map A M N) {ι : Type u} 
   (x : ι →₀ M) (k : ι →₀ ℕ) : N :=
   tensor_product.lid A N ((linear_map.mv_polynomial.coeff k).rtensor N  (
   ((f.to_fun (mv_polynomial ι A)).restrict_scalars A) (
     finsupp.sum x (λ i m, (mv_polynomial.X i) ⊗ₜ[A] m) )))
 
+-- TODO : same stuff as a linear_map
+
+-- TODO : go on…
 
 end polynomial_map
 
