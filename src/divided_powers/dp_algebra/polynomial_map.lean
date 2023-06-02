@@ -211,72 +211,165 @@ right_inv := sorry,
 }
  -/
 
-lemma finite_support_coeff {ι : Type u} [fintype ι] (m : ι → M) (f : polynomial_map A M N):
-  (λ k, coeff m k f).support.finite ∧ 
-  f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i))
-  = finsum (λ (k : ι →₀ ℕ), finset.univ.prod (λ i : ι, (mv_polynomial.X i) ^ (k i)) ⊗ₜ (coeff m k f))
- :=
+example {α : Type*} : α → plift α := plift.up
+
+/- 
+def finset.plift {α : Type*} : finset α → finset (plift α) := 
+λ s, finset.map ⟨plift.up, plift.up_injective⟩ s
+-/
+
+lemma support_finite {ι : Type*} [fintype ι] (p : mv_polynomial ι A ⊗[A] N) :
+  (function.support (λ (k : ι →₀ ℕ),
+       mv_polynomial.monomial k (1 : A) ⊗ₜ[A]
+         (tensor_product.lid A N) ((linear_map.rtensor N (linear_map.mv_polynomial.coeff k)) p))).finite := 
 begin
   classical,
-  let p : mv_polynomial ι A ⊗ N := (f.to_fun (mv_polynomial ι A) 
-      (finset.univ.sum (λ (i : ι), mv_polynomial.X i ⊗ₜ[A] m i))),
-  have hcoeff : ∀ k, coeff m k f = (tensor_product.lid A N) ((linear_map.rtensor N (linear_map.mv_polynomial.coeff k)) p),
-  { intro k, rw coeff_eq, },
-  have hp : p ∈ ⊤ := submodule.mem_top, 
-  rw ← tensor_product.span_tmul_eq_top at hp,
-  rw submodule.mem_span_set_iff_exists_sum at hp,
-  obtain ⟨c, hc⟩ := hp,
-  let φ: ↥{t : mv_polynomial ι A ⊗ N | ∃ (m : mv_polynomial ι A) (n : N), m ⊗ₜ[A] n = t} → mv_polynomial ι A := λ t, t.prop.out.some,  
-  
-  let ν : ↥{t : mv_polynomial ι A ⊗ N | ∃ (m : mv_polynomial ι A) (n : N), m ⊗ₜ[A] n = t} →  N := λ t, t.prop.out.some_spec.some, 
-  have h : ∀ t, ↑t = φ t ⊗ₜ[A] ν t := λ t, t.prop.out.some_spec.some_spec.symm, 
+  induction p using tensor_product.induction_on with f n f g hf hg,
+  -- case C0
+  simp only [map_zero, tensor_product.tmul_zero, function.support_zero, set.finite_empty],
 
-  let s' := c.support.bUnion (λ t, (φ t).support),
-  
-  have p_eq : p = c.sum (λ t a, φ t ⊗ₜ (a • ν t)),
-  { rw ← hc,
-    apply finsupp.sum_congr,
-    intros t ht, rw h t, 
-    simp only [tensor_product.tmul_smul], },
+  -- case C1,
+  { apply set.finite.subset (mv_polynomial.support f).finite_to_set, 
+    intro k,
+    simp only [linear_map.rtensor_tmul, tensor_product.lid_tmul, tensor_product.tmul_smul, function.mem_support, ne.def,
+    finset.mem_coe, mv_polynomial.mem_support_iff, not_imp_not, linear_map.mv_polynomial.coeff_apply],
+    intro hk, rw hk, rw zero_smul,},
 
-  suffices support_ss : function.support (λ (k : ι →₀ ℕ), (coeff m k) f) ⊆ s', 
-  have finite_support : (λ k, coeff m k f).support.finite, 
-  exact set.finite.subset (s'.finite_to_set) support_ss,
-
-  apply and.intro finite_support,
-
-  { /- change p = _, 
-    suffices : function.support (λ (k : ι →₀ ℕ), finset.univ.prod (λ (i : ι), mv_polynomial.X i ^ k i) ⊗ₜ[A] (coeff m k) f) ⊆ finite_support.to_finset, 
-    rw finsum_eq_sum_of_support_subset _ this, 
-    simp only [hcoeff], dsimp,
-    simp_rw p_eq, 
-    simp,
-  sorry, -/
-  sorry, },
-
-  { intro x, rw function.mem_support, intro h, by_contradiction h', apply h,
-    simp only [s'] at h',
-    rw finset.mem_coe at h', 
-    rw finset.mem_bUnion at h', 
-    push_neg at h',
-    rw hcoeff, 
-    rw p_eq,
-    simp only [finsupp.sum, map_sum], 
-    apply finset.sum_eq_zero,
-    intros t ht, simp [linear_map.mv_polynomial.coeff_apply ], 
-    specialize h' t ht, simp only [mv_polynomial.mem_support_iff, not_not] at h', 
-    simp only [h', zero_smul, smul_zero], },
-
-  
-
+  -- case Cp
+  { simp only [map_add, tensor_product.tmul_add],
+    refine set.finite.subset (set.finite.union hf hg) (function.support_add _ _), },
 end
+
+lemma finset.sum_eq_of_suport_subset {α β : Type*} [decidable_eq α] [add_comm_monoid β] {f : α → β} {s : finset α} (hs : f.support ⊆ s) (t : finset α) (hst : s ⊆ t) : t.sum f = s.sum f :=
+begin
+  rw ← finset.sum_sdiff hst, 
+  convert zero_add _, 
+  apply finset.sum_eq_zero,
+  intros x hx, simp only [finset.mem_sdiff] at hx,
+  rw ← function.nmem_support, intro hx', apply hx.2, apply hs, exact hx',
+end
+
+
+lemma finset.sum_add_distrib_of_support_subset {α β : Type*} [decidable_eq α] [add_comm_monoid β] (f g : α → β)
+  {s t u : finset α} (hf : f.support ⊆ s) (hg : g.support ⊆ t) (hk : (f + g).support ⊆ u) :
+  s.sum f + t.sum g = u.sum (f+g) :=
+begin
+  rw ← finset.sum_eq_of_suport_subset hf (s ∪ t ∪ u),
+  rw ← finset.sum_eq_of_suport_subset hg (s ∪ t ∪ u),
+  rw ← finset.sum_eq_of_suport_subset hk (s ∪ t ∪ u),
+  rw ← finset.sum_add_distrib,
+  refl,
+  refine (s ∪ t).subset_union_right u,
+  apply subset_trans (s.subset_union_right t) ((s ∪ t).subset_union_left u),
+  apply subset_trans (s.subset_union_left t) ((s ∪ t).subset_union_left u),
+end
+
+lemma mv_polynomial_tmul_eq {ι : Type*} [fintype ι] (p : mv_polynomial ι A ⊗[A] N) :
+  p = (support_finite p).to_finset.sum
+    (λ (k : ι →₀ ℕ), mv_polynomial.monomial k (1 : A) ⊗ₜ[A]
+      (tensor_product.lid A N) ((linear_map.rtensor N (linear_map.mv_polynomial.coeff k)) p)) :=
+begin
+  classical,
+  induction p using tensor_product.induction_on with f n f g hf hg,
+  -- case C0
+  simp only [map_zero, tensor_product.tmul_zero, finset.sum_const_zero], 
+
+  {  -- case C1 
+    simp only [linear_map.rtensor_tmul, tensor_product.lid_tmul, tensor_product.tmul_smul],
+
+  rw f.as_sum,
+  simp_rw map_sum, simp_rw finset.sum_smul, 
+  rw finset.sum_comm,
+  simp_rw tensor_product.sum_tmul,
+  apply finset.sum_congr rfl,
+  intros k hk, 
+  rw finset.sum_eq_single k,
+  simp only [linear_map.mv_polynomial.coeff_apply, mv_polynomial.coeff_monomial, eq_self_iff_true, if_true],
+  apply congr_arg2 _ _ rfl,
+  simp only [mv_polynomial.monomial_eq, mv_polynomial.C_eq_smul_one, algebra.smul_mul_assoc, one_smul],
+
+
+  { intros d hd hdk,  
+    simp only [linear_map.mv_polynomial.coeff_apply, mv_polynomial.coeff_monomial], 
+    rw if_neg (ne_comm.mp hdk), simp only [zero_smul], },
+
+  { simp only [set.finite.mem_to_finset, function.mem_support, linear_map.mv_polynomial.coeff_apply, not_not], 
+    simp_rw mv_polynomial.coeff_monomial,
+    rw finset.sum_eq_single k, exact id,
+
+    intro d,
+    simp only [function.mem_support, ne.def, finset.mem_coe, mv_polynomial.mem_support_iff],
+    intros hd hdk, rw [if_neg hdk, zero_smul], 
+
+    intro hk', exfalso, exact hk' hk, }, },
+  { -- case add 
+    simp only [map_add, tensor_product.tmul_add], 
+    conv_lhs {rw [hf, hg], },
+    convert finset.sum_add_distrib_of_support_subset _ _ _ _ _,
+    apply_instance,
+    simp only [set.finite.coe_to_finset],
+    refine set.subset.refl _,
+    simp only [set.finite.coe_to_finset],
+    refine set.subset.refl _,
+    simp only [set.finite.coe_to_finset],
+    refine set.subset.refl _, }
+end
+
+/- ATTEMPT TO DO IT USING finsupp.sum
+
+lemma mv_polynomial_tmul_eq' {ι : Type*} [fintype ι] (p : mv_polynomial ι A ⊗[A] N) :
+   p = (support_finite p).to_finset.sum
+    (λ (k : ι →₀ ℕ), mv_polynomial.monomial k (1 : A) ⊗ₜ[A]
+      (tensor_product.lid A N) ((linear_map.rtensor N (linear_map.mv_polynomial.coeff k)) p)) :=
+begin
+  have H : ∀ (p : mv_polynomial ι A ⊗[A] N) (k : ι →₀ ℕ),
+    finsupp.of_support_finite _ (support_finite p) k  = 
+    (mv_polynomial.monomial k) 1 ⊗ₜ[A] (tensor_product.lid A N) ((linear_map.rtensor N (linear_map.mv_polynomial.coeff k)) p),
+  intros p k, refl,
+
+  let f := finsupp.of_support_finite _ (support_finite p),
+  change p = f.support.sum _, 
+  suffices : p = f.sum (λ k a,a),
+  simp only [finsupp.sum] at this,
+  exact this, 
+
+  revert f,
+  induction p using tensor_product.induction_on with f n f g hf hg,
+  { intro f,
+    suffices : f = 0,
+    rw this, simp only [finsupp.sum_zero_index],
+    ext, simp [f, H], refl, },
+  { intro φ, simp only [φ, finsupp.sum, linear_map.rtensor_tmul, tensor_product.lid_tmul, tensor_product.tmul_smul], 
+
+  
+  
+  sorry },
+  { sorry },
+end
+ -/
+
+example {ι : Type u} [fintype ι] (m : ι → M) (f : polynomial_map A M N) : 
+  (function.support (λ k, (coeff m k) f)).finite :=
+begin
+
+  sorry 
+end
+
 
 example {ι : Type u} [fintype ι] (r : ι → R) (m : ι → M) (f : polynomial_map A M N) :
 f.to_fun R (finset.univ.sum (λ i, r i ⊗ₜ[A] m i)) =
 finsum (λ (k : ι →₀ ℕ), finset.univ.prod (λ i : ι, (r i) ^ (k i)) ⊗ₜ (coeff m k f)) :=
 begin
-  suffices : f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i))
-  = finsum (λ (k : ι →₀ ℕ), finset.univ.prod (λ i : ι, (mv_polynomial.X i) ^ (k i)) ⊗ₜ (coeff m k f)),
+  suffices : f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)) = finsum (λ (k : ι →₀ ℕ), mv_polynomial.monomial k 1 ⊗ₜ (coeff m k f)),
+
+  let φ : mv_polynomial ι A →ₐ[A] R := mv_polynomial.aeval r, 
+  have that := congr_fun (f.is_compat φ) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)), 
+  simp only [function.comp_app, linear_map.map_sum, linear_map.rtensor_tmul, alg_hom.to_linear_map_apply, mv_polynomial.aeval_X] at that, 
+  rw ← that, rw this,
+   
+  have : ∀ (i : ι), r i = φ (mv_polynomial.X i), intro i, 
+  simp only [φ, mv_polynomial.aeval_X], 
+
   sorry,
   sorry,
 
