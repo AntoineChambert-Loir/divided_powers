@@ -1,6 +1,8 @@
 import divided_powers.dp_algebra.init
 import divided_powers.dp_algebra.graded
 import ring_theory.power_series.basic
+import ring_theory.tensor_product 
+
 import ...for_mathlib.ring_theory.submodule_mem
 
 /-! Polynomial laws on modules
@@ -424,7 +426,7 @@ by simp only [coeff, linear_map.coe_mk, zoo_inv, zoo_inv', finsupp.of_support_fi
 
 
 
-example  (r : ι → R) (m : ι → M) (f : polynomial_map A M N) :
+theorem image_eq_coeff_sum  (r : ι → R) (m : ι → M) (f : polynomial_map A M N) :
 f.to_fun R (finset.univ.sum (λ i, r i ⊗ₜ[A] m i)) =
 (coeff m f).sum (λ k n, finset.univ.prod (λ i, r i ^ (k i)) ⊗ₜ[A] n) := 
 begin
@@ -447,6 +449,35 @@ begin
   obtain ⟨g, rfl⟩ := zoo_surjective ι A N p,
   rw zoo_inv_zoo_apply, refl,
 end
+
+noncomputable example (b : basis ι A M) (i : ι) : M →ₗ[A] A :=
+b.coord i
+
+example (b : basis ι A M) (n : N) (i : ι) : R ⊗[A] M →ₗ[R] R :=
+begin
+have f1 := linear_map.base_change R (b.coord i),
+have f2 := tensor_product.rid A R,
+let f3 := algebra.tensor_product.rid A R, 
+have : R ⊗[A] A ≃ₐ[R] R, 
+sorry,
+end
+
+
+
+def algebra.tensor_product.rid' : R ⊗[A] A →ₐ[R] R := {
+  map_one' := sorry,
+  map_zero' := sorry,
+  commutes' := sorry,
+  ..algebra.tensor_product.rid A R, }
+
+example : comm_ring R := infer_instance
+
+example (b : basis ι A M) (h : (ι →₀ ℕ) →₀ N): 
+polynomial_map A M N := {
+to_fun := λ R _ _ x, by exactI 
+h.sum (λ k n, finset.univ.prod (λ i, ((tensor_product.rid A R).to_linear_map.comp (linear_map.ltensor R (b.coord i))) ^ (k i)) ⊗ₜ[A] n)
+,
+is_compat := sorry }
 
 
 end coefficients
