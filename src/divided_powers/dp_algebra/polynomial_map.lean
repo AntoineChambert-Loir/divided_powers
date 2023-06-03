@@ -390,8 +390,10 @@ end comp
 
 section coefficients
 
+variables {ι : Type u} [fintype ι] [decidable_eq ι]
+
 /-- The coefficients of a `polynomial_map` -/
-noncomputable def coeff {ι : Type u} [fintype ι] (m : ι → M) (k : ι →₀ ℕ) : 
+noncomputable def coeff' (m : ι → M) (k : ι →₀ ℕ) : 
   polynomial_map A M N  →ₗ[A] N := { 
 to_fun := λ f, tensor_product.lid A N ((linear_map.mv_polynomial.coeff k).rtensor N
   (f.to_fun (mv_polynomial ι A)
@@ -399,16 +401,56 @@ to_fun := λ f, tensor_product.lid A N ((linear_map.mv_polynomial.coeff k).rtens
 map_add' := λ f g, by simp only [add_def, pi.add_apply, map_add],
 map_smul' := λ a f, by simp only [smul_def, pi.smul_apply, linear_map.map_smulₛₗ, ring_hom.id_apply, linear_equiv.map_smulₛₗ] }
 
-lemma coeff_eq  {ι : Type u} [fintype ι] (m : ι → M) (k : ι →₀ ℕ) 
+
+/-- The coefficients of a `polynomial_map` -/
+noncomputable def coeff (m : ι → M) : polynomial_map A M N
+  →ₗ[A] ((ι →₀ ℕ) →₀ N) := {
+to_fun := λ f, zoo_inv _ A N (f.to_fun (mv_polynomial ι A)
+    (finset.univ.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i))),
+map_add' := λ f g, 
+by { rw ← map_add, refl, },
+map_smul' := λ a f, 
+by { simp only [ring_hom.id_apply, ← map_smul], refl, }, }
+
+
+lemma coeff_eq (m : ι → M) (k : ι →₀ ℕ) 
   (f : polynomial_map A M N) :
-  coeff m k f = (tensor_product.lid A N)
+  coeff m f k = 
+  (tensor_product.lid A N)
   ((linear_map.rtensor N (linear_map.mv_polynomial.coeff k))
-     (f.to_fun (mv_polynomial ι A) 
-      (finset.univ.sum (λ (i : ι), mv_polynomial.X i ⊗ₜ[A] m i)))) := 
-by simp only [coeff, linear_map.coe_mk]
+     (f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ (i : ι), mv_polynomial.X i ⊗ₜ[A] m i)))) :=
+by simp only [coeff, linear_map.coe_mk, zoo_inv, zoo_inv', finsupp.of_support_finite_coe]
 
 
 
+
+example  (r : ι → R) (m : ι → M) (f : polynomial_map A M N) :
+f.to_fun R (finset.univ.sum (λ i, r i ⊗ₜ[A] m i)) =
+(coeff m f).sum (λ k n, finset.univ.prod (λ i, r i ^ (k i)) ⊗ₜ[A] n) := 
+begin
+  suffices : f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)) = (coeff m f).sum (λ k n, mv_polynomial.monomial k 1 ⊗ₜ n),
+
+  let φ : mv_polynomial ι A →ₐ[A] R := mv_polynomial.aeval r, 
+  have that := congr_fun (f.is_compat φ) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)), 
+  simp only [function.comp_app, linear_map.map_sum, linear_map.rtensor_tmul, alg_hom.to_linear_map_apply, mv_polynomial.aeval_X] at that, 
+  rw ← that, rw this, 
+  simp only [finsupp.sum], 
+  rw map_sum,  
+  apply finset.sum_congr rfl,
+  intros k hk, simp only [linear_map.rtensor_tmul, alg_hom.to_linear_map_apply], 
+  apply congr_arg2 _ _ rfl,
+  simp  [φ, mv_polynomial.aeval_monomial], 
+
+  -- The generic case
+  sorry,
+end
+
+
+end coefficients
+
+end polynomial_map 
+
+#exit 
 example {α : Type*} : α → plift α := plift.up
 
 /- 
@@ -545,16 +587,6 @@ begin
       hk, map_zero, tensor_product.tmul_zero], }, },
 end
 
--- ATTEMPT TO DO IT USING finsupp.sum
-example {ι : Type*} [fintype ι] (p : mv_polynomial ι A ⊗[A] N) : Prop :=
-begin
-let hp := mv_polynomial_tmul_eq p, 
-let f := finsupp.of_support_finite _ (support_finite p),
-have hf : f.support = (support_finite p).to_finset := rfl,
-rw ← hf at hp, 
-let np := f.sum (λ k n, (mv_polynomial.monomial k 1 : mv_polynomial ι A) ⊗ₜ[A] n), 
-end
-
 lemma mv_polynomial_tmul_eq' {ι : Type*} [fintype ι] (p : mv_polynomial ι A ⊗[A] N) :
    p = (finsupp.of_support_finite _ (support_finite p)).sum
     (λ k n, (mv_polynomial.monomial k 1 : mv_polynomial ι A) ⊗ₜ[A] n) :=
@@ -601,26 +633,6 @@ begin
       (finset.univ.sum (λ (i : ι), mv_polynomial.X i ⊗ₜ[A] m i))),
   let hp := support_finite p,  
   sorry 
-end
-
-
-example {ι : Type u} [fintype ι] (r : ι → R) (m : ι → M) (f : polynomial_map A M N) :
-f.to_fun R (finset.univ.sum (λ i, r i ⊗ₜ[A] m i)) =
-finsum (λ (k : ι →₀ ℕ), finset.univ.prod (λ i : ι, (r i) ^ (k i)) ⊗ₜ (coeff m k f)) :=
-begin
-  suffices : f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)) = finsum (λ (k : ι →₀ ℕ), mv_polynomial.monomial k 1 ⊗ₜ (coeff m k f)),
-
-  let φ : mv_polynomial ι A →ₐ[A] R := mv_polynomial.aeval r, 
-  have that := congr_fun (f.is_compat φ) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)), 
-  simp only [function.comp_app, linear_map.map_sum, linear_map.rtensor_tmul, alg_hom.to_linear_map_apply, mv_polynomial.aeval_X] at that, 
-  rw ← that, rw this,
-   
-  have : ∀ (i : ι), r i = φ (mv_polynomial.X i), intro i, 
-  simp only [φ, mv_polynomial.aeval_X], 
-
-  sorry,
-  sorry,
-
 end
 
 
