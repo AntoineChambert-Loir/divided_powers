@@ -442,7 +442,10 @@ begin
   simp  [φ, mv_polynomial.aeval_monomial], 
 
   -- The generic case
-  sorry,
+  simp only [coeff], dsimp,
+  generalize : f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ (i : ι), mv_polynomial.X i ⊗ₜ[A] m i)) = p, 
+  obtain ⟨g, rfl⟩ := zoo_surjective ι A N p,
+  rw zoo_inv_zoo_apply, refl,
 end
 
 
