@@ -13,6 +13,11 @@ Reference : N. Roby, Lois polynômes et lois formelles en théorie des modules�
 
 open algebra function linear_map
 
+lemma finsupp.of_support_finite_support {ι α: Type*} [has_zero α] (f : ι → α) 
+  (hf : f.support.finite) : (finsupp.of_support_finite f hf).support = hf.to_finset :=
+by { ext, simp only [finsupp.of_support_finite_coe, finsupp.mem_support_iff, 
+  set.finite.mem_to_finset, function.mem_support] }
+
 section algebra
 
 open_locale tensor_product 
@@ -241,7 +246,7 @@ noncomputable def linear_map_equiv [decidable_eq σ] :
 { inv_fun   := zoo_inv σ A N,
   left_inv  := zoo_inv_zoo_apply σ A N,
   right_inv := zoo_zoo_inv_apply σ A N,
-  .. zoo σ A N }
+  ..zoo σ A N }
 
 end mv_polynomial_module
 
@@ -389,124 +394,107 @@ lemma of_linear_map_hom_apply (v : M →ₗ[A] N) : of_linear_map_hom v = of_lin
 
 end linear
 
-#lint
-#exit
+.
 
 section locally_finite
 
 def locfinsupp {ι : Type*} (f : ι → polynomial_map A M N) : Prop :=
-  ∀ (R : Type w) [comm_semiring R], by exactI ∀ [algebra A R],
-  by exactI ∀ (m : R ⊗[A] M), (function.support (λ i, (f i).to_fun R m)).finite
+  ∀ (R : Type w) [comm_semiring R], by exactI ∀ [algebra A R], by exactI ∀ (m : R ⊗[A] M), 
+  (function.support (λ i, (f i).to_fun R m)).finite
 
 variables (A M N)
-def with_locfinsupp (ι : Type*) : submodule A (ι → polynomial_map A M N) := {
-carrier := locfinsupp,
-add_mem' := λ a b ha hb, 
-begin
-  intros R _ _ m, 
-  resetI,
-  simp only [pi.add_def, polynomial_map.add_def],
-  refine set.finite.subset _ (function.support_add _ _),
-  rw set.finite_union,
-  exact ⟨ha R m, hb R m⟩,
-end,
-zero_mem' := 
-begin
-  intros R _ _ m, resetI, 
-  convert set.finite_empty , 
-  convert function.support_zero ,
-end,
-smul_mem' := λ a f hf,
-begin
-  intros R _ _ m, resetI,
-  simp only [pi.smul_def, polynomial_map.smul_def],
-  refine set.finite.subset (hf R m) (function.support_smul_subset_right a _),
-end, }
+
+def with_locfinsupp (ι : Type*) : submodule A (ι → polynomial_map A M N) := 
+{ carrier := locfinsupp,
+  add_mem' := λ a b ha hb R _ _ m, 
+  begin
+    resetI,
+    exact set.finite.subset (set.finite_union.mpr ⟨ha R m, hb R m⟩) (function.support_add _ _),
+  end,
+  zero_mem' := λ R _ _ m, by simp only [pi.zero_apply, zero_def, support_zero, set.finite_empty],
+  smul_mem' := λ a f hf R _ _ m,
+  begin
+    resetI,
+    exact set.finite.subset (hf R m) (function.support_smul_subset_right a _),
+  end }
+
+namespace locfinsupp
 
 variables {A M N}
-noncomputable def locfinsupp.sum {ι : Type*} (f : ι → polynomial_map A M N) (hf : locfinsupp f) : 
+
+noncomputable def sum {ι : Type*} (f : ι → polynomial_map A M N) (hf : locfinsupp f) : 
   polynomial_map A M N := 
-{ to_fun := λ R _ _ m,begin
-  resetI,
-  exact (finsupp.of_support_finite _ (hf R m)).sum (λ i m, m),
-  end,
+{ to_fun := λ R _ _ m, by exactI (finsupp.of_support_finite _ (hf R m)).sum (λ i m, m),
   is_compat := λ R _rR _aR R' _rR' _aR' φ,
   begin
-    resetI, ext m,
+    resetI, 
+    ext m,
     simp only [function.comp_app, linear_map.map_finsupp_sum],
     rw finsupp.sum,
     suffices : _ ⊆ (hf R m).to_finset, 
-    rw finsupp.sum_of_support_subset _ this,
-    apply finset.sum_congr rfl,
-    intros i hi, 
-    simp only [finsupp.of_support_finite_coe, map_sum, is_compat_apply],
-    intros i hi, refl,
-    intro i, 
-    simp only [finsupp.of_support_finite_coe, not_imp_not, finsupp.mem_support_iff, 
-      set.finite.mem_to_finset, function.mem_support, ← is_compat_apply],
-    intro hi,rw [hi, map_zero],
+    { rw finsupp.sum_of_support_subset _ this,
+      apply finset.sum_congr rfl,
+      intros i hi, 
+      simp only [finsupp.of_support_finite_coe, _root_.map_sum, is_compat_apply],
+      { intros i hi, refl, }},
+    { intro i, 
+      simp only [finsupp.of_support_finite_coe, not_imp_not, finsupp.mem_support_iff, 
+        set.finite.mem_to_finset, function.mem_support, ← is_compat_apply],
+      intro hi,
+      rw [hi, map_zero] },
   end }
 
-lemma finsupp.of_support_finite_support 
-  {ι α: Type*} [has_zero α] (f : ι → α) (hf : f.support.finite) :
-  (finsupp.of_support_finite f hf).support = hf.to_finset :=
-begin
-  ext,
-  simp only [finsupp.of_support_finite_coe, finsupp.mem_support_iff, set.finite.mem_to_finset, 
-    function.mem_support],
-end
-
-
-lemma locfinsupp.sum_eq {ι : Type*} (f : ι → polynomial_map A M N)
-  (hf : locfinsupp f) (R : Type w) [comm_semiring R] [algebra A R] (m : R ⊗[A] M): 
+lemma sum_eq {ι : Type*} (f : ι → polynomial_map A M N) (hf : locfinsupp f) (R : Type w) 
+  [comm_semiring R] [algebra A R] (m : R ⊗[A] M) : 
   (locfinsupp.sum f hf).to_fun R m = (finsupp.of_support_finite _ (hf R m)).sum (λ i m, m) := rfl
 
-noncomputable def linear_map.locfinsupp.sum {ι : Type*} [decidable_eq ι]: 
-  with_locfinsupp A M N ι →ₗ[A] polynomial_map A M N := {
-to_fun := λ fhf, locfinsupp.sum fhf.val fhf.prop, 
-map_add' := λ fhf ghg, 
-begin
-  obtain ⟨f, hf⟩ := fhf, obtain ⟨g, hg⟩ := ghg,
-  rw ext_iff, ext R _ _ m, resetI,
-  simp only [add_mem_class.mk_add_mk, add_def_apply],
-  simp [locfinsupp.sum_eq], 
-  suffices this_add : _,
-  rw finsupp.sum_of_support_subset _ this_add _,
-  suffices this_f : _ ⊆ (hf R m).to_finset ∪ (hg R m).to_finset,
-  rw finsupp.sum_of_support_subset _ this_f _,
-  suffices this_g : _,
-  rw finsupp.sum_of_support_subset _ this_g _,
-  rw ← finset.sum_add_distrib,  
-  apply finset.sum_congr rfl,
-  all_goals { try { intros i hi, refl, }, },
-  all_goals { simp only [finsupp.of_support_finite_support]},
-  { apply finset.subset_union_right, },
-  { apply finset.subset_union_left, },
-  { intro x, simp only [set.finite.mem_to_finset, function.mem_support, ne.def, finset.mem_union], 
-    rw [← not_and_distrib, not_imp_not], 
-    intro h, rw [h.1, h.2, add_zero], },
-end,
-map_smul' := λ a fhf, 
-begin
-  rw ext_iff, ext R _ _ m, resetI, 
-  rw smul_def, simp only [pi.smul_apply],
-  simp [locfinsupp.sum_eq], 
-  suffices : _,
-  rw finsupp.sum_of_support_subset _ this _,
-  rw finsupp.smul_sum,
-  rw finsupp.sum,
-  apply finset.sum_congr rfl,
-  { intro i, 
-    simp [pi.smul_def, polynomial_map.smul_def, finsupp.of_support_finite_coe], },
-  { intros i hi, refl, },
-  intro i, 
-  simp only [pi.smul_def, polynomial_map.smul_def, finsupp.of_support_finite_coe,
-    not_imp_not, finsupp.mem_support_iff],
-  intro hi, rw [hi, smul_zero],
-end }
+end locfinsupp
 
+.
+
+--TODO: I don't think this is in the right namespace, but I don't know how to rename it.
+noncomputable def linear_map.locfinsupp.sum {ι : Type*} [decidable_eq ι] : 
+  with_locfinsupp A M N ι →ₗ[A] polynomial_map A M N := 
+{ to_fun := λ fhf, locfinsupp.sum fhf.val fhf.prop, 
+  map_add' := λ ⟨f, hf⟩ ⟨g, hg⟩, 
+  begin
+    ext R _ _ m, 
+    resetI,
+    simp only [add_mem_class.mk_add_mk, locfinsupp.sum_eq, pi.add_apply, add_def_apply], 
+    rw [@finsupp.sum_of_support_subset _ _ _ _ _ _ ((hf R m).to_finset ∪ (hg R m).to_finset),
+      finsupp.sum_of_support_subset _ (finset.subset_union_left _ _),
+      finsupp.sum_of_support_subset _ (finset.subset_union_right _ _), ← finset.sum_add_distrib],  
+    apply finset.sum_congr rfl,
+    all_goals { try { intros i hi, refl, }, },
+    { intro x, 
+      simp only [finsupp.of_support_finite_support, set.finite.mem_to_finset, function.mem_support,
+        ne.def, finset.mem_union], 
+      rw [← not_and_distrib, not_imp_not], 
+      intro h, 
+      rw [h.1, h.2, add_zero], },
+  end,
+  map_smul' := λ a fhf, 
+  begin
+    ext R _ _ m, 
+    resetI, 
+    simp only [smul_def, locfinsupp.sum_eq, subtype.val_eq_coe, submodule.coe_smul_of_tower, 
+      pi.smul_apply, ring_hom.id_apply], 
+    rw finsupp.sum_of_support_subset,
+    { rw [finsupp.smul_sum, finsupp.sum],
+      exact finset.sum_congr rfl (λ i hi, rfl), },
+    { intro i, 
+      simp only [pi.smul_def, polynomial_map.smul_def, finsupp.of_support_finite_coe,
+        not_imp_not, finsupp.mem_support_iff],
+      intro hi, 
+      rw [hi, smul_zero] },
+    { intros i hi, refl },
+  end }
 
 end locally_finite
+
+#exit
+
+
 section coefficients
 
 variables {ι : Type*} [fintype ι] [decidable_eq ι]
