@@ -70,10 +70,12 @@ def is_sub_pd_ideal.divided_powers {J : ideal A} (hJ : is_sub_pd_ideal hI J)
   dpow_zero := λ x hx, by rw if_pos hx; exact hI.dpow_zero (hJ.is_sub_ideal hx),
   dpow_one  := λ x hx, by rw if_pos hx; exact hI.dpow_one (hJ.is_sub_ideal hx),
   dpow_mem  := λ n hn x hx, by rw if_pos hx; exact hJ.dpow_mem_ideal n hn x hx,
-  dpow_add  := sorry,
-  dpow_smul := sorry,
-  dpow_mul  := sorry,
-  dpow_comp := sorry }
+  dpow_add  := λ n x y hx hy, by simp_rw [if_pos hx, if_pos hy, if_pos (ideal.add_mem J hx hy)];
+    rw hI.dpow_add n (hJ.is_sub_ideal hx) (hJ.is_sub_ideal hy),
+  dpow_smul := λ n a x hx, by rw [if_pos hx, if_pos (ideal.mul_mem_left J a hx), hI.dpow_smul n (hJ.is_sub_ideal hx)],
+  dpow_mul  := λ m n x hx, by simp only [if_pos hx, hI.dpow_mul m n (hJ.is_sub_ideal hx)],
+  dpow_comp := λ m n hn x hx, by simp only [if_pos hx, if_pos (hJ.dpow_mem_ideal n hn x hx),
+    hI.dpow_comp m hn (hJ.is_sub_ideal hx)] }
 
 /-- The ideal J ⊓ I is a sub-pd-ideal of I, if and only if (on I) the divided powers have some 
   compatiblity mod J. (The necessity was proved as a sanity check.) -/
