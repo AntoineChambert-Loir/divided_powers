@@ -275,8 +275,16 @@ def add (f g : polynomial_map A M N) : (polynomial_map A M N) :=
   is_compat := λ R _ _ R' _ _ φ,
   by ext; simp only [comp_app, pi.add_apply, map_add, is_compat_apply] }
 
-instance has_add : has_add (polynomial_map A M N) := ⟨add⟩
+instance : has_zero (polynomial_map A M N) :=
+⟨ { to_fun := λ R _ _, 0, 
+    is_compat := λ R _ _ R' _ _ φ, rfl }⟩ 
 
+@[simp] lemma zero_def (R : Type w) [comm_semiring R] [algebra A R] : 
+  (0 : polynomial_map A M N).to_fun R = 0 := rfl
+
+instance : inhabited (polynomial_map A M N) := ⟨has_zero.zero⟩
+
+instance : has_add (polynomial_map A M N) := ⟨add⟩
 
 @[simp] lemma add_def (f g : polynomial_map A M N) (R : Type w) [comm_semiring R] [algebra A R] : 
   (f + g).to_fun R = f.to_fun R + g.to_fun R := rfl
@@ -287,11 +295,9 @@ instance has_add : has_add (polynomial_map A M N) := ⟨add⟩
 instance add_comm_monoid : add_comm_monoid (polynomial_map A M N) := 
 { add := has_add.add, 
   add_assoc := λ f g h, by { ext R _ _ m resetI, simp only [add_def, add_assoc] },
-  zero := 
-  { to_fun := λ R _ _, 0, 
-    is_compat := λ R _ _ R' _ _ φ, rfl, },
-  zero_add := λ f, by { ext R _ _ m, simp only [add_def, zero_add] },
-  add_zero := λ f, by { ext R _ _ m, simp only [add_def, add_zero] },
+  zero := has_zero.zero,
+  zero_add := λ f, by { ext R _ _ m, simp only [add_def, zero_add, zero_def] },
+  add_zero := λ f, by { ext R _ _ m, simp only [add_def, add_zero, zero_def] },
   nsmul := λ n f, 
   { to_fun    := λ R _ _, by exactI (n • (f.to_fun R)),
     is_compat := λ R R' _ _ _ _ φ, 
@@ -369,7 +375,7 @@ def of_linear_map (v : M →ₗ[A] N) : polynomial_map A M N :=
   is_compat := λ R _ _ _ _ _ φ, by ext m; simp only [base_change_eq_ltensor, 
     ← linear_map.comp_apply, comp_app, rtensor_comp_ltensor, ltensor_comp_rtensor] }
 
-def of_linear_map_to_fun (u : M →ₗ[A] N) (R : Type w) [comm_semiring R] [algebra A R] :
+lemma of_linear_map_to_fun (u : M →ₗ[A] N) (R : Type w) [comm_semiring R] [algebra A R] :
   (of_linear_map u).to_fun R =base_change R u := rfl
 
 def of_linear_map_hom :  (M →ₗ[A] N) →ₗ[A] (polynomial_map A M N):= 
@@ -383,6 +389,7 @@ lemma of_linear_map_hom_apply (v : M →ₗ[A] N) : of_linear_map_hom v = of_lin
 
 end linear
 
+#lint
 #exit
 
 section locally_finite
