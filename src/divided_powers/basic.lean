@@ -332,6 +332,7 @@ begin
 end }
 
 /- Roby65, Proposition 2. (TODO: rename?)-/
+/-- The ideal on which two divided power structures on two ideals coincide -/
 def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
   (hI : divided_powers I) (hJ : divided_powers J) {f : A →+* B} (hf : I.map f ≤ J) : 
   ideal A := 
@@ -364,6 +365,7 @@ def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J
   end }
 
 /- Roby65, Proposition 3.  (TODO: rename?) -/
+/-- The pd morphism induced by a ring morphism, provided divided powers match on a generating set -/
 def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
   (hI : divided_powers I) (hJ : divided_powers J) {f : A →+* B} {S : set A} (hS : I = ideal.span S)
   (hf : I.map f ≤ J) (h : ∀ (n : ℕ) (x ∈ S), f (hI.dpow n x) = hJ.dpow n (f x)) : 
@@ -381,6 +383,7 @@ def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A
     exact ((hS' hx).2 n).symm,
   end }
 
+/-- Identity as a pd morphism -/
 def pd_morphism.id {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) : 
   pd_morphism hI hI :=
 { to_ring_hom  := ring_hom.id A,
@@ -405,6 +408,7 @@ rfl
 rfl
 -/
 
+-- Bizarre
 def pd_morphism_of_le {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
   {B : Type*} [comm_ring B] {J : ideal B} (hJ : divided_powers J) (f : pd_morphism hI hI) 
   {K : ideal B} (hJK : K ≤ J) : 
