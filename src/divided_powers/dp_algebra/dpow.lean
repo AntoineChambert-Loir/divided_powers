@@ -31,20 +31,20 @@ open divided_power_algebra
 
 /-- Lemma 2 of Roby 65. -/
 lemma on_dp_algebra_unique (h h' : divided_powers (aug_ideal R M))
-  (h1 : ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x)
-  (h1' : ∀ (x : M) (n : ℕ), h'.dpow n (ι R x) = dp R n x) :
+  (h1 : ∀ (n : ℕ) (x : M), h.dpow n (ι R x) = dp R n x)
+  (h1' : ∀ (n : ℕ) (x : M), h'.dpow n (ι R x) = dp R n x) :
 h = h' := 
 begin
   apply divided_powers.dp_uniqueness h h' (aug_ideal_eq_span R M),
   rintros n f ⟨q, m, hq : 0 < q, _, rfl⟩, 
-  nth_rewrite 0 [← h1 m q],
-  rw [← h1' m q, h.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
-    h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), h1 m,  h1' m], 
+  nth_rewrite 0 [← h1 q m],
+  rw [← h1' q m, h.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
+    h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), h1 _ m,  h1' _ m], 
 end
 
 
 def cond_δ (R : Type u) [comm_ring R] (M : Type u) [add_comm_group M] [module R M] : Prop :=
-∃ (h : divided_powers (aug_ideal R M)), ∀ (x : M) (n : ℕ), h.dpow n (ι R x) = dp R n x 
+∃ (h : divided_powers (aug_ideal R M)), ∀ (n : ℕ) (x : M), h.dpow n (ι R x) = dp R n x 
 
 def cond_D (R : Type u) [comm_ring R] : Prop :=
 ∀ (M : Type u) [add_comm_group M], by exactI ∀ [module R M], by exactI cond_δ R M 
@@ -198,6 +198,17 @@ begin
       rw hh, rw lift_dp_eq, }, },
 end
 
+
+section add
+
+example (A : Type*) [comm_ring A] (B : Type*) [comm_ring B]
+  (I₁ I₂ : ideal A) (hI₁ : divided_powers I₁) (hI₂ : divided_powers I₂)
+  (J : ideal B) [divided_powers J] : Prop := sorry
+  
+
+end add
+
+
 -- Roby, lemma 4
 lemma T_free_and_D_to_Q (A : Type u) [comm_ring A] :
   cond_T_free A → cond_D A → cond_Q A :=
@@ -221,11 +232,13 @@ begin
       alg_hom.commutes],
     rw ← mul_assoc, 
   end, },
-  suffices dec_eq_R : decidable_eq R, haveI := dec_eq_R , 
-  let hR := divided_powers_bot R, 
-  resetI,
 
-  suffices dec_eq_I : decidable_eq I, haveI := dec_eq_I,
+  classical,
+--  suffices dec_eq_R : decidable_eq R, haveI := dec_eq_R , 
+  let hR := divided_powers_bot R, 
+--  resetI,
+
+--  suffices dec_eq_I : decidable_eq I, haveI := dec_eq_I,
   let M := (↥I →₀ A),
   -- have : module A M := finsupp.module ↥I A,
   let f : M →ₗ[A] S := {
@@ -272,8 +285,14 @@ begin
   use K A ⊥ (aug_ideal A M),
   use hK,
   split,
-  { split,
-    { sorry, },
+  { -- apply cond_D_uniqueness,
+    have := cond_D_uniqueness hM hM_eq hI f hf,
+  split,
+    { simp only [K, ideal.map_sup], 
+      simp only [ideal.map_bot, bot_sup_eq],
+    simp only [is_pd_morphism] at hR_pd hM_pd this, 
+
+      sorry, },
     { sorry, }, },
   { rw ← (algebra.range_top_iff_surjective _),
     rw algebra.tensor_product.product_map_range, 
@@ -295,7 +314,7 @@ begin
     -- sorry, 
     -- exact module.free.finsupp ↥I A A, }, -/
   
-  all_goals { classical, apply_instance, },
+--  all_goals { classical, apply_instance, },
 end
 
 -- Roby, lemma 5
