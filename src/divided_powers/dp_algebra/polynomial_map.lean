@@ -612,7 +612,7 @@ polynomial_map A M N := {
 to_fun := λ R _ _ x, by exactI 
   h.sum (λ k n, finset.univ.prod 
     (λ i, (linear_form.base_change A R _ (b.coord i)) x ^ (k i)) ⊗ₜ[A] n),
-is_compat := λ R R' _ _ _ _ φ, 
+is_compat := λ R _ _ R' _ _ φ, 
 begin
   resetI,
   ext m,

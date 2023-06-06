@@ -383,6 +383,7 @@ def pd_morphism_from_gens {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A
     exact ((hS' hx).2 n).symm,
   end }
 
+
 /-- Identity as a pd morphism -/
 def pd_morphism.id {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I) : 
   pd_morphism hI hI :=
@@ -443,9 +444,11 @@ lemma dp_uniqueness' {A B : Type*} [comm_ring A] [comm_ring B]
   (f : A →+* B) 
   {S : set A} (hS : I = ideal.span S) (hS' : ∀ s ∈ S, f s ∈ J)
   (hdp : ∀ (n : ℕ) (a ∈ S), f(hI.dpow n a) = hJ.dpow n (f a)) :
-  ∀ (n) (a ∈ I), f (hI.dpow n a)  = hJ.dpow n (f a) := 
+--   ∀ (n) (a ∈ I), f (hI.dpow n a)  = hJ.dpow n (f a) := 
+  is_pd_morphism hI hJ f :=
 begin
   suffices : I.map f ≤ J,
+  apply and.intro this,
   let pd_f := pd_morphism_from_gens hI hJ hS this hdp,
   intros n a ha,
   rw ← pd_morphism_from_gens_coe hI hJ hS this hdp,

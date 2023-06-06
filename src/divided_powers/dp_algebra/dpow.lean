@@ -83,7 +83,6 @@ def i_2 : S →ₐ R ⊗[A] S := algebra.tensor_product.include_right
 variables {R S} (I J)
 def K : ideal (R ⊗[A] S) := (I.map (i_1 A R S)) ⊔ (J.map (i_2 A R S))
 
-
 variables {I J}
 /- Lemma 1 : uniqueness of the dp structure on R ⊗ S for I + J -/
 lemma on_tensor_product_unique (hK hK' : divided_powers (K A I J))
@@ -184,7 +183,7 @@ begin
   { intros n a ha,
 --    simp only [alg_hom.coe_to_ring_hom], 
     apply symm,
-    rw dp_uniqueness' h hJ (lift R M hJ f hf) (aug_ideal_eq_span R M) _ _ n a ha,
+    rw (dp_uniqueness' h hJ (lift R M hJ f hf) (aug_ideal_eq_span R M) _ _ ).2 n a ha,
     { rintros a ⟨q, m, hq : 0 < q, hm, rfl⟩,
       simp only [alg_hom.coe_to_ring_hom, lift_dp_eq],
       exact hJ.dpow_mem (ne_of_gt hq) (hf m), },
@@ -285,15 +284,13 @@ begin
   use K A ⊥ (aug_ideal A M),
   use hK,
   split,
-  { -- apply cond_D_uniqueness,
-    have := cond_D_uniqueness hM hM_eq hI f hf,
-  split,
-    { simp only [K, ideal.map_sup], 
-      simp only [ideal.map_bot, bot_sup_eq],
-    simp only [is_pd_morphism] at hR_pd hM_pd this, 
+  { split,
+    { rw [K, ideal.map_bot, bot_sup_eq],
 
-      sorry, },
-    { sorry, }, },
+      -- why can't I conclude ? — tomorrow is another day
+
+    sorry },
+    { sorry }, },
   { rw ← (algebra.range_top_iff_surjective _),
     rw algebra.tensor_product.product_map_range, 
     suffices : (is_scalar_tower.to_alg_hom A R S).range = ⊤,
