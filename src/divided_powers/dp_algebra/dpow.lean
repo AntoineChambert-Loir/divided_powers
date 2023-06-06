@@ -6,6 +6,7 @@ import divided_powers.sub_pd_ideal
 import divided_powers.ideal_add
 
 import ring_theory.tensor_product
+import ring_theory.mv_polynomial.basic
 
 noncomputable theory
 
@@ -124,7 +125,7 @@ section free
 -- hR_free, hS_free are not used for the def (they might be needed at lemmas about cond_T_free)
 
 def cond_T_free (A : Type u) [comm_ring A] : Prop := 
-∀ (R : Type v₁) [comm_ring R] (S : Type v₂) [comm_ring S], 
+∀ (R : Type u) [comm_ring R] (S : Type u) [comm_ring S], 
 by exactI ∀ [algebra A R] [algebra A S],
 by exactI ∀ (hR_free : module.free A R) (hS_free : module.free A S),
 by exactI ∀ {I : ideal R} {J : ideal S} (hI : divided_powers I) (hJ : divided_powers J),
@@ -202,11 +203,9 @@ lemma T_free_and_D_to_Q (A : Type u) [comm_ring A] :
   cond_T_free A → cond_D A → cond_Q A :=
 begin
   intros hT_free hD, 
-  -- simp only [cond_Q, cond_D, cond_T_free] at *,
-  -- simp only [cond_Q],
+  simp only [cond_Q, cond_D, cond_T_free] at *,
   intros S _ _ I hI, 
   resetI,
-
   let R := mv_polynomial S A,
   -- R = A[S] →ₐ[A] S, morphisme de A-algèbres
   letI : algebra R S := ring_hom.to_algebra
@@ -254,36 +253,28 @@ begin
     exact I.mul_mem_left _ ha,
     apply_instance, apply_instance, },
 
-  specialize hD M,
-
-  -- I can't do `specialize hD M` because the universes don't match
-  suffices : cond_δ A M, 
-  simp only [cond_δ] at this,
-  obtain ⟨hM, hM_eq⟩ := this,
-  
-  let T := R ⊗[A] (divided_power_algebra A M),
-  -- because universes don't match
-  suffices : ∃ (T : Type*) [comm_ring T], by exactI ∃ [algebra A T],
-    by exactI ∃ [module.free A T] (f : T →ₐ[A] S) (J : ideal T) (hJ : divided_powers J) 
-      (hf : hJ.is_pd_morphism hI ↑f), function.surjective f,
+  obtain ⟨hM, hM_eq⟩ := hD M,
+  haveI hdpM_free : module.free A (divided_power_algebra A M),
   sorry,
+  haveI hR_free : module.free A R :=
+  module.free.of_basis (mv_polynomial.basis_monomials _ _),
 
-  use T,
+  use R ⊗[A] (divided_power_algebra A M),
   use (by apply_instance),
   use (by apply_instance),
-  split, sorry,
+  split, 
+  apply_instance, -- tensor product of free modules is free
   use algebra.tensor_product.product_map (is_scalar_tower.to_alg_hom A R S) 
     (divided_power_algebra.lift A M hI f hf),
 
   suffices : cond_τ A hR hM,
-  simp only [cond_τ] at this,
-  obtain ⟨hK, hR_pd, hM_pd⟩ := this,
+  obtain ⟨hK, hR_pd, hM_pd⟩ := this, 
   use K A ⊥ (aug_ideal A M),
   use hK,
   split,
   { split,
-    sorry,
-    sorry, },
+    { sorry, },
+    { sorry, }, },
   { rw ← (algebra.range_top_iff_surjective _),
     rw algebra.tensor_product.product_map_range, 
     suffices : (is_scalar_tower.to_alg_hom A R S).range = ⊤,
@@ -293,13 +284,18 @@ begin
     simp only [mapRS, is_scalar_tower.coe_to_alg_hom', alg_hom.to_ring_hom_eq_coe, 
       alg_hom.coe_to_ring_hom, aeval_X, id.def], },
   
-  { simp only [cond_T_free] at hT_free, 
-
+  { -- cond_τ 
+    apply hT_free,
+    exact hR_free,
+    exact hdpM_free, }, 
+    -- R : mv_polynomials
+    -- apply module.free.of_basis (mv_polynomial.basis_monomials _ _),
+    -- divided_power_algebra of a free module
+    -- suffices : module.free A M,
+    -- sorry, 
+    -- exact module.free.finsupp ↥I A A, }, -/
   
-  sorry, },
-  
-  { sorry, },
-  sorry, sorry,
+  all_goals { classical, apply_instance, },
 end
 
 -- Roby, lemma 5
