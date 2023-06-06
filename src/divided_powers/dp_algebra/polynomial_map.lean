@@ -89,13 +89,12 @@ section mv_polynomial_module
 
 open_locale tensor_product
 
-variables (σ : Type*) [decidable_eq σ] (A : Type*) [comm_semiring A] (N : Type*) 
-  [add_comm_monoid N] [module A N]
+variables (σ : Type*) (A : Type*) [comm_semiring A] (N : Type*) [add_comm_monoid N] [module A N]
 
 open finsupp
 
 -- TODO: rename
-noncomputable def zoo : ((σ →₀ ℕ) →₀ N) →ₗ[A] mv_polynomial σ A ⊗[A] N :=
+noncomputable def zoo [decidable_eq σ] : ((σ →₀ ℕ) →₀ N) →ₗ[A] mv_polynomial σ A ⊗[A] N :=
 { to_fun := λ f, f.sum (λ k n, mv_polynomial.monomial k 1 ⊗ₜ[A] n),
   map_add' := λ f g , 
   begin 
@@ -116,7 +115,7 @@ noncomputable def zoo : ((σ →₀ ℕ) →₀ N) →ₗ[A] mv_polynomial σ A 
     { intros k hk, rw tensor_product.tmul_zero },
   end }
 
-lemma zoo_apply_single (k : σ →₀ ℕ) (n : N) : 
+lemma zoo_apply_single [decidable_eq σ] (k : σ →₀ ℕ) (n : N) : 
   zoo σ A N (single k n) = (mv_polynomial.monomial k) 1 ⊗ₜ[A] n :=
 by simp only [zoo, sum_single_index, tensor_product.tmul_zero, linear_map.coe_mk]
 
@@ -164,6 +163,7 @@ lemma zoo_inv_coe_apply (p : mv_polynomial σ A ⊗[A] N) : zoo_inv' σ A N p = 
 lemma zoo_inv_apply_tmul (f : mv_polynomial σ A) (n : N) :
    zoo_inv σ A N (f ⊗ₜ[A] n) = f.sum (λ (k : (σ →₀ ℕ)) (a : A), single k (a • n)) := 
 begin
+  classical,
   conv_lhs { rw f.as_sum, },
   rw [tensor_product.sum_tmul, _root_.map_sum, finsupp.sum],
   apply finset.sum_congr rfl, 
@@ -176,7 +176,7 @@ begin
 end
 
 
-lemma zoo_inv'_comp_zoo (f : (σ →₀ ℕ) →₀ N) (k : σ →₀ ℕ) :
+lemma zoo_inv'_comp_zoo [decidable_eq σ] (f : (σ →₀ ℕ) →₀ N) (k : σ →₀ ℕ) :
   zoo_inv' σ A N (zoo σ A N f) k = f k :=
 begin
   simp only [zoo, finsupp.sum, linear_map.coe_mk, _root_.map_sum, zoo_inv'_eq,
@@ -190,19 +190,19 @@ begin
     rw [hk, smul_zero] },
 end
 
-lemma zoo_inv_zoo_apply (f) : zoo_inv σ A N (zoo σ A N f) = f := 
+lemma zoo_inv_zoo_apply [decidable_eq σ] (f) : zoo_inv σ A N (zoo σ A N f) = f := 
 by ext k; rw [← zoo_inv_coe_apply σ A N, zoo_inv'_comp_zoo ]
 
 /- lemma zoo_inv_zoo' : function.left_inverse (zoo_inv σ A N) (zoo σ A N) :=
 zoo_inv_zoo_apply σ A N -/
 
-lemma zoo_inv_zoo : (zoo_inv σ A N).comp (zoo σ A N) = id := 
+lemma zoo_inv_zoo [decidable_eq σ] : (zoo_inv σ A N).comp (zoo σ A N) = id := 
 by ext f; simp only [zoo_inv_zoo_apply, coe_comp, comp_app, id_coe, id.def]
 
-lemma zoo_injective : function.injective (zoo σ A N) := 
+lemma zoo_injective [decidable_eq σ] : function.injective (zoo σ A N) := 
 function.has_left_inverse.injective ⟨zoo_inv σ A N, zoo_inv_zoo_apply σ A N⟩
 
-lemma zoo_zoo_inv_of_tmul (f : mv_polynomial σ A) (n : N) : 
+lemma zoo_zoo_inv_of_tmul [decidable_eq σ] (f : mv_polynomial σ A) (n : N) : 
   zoo σ A N (zoo_inv σ A N (f ⊗ₜ[A] n)) = f ⊗ₜ[A] n :=
 begin
   conv_rhs {rw f.as_sum},
@@ -214,7 +214,8 @@ begin
   refl,
 end
 
-lemma zoo_zoo_inv_apply (p : mv_polynomial σ A ⊗[A] N) : zoo σ A N (zoo_inv σ A N p) = p :=
+lemma zoo_zoo_inv_apply [decidable_eq σ] (p : mv_polynomial σ A ⊗[A] N) : 
+  zoo σ A N (zoo_inv σ A N p) = p :=
 begin
   induction p using tensor_product.induction_on with f n f g hf hg,
   { rw [map_zero, map_zero] },
@@ -222,22 +223,21 @@ begin
   { rw [map_add, map_add, hf, hg] }
 end
 
-lemma zoo_surjective : function.surjective (zoo σ A N) :=
+lemma zoo_surjective [decidable_eq σ] : function.surjective (zoo σ A N) :=
 function.has_right_inverse.surjective ⟨zoo_inv σ A N, zoo_zoo_inv_apply σ A N⟩
 
-lemma zoo_zoo_inv : (zoo σ A N).comp (zoo_inv σ A N) = linear_map.id :=
+lemma zoo_zoo_inv [decidable_eq σ] : (zoo σ A N).comp (zoo_inv σ A N) = linear_map.id :=
 begin
   apply linear_map.ext,
   intro p,
   simp only [zoo_zoo_inv_apply, linear_map.coe_comp, function.comp_app, linear_map.id_coe, id.def]
 end
 
+lemma zoo_inv_injective  : function.injective (zoo_inv σ A N) := 
+by classical; exact function.has_left_inverse.injective ⟨zoo σ A N, zoo_zoo_inv_apply σ A N⟩
 
-
-lemma zoo_inv_injective : function.injective (zoo_inv σ A N) := 
-function.has_left_inverse.injective ⟨zoo σ A N, zoo_zoo_inv_apply σ A N⟩
-
-noncomputable def linear_map_equiv : ((σ →₀ ℕ) →₀ N) ≃ₗ[A] mv_polynomial σ A ⊗[A] N  := 
+noncomputable def linear_map_equiv [decidable_eq σ] : 
+  ((σ →₀ ℕ) →₀ N) ≃ₗ[A] mv_polynomial σ A ⊗[A] N  := 
 { inv_fun   := zoo_inv σ A N,
   left_inv  := zoo_inv_zoo_apply σ A N,
   right_inv := zoo_zoo_inv_apply σ A N,
