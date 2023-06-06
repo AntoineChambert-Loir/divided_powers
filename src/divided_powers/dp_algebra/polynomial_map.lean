@@ -501,10 +501,8 @@ end locally_finite
 
 section coefficients
 
-variables {ι : Type*} [fintype ι] [decidable_eq ι]
-
 /-- The coefficients of a `polynomial_map` -/
-noncomputable def coeff' {ι : Type*} [fintype ι] [decidable_eq ι] (m : ι → M) (k : ι →₀ ℕ) : 
+noncomputable def coeff' {ι : Type*} [fintype ι] (m : ι → M) (k : ι →₀ ℕ) : 
   polynomial_map A M N →ₗ[A] N := 
 { to_fun    := λ f, tensor_product.lid A N ((mv_polynomial.coeff_hom k).rtensor N
     (f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i)))), 
@@ -513,7 +511,7 @@ noncomputable def coeff' {ι : Type*} [fintype ι] [decidable_eq ι] (m : ι →
     ring_hom.id_apply, linear_equiv.map_smulₛₗ] }
 
 /-- The coefficients of a `polynomial_map` -/
-noncomputable def coeff {ι : Type*} [fintype ι] [decidable_eq ι] (m : ι → M) : 
+noncomputable def coeff {ι : Type*} [fintype ι] (m : ι → M) : 
   polynomial_map A M N →ₗ[A] ((ι →₀ ℕ) →₀ N) := 
 { to_fun    := λ f, zoo_inv _ A N (f.to_fun (mv_polynomial ι A)
       (finset.univ.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i))),
@@ -521,6 +519,7 @@ noncomputable def coeff {ι : Type*} [fintype ι] [decidable_eq ι] (m : ι → 
   map_smul' := λ a f, by { simp only [ring_hom.id_apply, ← map_smul], refl, }, }
 
 
+variables {ι : Type*} [fintype ι]
 
 lemma coeff_eq (m : ι → M) (k : ι →₀ ℕ) (f : polynomial_map A M N) :
   coeff m f k = (tensor_product.lid A N) ((linear_map.rtensor N (mv_polynomial.coeff_hom k))
@@ -528,13 +527,12 @@ lemma coeff_eq (m : ι → M) (k : ι →₀ ℕ) (f : polynomial_map A M N) :
 by simp only [coeff, linear_map.coe_mk, zoo_inv, zoo_inv', finsupp.of_support_finite_coe]
 
 
-theorem image_eq_coeff_sum 
-  {ι : Type*} [fintype ι] [decidable_eq ι] (m : ι → M) 
-  (f : polynomial_map A M N) 
+theorem image_eq_coeff_sum {ι : Type*} [fintype ι] (m : ι → M) (f : polynomial_map A M N) 
   (R : Type*) [comm_semiring R] [algebra A R] (r : ι → R) :
   f.to_fun R (finset.univ.sum (λ i, r i ⊗ₜ[A] m i)) =
 (coeff m f).sum (λ k n, finset.univ.prod (λ i, r i ^ (k i)) ⊗ₜ[A] n) := 
 begin
+  classical,
   suffices : f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)) = 
     (coeff m f).sum (λ k n, mv_polynomial.monomial k 1 ⊗ₜ n),
 
@@ -651,6 +649,7 @@ end
 lemma coeff_of_finsup_polynomial_map (b : basis ι A M) (h : (ι →₀ ℕ) →₀ N) :
   coeff (coe_fn b) (finsupp.polynomial_map b h) = h :=
 begin
+  classical,
   simp only [coeff], dsimp,
   conv_rhs { rw ← zoo_inv_zoo_apply ι A N h, },
   apply congr_arg,
@@ -683,7 +682,7 @@ begin
   rw coeff_of_finsup_polynomial_map, 
 end
 
-example (b : basis ι A M) (i j : ι) :
+example [decidable_eq ι] (b : basis ι A M) (i j : ι) :
   (b.coord i) (b j) = ite (j = i) 1 0 :=
   by
   rw [basis.coord_apply,  basis.repr_self, finsupp.single_apply]
@@ -694,6 +693,7 @@ noncomputable def coeff_polynomial_map_equiv (b : basis ι A M) :
 to_fun := λ h, finsupp.polynomial_map b h,
 map_add' := λ h k, 
 begin
+  classical,
   rw ext_iff,
   ext R _ _ m,
   simp only [finsupp.polynomial_map_to_fun_apply, add_def, pi.add_apply],
@@ -725,3 +725,5 @@ right_inv := λ f, by { dsimp, rw finsup_polynomial_map_of_coeff b, } }
 end coefficients
 
 end polynomial_map 
+
+#lint
