@@ -371,7 +371,7 @@ lemma cond_Q_and_cond_T_free_imply_cond_T (A : Type*) [comm_ring A]
   (hQ : cond_Q A) (hT_free: cond_T_free A) : cond_T A := 
 sorry
 
-/- Requires to prove that divided_power_algebra is compatible with extension of scalars -/
+/- Requires to prove that divided_power_algebra is compatible with restriction of scalars -/
 def dp_scalar_extension (A : Type*) [comm_ring A] (R : Type*) [comm_ring R] [algebra A R]
   (M : Type*) [add_comm_group M] [module A M] [module R M] [is_scalar_tower A R M] :
   R ⊗[A] (divided_power_algebra A M) →ₐ[R] divided_power_algebra R M := 
