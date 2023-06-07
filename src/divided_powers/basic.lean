@@ -418,33 +418,13 @@ def pd_morphism_of_le {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powe
   ideal_comp   := by simp only [ideal.map_id, le_refl],
   dpow_comp    := λ n a ha, by simp only [ring_hom.id_apply] }
 
-/- Roby65, corollary after proposition 3 -/
-/-- Uniqueness of a divided powers given its values on a generating set -/
-lemma dp_uniqueness {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A}
-  (hS : I = ideal.span S) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI = hI' :=
-begin
-  suffices : I.map (ring_hom.id A) ≤ I, 
-  let pd_id := pd_morphism_from_gens hI hI' hS this _,
-  ext n a,
-  by_cases ha : a ∈ I,
-  have := pd_id.dpow_comp n a ha, 
-  suffices pd_id_id : ∀ (x : A), pd_id.to_ring_hom x = x,
-  simp only [pd_id_id] at this,  exact this.symm, 
-  { intro x,refl, },
-  { rw [hI.dpow_null ha, hI'.dpow_null ha], },
-  { intros n a ha, 
-    simp only [subtype.coe_mk, ring_hom.id_apply],
-    exact hdp n a ha, },
-  { simp only [ideal.map_id, le_refl], },
-end
 
 /- Generalization -/
-lemma dp_uniqueness' {A B : Type*} [comm_ring A] [comm_ring B] 
+lemma is_pd_morphism_on_span {A B : Type*} [comm_ring A] [comm_ring B] 
   {I : ideal A} {J : ideal B} (hI :divided_powers I) (hJ : divided_powers J) 
   (f : A →+* B) 
   {S : set A} (hS : I = ideal.span S) (hS' : ∀ s ∈ S, f s ∈ J)
   (hdp : ∀ (n : ℕ) (a ∈ S), f(hI.dpow n a) = hJ.dpow n (f a)) :
---   ∀ (n) (a ∈ I), f (hI.dpow n a)  = hJ.dpow n (f a) := 
   is_pd_morphism hI hJ f :=
 begin
   suffices : I.map f ≤ J,
@@ -458,6 +438,29 @@ begin
   rw ideal.span_le,
   rintros b ⟨a, has, rfl⟩, 
   exact hS' a has, 
+end
+
+lemma dp_uniqueness {A B : Type*} [comm_ring A] [comm_ring B] 
+  {I : ideal A} {J : ideal B} (hI :divided_powers I) (hJ : divided_powers J) 
+  (f : A →+* B) 
+  {S : set A} (hS : I = ideal.span S) (hS' : ∀ s ∈ S, f s ∈ J)
+  (hdp : ∀ (n : ℕ) (a ∈ S), f(hI.dpow n a) = hJ.dpow n (f a)) :
+  ∀ (n) (a ∈ I), hJ.dpow n (f a) = f (hI.dpow n a) := 
+(is_pd_morphism_on_span hI hJ f hS hS' hdp).2
+
+/- Roby65, corollary after proposition 3 -/
+/-- Uniqueness of a divided powers given its values on a generating set -/
+lemma dp_uniqueness_self {A : Type*} [comm_ring A] {I : ideal A} (hI hI' : divided_powers I) {S : set A}
+  (hS : I = ideal.span S) (hdp : ∀ (n : ℕ) (a ∈ S), hI.dpow n a = hI'.dpow n a) : hI' = hI :=
+begin
+  ext n a,
+  by_cases ha : a ∈ I, 
+  simpa only using hI.dp_uniqueness hI' (ring_hom.id A) hS _ _ n a ha, 
+  { simp only [ring_hom.id_apply, hS],
+    intros s hs, exact ideal.subset_span hs, },
+  { simpa only [ring_hom.id_apply] using hdp, },
+  -- case a ∉ I
+  { rw [hI.dpow_null ha, hI'.dpow_null ha], },
 end
 
 -- For the moment, the notation does not work

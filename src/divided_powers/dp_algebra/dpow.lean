@@ -35,11 +35,12 @@ lemma on_dp_algebra_unique (h h' : divided_powers (aug_ideal R M))
   (h1' : ∀ (n : ℕ) (x : M), h'.dpow n (ι R x) = dp R n x) :
 h = h' := 
 begin
-  apply divided_powers.dp_uniqueness h h' (aug_ideal_eq_span R M),
+  apply divided_powers.dp_uniqueness_self h' h (aug_ideal_eq_span R M),
   rintros n f ⟨q, m, hq : 0 < q, _, rfl⟩, 
-  nth_rewrite 0 [← h1 q m],
-  rw [← h1' q m, h.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
-    h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), h1 _ m,  h1' _ m], 
+  nth_rewrite 0 [← h1' q m],
+  rw [← h1 q m, h.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
+    h'.dpow_comp n (ne_of_gt hq) (ι_mem_aug_ideal R M m), 
+    h1 _ m,  h1' _ m], 
 end
 
 
@@ -79,6 +80,7 @@ variables (A R S : Type*) [comm_ring A] [comm_ring R] [algebra A R] [comm_ring S
 def i_1 : R →ₐ R ⊗[A] S := algebra.tensor_product.include_left
 
 def i_2 : S →ₐ R ⊗[A] S := algebra.tensor_product.include_right
+
 
 variables {R S} (I J)
 def K : ideal (R ⊗[A] S) := (I.map (i_1 A R S)) ⊔ (J.map (i_2 A R S))
@@ -183,7 +185,7 @@ begin
   { intros n a ha,
 --    simp only [alg_hom.coe_to_ring_hom], 
     apply symm,
-    rw (dp_uniqueness' h hJ (lift R M hJ f hf) (aug_ideal_eq_span R M) _ _ ).2 n a ha,
+    rw (dp_uniqueness h hJ (lift R M hJ f hf) (aug_ideal_eq_span R M) _ _ ) n a ha,
     { rintros a ⟨q, m, hq : 0 < q, hm, rfl⟩,
       simp only [alg_hom.coe_to_ring_hom, lift_dp_eq],
       exact hJ.dpow_mem (ne_of_gt hq) (hf m), },
@@ -197,15 +199,6 @@ begin
       rw hh, rw lift_dp_eq, }, },
 end
 
-
-section add
-
-example (A : Type*) [comm_ring A] (B : Type*) [comm_ring B]
-  (I₁ I₂ : ideal A) (hI₁ : divided_powers I₁) (hI₂ : divided_powers I₂)
-  (J : ideal B) [divided_powers J] : Prop := sorry
-  
-
-end add
 
 
 -- Roby, lemma 4
@@ -233,13 +226,8 @@ begin
   end, },
 
   classical,
---  suffices dec_eq_R : decidable_eq R, haveI := dec_eq_R , 
   let hR := divided_powers_bot R, 
---  resetI,
-
---  suffices dec_eq_I : decidable_eq I, haveI := dec_eq_I,
   let M := (↥I →₀ A),
-  -- have : module A M := finsupp.module ↥I A,
   let f : M →ₗ[A] S := {
   to_fun := λ p, finsupp.sum p (λ (i : I) (r : A), r • (i : S)),
   map_add' := λ p q, 
@@ -284,13 +272,54 @@ begin
   use K A ⊥ (aug_ideal A M),
   use hK,
   split,
-  { split,
+  { suffices hmap_le : _,
+    apply and.intro hmap_le, -- split,
+    { intros n a ha,
+      let ha' := id ha,
+      simp only [K, ideal.map_bot, bot_sup_eq] at ha,
+      simp only [is_pd_morphism] at hM_pd,
+      apply dp_uniqueness hK hI, 
+      simp only [K, ideal.map_bot, bot_sup_eq], rw ideal.map, 
+      { rintros s ⟨a, ha, rfl⟩,
+        simp only [i_2, algebra.tensor_product.include_right_apply, 
+          alg_hom.coe_to_ring_hom, algebra.tensor_product.product_map_apply_tmul, 
+          map_one, one_mul],
+        apply lift_mem_of_mem_aug_ideal, 
+        exact ha, },
+        
+      { rintros n s ⟨a, ha, rfl⟩,
+        simp only [set_like.mem_coe] at ha,
+        have := hM_pd.2 n a ha,
+        simp only [alg_hom.coe_to_ring_hom] at this,
+        rw this,
+        simp only [i_2, algebra.tensor_product.include_right_apply, 
+          alg_hom.coe_to_ring_hom, algebra.tensor_product.product_map_apply_tmul, 
+          map_one, one_mul],
+
+        apply symm,
+        apply dp_uniqueness hM hI,
+        rw aug_ideal_eq_span,
+        { rintros s ⟨q, m, hq, hm, rfl⟩,
+          change (lift A M hI f hf) (dp A q m) ∈ I, 
+          rw lift_dp_eq, 
+          exact hI.dpow_mem (ne_of_gt hq) (hf m), },
+        { rintros n s ⟨q, m, hq, hm, rfl⟩,
+          change (lift A M hI f hf) (hM.dpow n (dp A q m)) = 
+            hI.dpow n ((lift A M hI f hf) (dp A q m)),
+          rw [lift_dp_eq, ← hM_eq, hM.dpow_comp n (ne_of_gt hq), hM_eq,
+            hI.dpow_comp n (ne_of_gt hq) (hf m)],
+          simp only [← nsmul_eq_mul], rw map_nsmul,
+          rw lift_dp_eq,
+          exact ι_mem_aug_ideal A M m, },
+        exact ha, },
+      exact ha' },
     { rw [K, ideal.map_bot, bot_sup_eq],
-
-      -- why can't I conclude ? — tomorrow is another day
-
-    sorry },
-    { sorry }, },
+      simp only [ideal.map_le_iff_le_comap],
+      intros x hx,
+      simp only [ideal.mem_comap, i_2, algebra.tensor_product.include_right_apply, alg_hom.coe_to_ring_hom,
+  algebra.tensor_product.product_map_apply_tmul, map_one, one_mul],
+      apply lift_mem_of_mem_aug_ideal,
+      exact hx, }, },
   { rw ← (algebra.range_top_iff_surjective _),
     rw algebra.tensor_product.product_map_range, 
     suffices : (is_scalar_tower.to_alg_hom A R S).range = ⊤,
@@ -304,15 +333,13 @@ begin
     apply hT_free,
     exact hR_free,
     exact hdpM_free, }, 
-    -- R : mv_polynomials
-    -- apply module.free.of_basis (mv_polynomial.basis_monomials _ _),
-    -- divided_power_algebra of a free module
-    -- suffices : module.free A M,
-    -- sorry, 
-    -- exact module.free.finsupp ↥I A A, }, -/
-  
---  all_goals { classical, apply_instance, },
 end
+
+example {A : Type*} [comm_ring A] (a : A) (n : ℕ) : n • a = n * a :=
+begin
+refine nsmul_eq_mul n a,
+end
+
 
 -- Roby, lemma 5
 lemma ker_tens (A : Type*) [comm_ring A] {R S R' S' : Type*} 

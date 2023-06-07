@@ -459,6 +459,16 @@ begin
   rw algebra_map_right_inv_of_degree_zero R M x,
 end
 
+lemma lift_aug_ideal_le {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) : ideal.map (lift R M hI φ hφ) (aug_ideal R M) ≤ I := 
+begin
+  simp only [aug_ideal_eq_span, ideal.map_span, ideal.span_le, set_like.mem_coe],
+  rintros y ⟨x, ⟨n, m, hn, hm, rfl⟩, rfl⟩,
+  rw lift_dp_eq, 
+  exact hI.dpow_mem (ne_of_gt hn) (hφ m),
+end
+
+lemma lift_mem_of_mem_aug_ideal {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) (φ : M →ₗ[R] A) (hφ : ∀ m, φ m ∈ I) (x : divided_power_algebra R M) (hx : x ∈ aug_ideal R M) : lift R M hI φ hφ x ∈ I := (lift_aug_ideal_le R M hI φ hφ) (mem_map_of_mem _ hx)
+
 /- grade R M 0 → R is isomorphism -/
 noncomputable! def ring_equiv_degree_zero [decidable_eq R] [decidable_eq M] :
   ring_equiv (grade R M 0) R := 
