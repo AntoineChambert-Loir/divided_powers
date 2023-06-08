@@ -341,16 +341,7 @@ refine nsmul_eq_mul n a,
 end
 
 
--- Roby, lemma 5
-lemma ker_tens (A : Type*) [comm_ring A] {R S R' S' : Type*} 
-  [comm_ring R] [comm_ring S] [comm_ring R'] [comm_ring S']
-  [algebra A R] [algebra A S] [algebra A R'] [algebra A S'] 
-  (f : R →ₐ[A] R') (g : S →ₐ[A] S') 
-  (hf : function.surjective f) (hg : function.surjective g) : 
-  ring_hom.ker (algebra.tensor_product.map f g) 
-  = (f.to_ring_hom.ker.map (algebra.tensor_product.include_left : R →ₐ[A] (R ⊗[A] S))) 
-  ⊔ ((g.to_ring_hom.ker.map (algebra.tensor_product.include_right : S →ₐ[A] (R ⊗[A] S)))) :=
-sorry
+
 
 -- Roby, lemma 6
 lemma cond_τ_rel (A : Type*) [comm_ring A] {R S R' S' : Type*} 

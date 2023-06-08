@@ -30,6 +30,31 @@ end
 
 end ring_hom
 
+section alg_hom
+
+
+lemma alg_hom.ker_eq_ideal_iff  {R A B : Type*} [comm_ring R] [comm_ring A] [algebra R A] [comm_ring B] [algebra R B] (f : A →ₐ[R] B) (I : ideal A) :
+  ring_hom.ker f = I ↔ ∃ (h : I ≤ ring_hom.ker f), 
+  function.injective (ideal.quotient.liftₐ I f h) := 
+begin
+  have : ring_hom.ker f = ring_hom.ker f.to_ring_hom, refl,
+  split,
+  { intro hI, use le_of_eq hI.symm,
+    suffices : function.injective (ideal.quotient.lift I f.to_ring_hom (le_of_eq hI.symm)),
+    intros x y hxy, apply this,
+    simpa only [ideal.quotient.liftₐ_apply] using hxy, 
+    apply ring_hom.lift_injective_of_ker_le_ideal, 
+    rw [←hI, ←this], exact le_refl _, },
+  { rintro ⟨hI, h⟩, 
+    rw this, rw ring_hom.ker_eq_ideal_iff,
+    rw this at hI, use hI,
+    intros x y hxy, 
+    apply h,
+    simpa only [ideal.quotient.liftₐ_apply] using hxy, },
+end
+
+end alg_hom
+
 variables (R : Type*) [comm_ring R] 
  (S : Type*) [comm_ring S] 
 
