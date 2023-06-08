@@ -4,8 +4,11 @@ import divided_powers.dp_algebra.graded
 import divided_powers.rat_algebra
 import divided_powers.sub_pd_ideal
 import divided_powers.ideal_add
+import divided_powers.dp_algebra.roby_lemma5
+import divided_powers.dp_algebra.roby_lemma9
 
-import ring_theory.tensor_product
+
+-- import ring_theory.tensor_product
 import ring_theory.mv_polynomial.basic
 
 noncomputable theory
@@ -340,7 +343,7 @@ begin
 refine nsmul_eq_mul n a,
 end
 
-
+.
 
 
 -- Roby, lemma 6
@@ -355,7 +358,21 @@ lemma cond_τ_rel (A : Type*) [comm_ring A] {R S R' S' : Type*}
   {J' : ideal S'} (hJ' : divided_powers J')
   (hf' : is_pd_morphism hI hI' f) (hg' : is_pd_morphism hJ hJ' g)
   (hRS : cond_τ A hI hJ) : cond_τ A hI' hJ' :=
-sorry
+begin
+  obtain ⟨hK, hK_pd⟩ := hRS, 
+  simp only [cond_τ],
+  let fg := (algebra.tensor_product.map f g),
+  let k_fg := algebra.tensor_product.ker_tens hf hg, 
+  suffices : K A I' J' = (K A I J).map fg,
+  rw this,
+  use divided_power.quot.divided_powers 
+
+  sorry,
+
+end
+
+
+#exit
 
 -- Roby, lemma 7
 lemma cond_Q_and_cond_T_free_imply_cond_T (A : Type*) [comm_ring A]

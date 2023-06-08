@@ -6,7 +6,7 @@ import divided_powers.dp_algebra.roby_lemma9
 
 -- import ...generalisation.generalisation_linter
 
-
+namespace algebra.tensor_product
 
 open_locale tensor_product
 local notation  M ` ⊗[`:100 R `] `:0 N:100 := tensor_product R M N
@@ -190,3 +190,4 @@ begin
 end
 
 
+end algebra.tensor_product
