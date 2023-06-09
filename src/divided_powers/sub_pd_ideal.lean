@@ -507,120 +507,22 @@ end generated
 
 end sub_pd_ideal
 
-namespace quot
+
+section quotient
+
+/- Divided power structure on a quotient ring in two sorts:
+* the case of a surjective ring_hom 
+* specific case for ideal.quotient.mk   -/
+
+namespace quotient 
 
 variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 
-/- Tagged as noncomputable because it makes use of function.extend, 
-but under is_sub_pd_ideal hI (J ⊓ I), dpow_quot_eq proves that no choices are involved -/
-/-- The definition of divided powers on A ⧸ J -/
-noncomputable def dpow (J : ideal A) : ℕ → (A ⧸ J) → (A ⧸ J) := 
-λ n, function.extend (λ a, ideal.quotient.mk J ↑a : I → A ⧸ J) 
-  (λ a, (ideal.quotient.mk J) (hI.dpow n a) : I → A ⧸ J) 0
+section of_surjective 
 
-variables {J : ideal A} (hIJ : is_sub_pd_ideal hI (J ⊓ I))
+namespace of_surjective
 
-include hIJ
-
-open_locale classical
-
-/-- Divided powers on the quotient are compatible with quotient map -/
-lemma dpow_eq {n : ℕ} {a : A} (ha : a ∈ I) :
-  dpow hI J n (ideal.quotient.mk J a) = (ideal.quotient.mk J) (hI.dpow n a) :=
-begin
-  have ha' : ∃ (a' : ↥I), (ideal.quotient.mk J) ↑a' = (ideal.quotient.mk J) a := ⟨⟨a, ha⟩, rfl⟩,
-  simp only [dpow],
-  rw [ function.extend_def, dif_pos ha', ideal.quotient.eq], 
-  apply (is_sub_pd_ideal_inf_iff hI J).mp hIJ n _ _ (set_like.coe_mem _) ha,
-  rw [← ideal.quotient.eq, classical.some_spec ha'], 
-end
-
--- We wish for a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
-/-- When `I ⊓ J` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I(A⧸J)` of the quotient -/
-noncomputable def divided_powers : divided_powers (I.map (ideal.quotient.mk J)) :=
-{ dpow := dpow hI J, 
-  dpow_null := λ n x hx, 
-  begin
-    simp only [dpow, function.extend_def], 
-    have ha' : ¬ ∃ (a' : ↥I), (ideal.quotient.mk J) ↑a' = x,
-    { rintro ⟨a, rfl⟩, 
-      exact hx (ideal.apply_coe_mem_map (ideal.quotient.mk J) I a), },
-    rw [dif_neg ha', pi.zero_apply],
-  end,
-  dpow_zero := λ x hx, 
-  begin
-    obtain ⟨a, ha, hax⟩ := 
-    (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hx,
-    rw [← hax, dpow_eq hI hIJ ha, hI.dpow_zero ha, map_one],
-  end,
-  dpow_one := λ x hx, 
-  begin
-    obtain ⟨a, ha, hax⟩ := 
-    (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hx,
-    rw [← hax, dpow_eq hI hIJ ha, hI.dpow_one ha],
-  end,
-  dpow_mem := λ n hn x hx, 
-  begin 
-    simp only [dpow], rw function.extend_def,
-    split_ifs with ha,
-    { rw [ideal.mem_quotient_iff_mem_sup],
-      exact ideal.mem_sup_left (hI.dpow_mem hn (set_like.coe_mem _)) },
-    { exact ideal.zero_mem _ }
-  end, 
-  dpow_add := λ n x y hx hy, 
-  begin
-    obtain ⟨a, ha, hax⟩ := 
-    (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hx,
-    obtain ⟨b, hb, hby⟩ := 
-    (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hy,
-    rw [← hax, ← hby, ← map_add, dpow_eq hI hIJ (I.add_mem ha hb), hI.dpow_add n ha hb, 
-      map_sum, 
- finset.sum_congr rfl],
-    { intros k hk, 
-      rw [dpow_eq hI hIJ ha, dpow_eq hI hIJ hb, ← map_mul] },
-  end,
-  dpow_smul := λ n x y hy, 
-  begin
-    obtain ⟨a, rfl⟩ := ideal.quotient.mk_surjective x, 
-    obtain ⟨b, hb, hby⟩ := 
-    (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hy,
-    rw [← hby, dpow_eq hI hIJ hb, ← map_mul, ← map_pow, dpow_eq hI hIJ (ideal.mul_mem_left I a hb),
-      hI.dpow_smul n hb, map_mul],
-    end,
-  dpow_mul := λ m n x hx, 
-  begin
-    obtain ⟨a, ha, hax⟩ := 
-    (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hx,
-    simp only [← hax, dpow_eq hI hIJ ha], 
-    rw [← map_mul, hI.dpow_mul m n ha, map_mul, map_nat_cast],
-  end,
-  dpow_comp := λ m n hn x hx,
-  begin 
-    obtain ⟨a, ha, hax⟩ := 
-    (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hx,
-    simp only [← hax, dpow_eq hI hIJ, ha, hI.dpow_mem hn ha],
-    rw [hI.dpow_comp m hn ha, map_mul, map_nat_cast],
-  end }
-
-lemma divided_powers_dpow_quot_apply {n : ℕ} {x : A ⧸ J} :
-  (divided_powers hI hIJ).dpow n x = dpow hI J n x :=
-rfl
-
-lemma divided_powers_quot_unique (hquot : _root_.divided_powers (I.map (ideal.quotient.mk J)))
-  (hm : is_pd_morphism hI hquot (ideal.quotient.mk J)) :
-  hquot = divided_powers hI hIJ := eq_of_eq_on_ideal _ _ $ λ n x hx,
-begin
-  obtain ⟨a, ha, hax⟩ := 
-  (ideal.mem_map_iff_of_surjective _ (ideal.quotient.mk J).is_surjective).mp hx,
-  rw [← hax, hm.2 n a ha, divided_powers_dpow_quot_apply, dpow_eq hI hIJ ha],
-end
-
-end quot
--- end divided_powers
-
-namespace quot'
 /- Define divided powers on a quotient map via a surjective morphism -/
-variables {A : Type*} [comm_ring A] {I : ideal A} (hI : divided_powers I)
 variables {B : Type*} [comm_ring B] (f : A →+* B)
 (hf : function.surjective f)
 
@@ -630,12 +532,9 @@ but under is_sub_pd_ideal hI (J ⊓ I), dpow_quot_eq proves that no choices are 
 noncomputable def dpow : ℕ → B → B := λ n, 
   function.extend (λ a, f a : I → B) (λ a, f (hI.dpow n a) : I → B) 0
 
-
 variable (hIf : is_sub_pd_ideal hI (f.ker ⊓ I))
 
 include hIf
-
-open_locale classical
 
 variable {f}
 include hf
@@ -643,6 +542,7 @@ include hf
 lemma dpow_eq {n : ℕ} {a : A} (ha : a ∈ I) :
   dpow hI f n (f a) = f (hI.dpow n a) :=
 begin
+  classical,
   simp only [dpow, function.extend_def],
   suffices : _, rw dif_pos this, 
   rw [← sub_eq_zero, ← map_sub, ← ring_hom.mem_ker],
@@ -654,22 +554,12 @@ begin
   { use ⟨a, ha⟩, simp only [submodule.coe_mk], },
 end
 
-lemma dpow_not_mem {n : ℕ} {b : B} (hb : b ∉ I.map f) :
-  dpow hI f n b = 0 :=
-begin
-  simp only [dpow, function.extend_def], rw dif_neg, 
-  simp only [pi.zero_apply],
-  intro h, 
-  obtain ⟨⟨a, ha⟩, rfl⟩ := h, apply hb, 
-  exact ideal.apply_coe_mem_map f I ⟨a, ha⟩,
-end
-
-
 /-- When `f.ker ⊓ I` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I.map f` of the target -/
 noncomputable def divided_powers : divided_powers (I.map f) :=
 { dpow := dpow hI f, 
   dpow_null := λ n x hx', 
   begin
+    classical,
     simp only [dpow, function.extend_def], rw dif_neg, 
     simp only [pi.zero_apply],
     intro h, 
@@ -722,18 +612,56 @@ noncomputable def divided_powers : divided_powers (I.map f) :=
     rw [hI.dpow_comp m hn ha, map_mul, map_nat_cast],
   end }
 
-lemma divided_powers_dpow_quot_apply {n : ℕ} {x : B} :
+lemma dpow_apply {n : ℕ} {x : B} :
   (divided_powers hI hf hIf).dpow n x = dpow hI f n x :=
 rfl
 
-lemma divided_powers_quot_unique (hquot : _root_.divided_powers (I.map f))
+lemma unique (hquot : _root_.divided_powers (I.map f))
   (hm : is_pd_morphism hI hquot f) :
   hquot = divided_powers hI hf hIf := eq_of_eq_on_ideal _ _ $ λ n x hx,
 begin
   obtain ⟨a, ha, rfl⟩ :=  (ideal.mem_map_iff_of_surjective f hf).mp hx,
-  rw [hm.2 n a ha, divided_powers_dpow_quot_apply, dpow_eq hI hf hIf ha],
+  rw [hm.2 n a ha, dpow_apply, dpow_eq hI hf hIf ha],
 end
 
-end quot'
+end of_surjective
+
+end of_surjective
+
+variables {J : ideal A} (hIJ : is_sub_pd_ideal hI (J ⊓ I))
+
+/- Tagged as noncomputable because it makes use of function.extend, 
+but under is_sub_pd_ideal hI (J ⊓ I), dpow_quot_eq proves that no choices are involved -/
+/-- The definition of divided powers on A ⧸ J -/
+noncomputable def dpow (J : ideal A) : ℕ → (A ⧸ J) → (A ⧸ J) := 
+divided_powers.quotient.of_surjective.dpow hI (ideal.quotient.mk J)
+
+include hIJ
+
+private def is_sub_pd_aux : is_sub_pd_ideal hI ((ideal.quotient.mk J).ker ⊓ I) :=
+by simpa [ideal.mk_ker] using hIJ 
+
+/-- Divided powers on the quotient are compatible with quotient map -/
+lemma dpow_eq {n : ℕ} {a : A} (ha : a ∈ I) :
+  dpow hI J n (ideal.quotient.mk J a) = (ideal.quotient.mk J) (hI.dpow n a) :=
+divided_powers.quotient.of_surjective.dpow_eq hI (ideal.quotient.mk_surjective) (is_sub_pd_aux hI hIJ) ha
+
+-- We wish for a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
+/-- When `I ⊓ J` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I(A⧸J)` of the quotient -/
+noncomputable def divided_powers : divided_powers (I.map (ideal.quotient.mk J)) :=
+divided_powers.quotient.of_surjective.divided_powers hI (ideal.quotient.mk_surjective) (is_sub_pd_aux hI hIJ)
+
+lemma dpow_apply {n : ℕ} {x : A ⧸ J} :
+  (divided_powers hI hIJ).dpow n x = dpow hI J n x :=
+rfl
+
+lemma unique (hquot : _root_.divided_powers (I.map (ideal.quotient.mk J)))
+  (hm : is_pd_morphism hI hquot (ideal.quotient.mk J)) :
+  hquot = divided_powers hI hIJ := 
+divided_powers.quotient.of_surjective.unique hI ideal.quotient.mk_surjective (is_sub_pd_aux hI hIJ) hquot hm 
+
+end quotient
+
+end quotient
 
 end divided_powers
