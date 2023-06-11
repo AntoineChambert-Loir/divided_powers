@@ -313,6 +313,25 @@ def is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : 
   (hI : divided_powers I) (hJ : divided_powers J) (f : A →+* B) : Prop :=
 (I.map f) ≤ J ∧  ∀ (n : ℕ) (a ∈ I), hJ.dpow n (f a) = f (hI.dpow n a)
 
+lemma is_pd_morphism.comp {A B C : Type*} [comm_ring A] [comm_ring B] [comm_ring C] {I : ideal A} {J : ideal B} {K : ideal C} 
+  (hI : divided_powers I) (hJ : divided_powers J) (hK : divided_powers K) (f : A →+* B) (g : B →+* C) (h : A →+* C)
+  (hcomp : g.comp f = h) :
+  is_pd_morphism hJ hK g → is_pd_morphism hI hJ f → is_pd_morphism hI hK h :=
+begin
+  intros hg hf, rw ← hcomp,
+  split,
+  { apply le_trans _ hg.1, 
+    rw ← ideal.map_map,
+    exact ideal.map_mono hf.1, },
+  { intros n a ha, 
+    simp only [ring_hom.coe_comp, function.comp_app],
+    rw ← hf.2 n a ha, 
+    rw hg.2, 
+    apply hf.1,
+    exact ideal.mem_map_of_mem f ha, }
+end
+
+
 /-- The structure of a pd_morphism between rings endowed with pd-rings -/
 @[ext] structure pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
   (hI : divided_powers I) (hJ : divided_powers J) :=
@@ -447,6 +466,21 @@ lemma dp_uniqueness {A B : Type*} [comm_ring A] [comm_ring B]
   (hdp : ∀ (n : ℕ) (a ∈ S), f(hI.dpow n a) = hJ.dpow n (f a)) :
   ∀ (n) (a ∈ I), hJ.dpow n (f a) = f (hI.dpow n a) := 
 (is_pd_morphism_on_span hI hJ f hS hS' hdp).2
+
+
+lemma is_pd_morphism.of_comp {A B C : Type*} [comm_ring A] [comm_ring B] [comm_ring C] {I : ideal A} {J : ideal B} {K : ideal C} 
+  (hI : divided_powers I) (hJ : divided_powers J) (hK : divided_powers K) (f : A →+* B) (g : B →+* C) (h : A →+* C)
+  (hcomp : g.comp f = h) (sf : J = I.map f):
+  is_pd_morphism hI hJ f → is_pd_morphism hI hK h → is_pd_morphism hJ hK g :=
+begin
+  intros hf hh,
+  apply is_pd_morphism_on_span, exact sf, 
+  rintros b ⟨a, ha, rfl⟩, rw ← ring_hom.comp_apply, rw hcomp,
+  apply hh.1, apply ideal.mem_map_of_mem, exact ha,
+  rintros n b ⟨a, ha, rfl⟩,
+  rw [← ring_hom.comp_apply, hcomp, hh.2 n a ha, ← hcomp, ring_hom.comp_apply],
+  rw hf.2 n a ha, 
+end
 
 /- Roby65, corollary after proposition 3 -/
 /-- Uniqueness of a divided powers given its values on a generating set -/

@@ -148,8 +148,8 @@ begin
   rw hinv_f g hf, rw hinv_g f hg, rw ← map_mul,
   rw ideal.quotient.mkₐ_eq_mk,
   apply congr_arg, 
-  simp only [algebra.tensor_product.include_left_apply, algebra.tensor_product.include_right_apply,
-  algebra.tensor_product.tmul_mul_tmul, mul_one, one_mul],
+  simp only [algebra.tensor_product.include_left_apply, algebra.tensor_product.include_right_apply, algebra.tensor_product.tmul_mul_tmul, 
+  _root_.mul_one r, _root_.one_mul s],
 end
 
 
