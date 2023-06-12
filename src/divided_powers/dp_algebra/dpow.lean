@@ -10,6 +10,7 @@ import divided_powers.dp_algebra.roby_lemma9
 
 -- import ring_theory.tensor_product
 import ring_theory.mv_polynomial.basic
+import for_mathlib.ring_theory.ideal
 
 noncomputable theory
 
@@ -345,6 +346,58 @@ end
 
 .
 
+/- In Roby, all PD-algebras A considered are of the form A₀ ⊕ A₊, 
+where A₊ is the PD-ideal. In other words, the PD-ideal is an augmentation ideal.
+Moreover, PD-morphisms map A₀ to B₀ and A₊ to B₊,
+so that their kernel is a direct sum K₀ ⊕ K₊ 
+
+Roby states this as a sory of `pre-graded algebras`, 
+which correspond to graded algebras by the monoid {⊥, ⊤} with carrier set (fin 0)
+or fin 2 (with multiplication)
+
+I am not sure that the proofs can avoid this hypothesis, 
+especially for tensor products (alas…).
+
+The question is about the formalism to use. 
+With `is_augmentation_ideal A I`, and `is_augmentation_ideal B J`,
+we need to state out the assumption that `f : A →+* B` is homogeneous.
+
+It maps A₊ to B₊ by definition of a PD-morphism,
+but A₀ and B₀ are not canonical. 
+The definition of an augmentation ideal is the existence of
+a section A/A₊ →+* A, whose image is A₀. 
+Write r₀ for the composition A →+* A/A₊ →+* A₀.
+The assumptions are : A₊ ≤ r₀.ker, r₀.range ⊓ A₊ = 0
+
+If f is homogeneous (for the two chosen maps r₀), then r₀ (f a) = f (r₀ a)
+and f.ker = (f.ker ⊓ A₀) ⊕ (f.ker ⊓ A₊)
+or map f I is an augmentation ideal in f.range 
+
+This looks less convenient than imposing the graded structure
+
+In lemma 6, we have two surjective algebra morphisms
+ f : R →+* R',  g : S →+* S'
+and we consider the induced surjective morphism fg : R ⊗ S →+* R' ⊗ S'
+R has a PD-ideal I,  R' has a PD-ideal I',
+S has a PD-ideal J,  S' has a PD-ideal J'
+with assumptions that I' = map f I and J' = map g J,
+with quotient PD structures
+
+Lemma 5 has proved that  fg.ker = (f.ker ⊗ 1) ⊔ (1 ⊗ g.ker)
+
+In the end, Roby applies its proposition 4 which we
+apparently haven't formalized and make use of yet another definition, 
+namely of a `divised ideal` : 
+Up to the homogeneous condition, this is exactly that `K ⊓ I` is a sub-pd-ideal.
+The proof of proposition goes by using that 
+`ideal.span s ⊓ I = ideal.span s ⊓ I`
+if `s` is made of homogeneous elements. 
+
+So this is what we want to assume here. 
+We want something similar on fg.ker ⊓ I : 
+fg.ker ⊓ (I = (f.ker \)
+-/
+
 
 -- Roby, lemma 6
 lemma cond_τ_rel (A : Type*) [comm_ring A] {R S R' S' : Type*} 
@@ -352,13 +405,18 @@ lemma cond_τ_rel (A : Type*) [comm_ring A] {R S R' S' : Type*}
   [algebra A R] [algebra A S] [algebra A R'] [algebra A S'] 
   (f : R →ₐ[A] R') (g : S →ₐ[A] S') 
   (hf : function.surjective f) (hg : function.surjective g)
-  {I : ideal R} (hI : divided_powers I) 
+  {I : ideal R} (haug_I : is_augmentation_ideal R I) (hI : divided_powers I) 
   {J : ideal S} (hJ : divided_powers J)
   {I' : ideal R'} (hI' : divided_powers I') 
   {J' : ideal S'} (hJ' : divided_powers J')
+  (hI'I : I' ≤ I.map f) (hJ'J : J' ≤ J.map g)
   (hf' : is_pd_morphism hI hI' f) (hg' : is_pd_morphism hJ hJ' g)
   (hRS : cond_τ A hI hJ) : cond_τ A hI' hJ' :=
 begin
+  suffices roby : ring_hom.ker (algebra.tensor_product.map f g) ⊓ K A I J = 
+    map (algebra.tensor_product.include_left : R →ₐ[A] R ⊗[A] S) (ring_hom.ker f ⊓ I) 
+    ⊔ map (algebra.tensor_product.include_right : S →ₐ[A] R ⊗[A] S) (ring_hom.ker g ⊓ J) ,
+  
   obtain ⟨hK, hK_pd⟩ := hRS, 
   simp only [cond_τ],
   let fg := (algebra.tensor_product.map f g),
@@ -370,7 +428,7 @@ begin
   let hK' := divided_powers.quotient.of_surjective.divided_powers hK s_fg hK'_pd,
   use hK',
   split,
-  { -- apply divided_powers.is_pd_morphism.of_comp hI hI' hK', 
+  { -- hI'.is_pd_morphism hK' ↑(i_1 A R' S')
     split, 
     { rw ← hK_map,
       rw ideal.map_le_iff_le_comap, intros a' ha',
@@ -387,15 +445,87 @@ begin
       apply congr_arg,
       simp only [← algebra.tensor_product.include_left_apply], 
       exact hK_pd.1.2 n a ha, 
-      sorry, sorry, sorry }, },
-  sorry,
-  sorry,
-  sorry,
+      { apply ideal.mem_sup_left, apply ideal.mem_map_of_mem, exact ha, },
+      { intro x, 
+        simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, 
+          algebra.tensor_product.map_tmul, map_one], }, 
+      { have := ideal.image_eq_map_of_surjective f.to_ring_hom I _, 
+        simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom] at this,
+        rw this, exact hI'I ha', 
+        simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom], 
+        exact hf, }, }, },
+  { -- hJ'.is_pd_morphism hK' ↑(i_2 A R' S')
+    split, 
+    { rw ← hK_map,
+      rw ideal.map_le_iff_le_comap, intros a' ha',
+      rw ideal.mem_comap,
+      apply ideal.mem_sup_right, apply ideal.mem_map_of_mem, exact ha', },
+    { intros n a' ha', 
+      suffices ha : a' ∈ g '' J, obtain ⟨a, ha, rfl⟩ := ha,
+      simp only [i_2, alg_hom.coe_to_ring_hom, algebra.tensor_product.include_right_apply],
+      suffices : ∀ (y : S), fg.to_ring_hom (1 ⊗ₜ[A] y) = 1 ⊗ₜ[A] g y, rw ← this,
+      rw quotient.of_surjective.dpow_apply hK s_fg, 
+      have that := hg'.2 n a ha, 
+      simp only [alg_hom.coe_to_ring_hom] at that, rw that,
+      rw ← this, 
+      apply congr_arg,
+      simp only [← algebra.tensor_product.include_right_apply], 
+      exact hK_pd.2.2 n a ha, 
+      { apply ideal.mem_sup_right, apply ideal.mem_map_of_mem, exact ha, },
+      { intro x, 
+        simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom, 
+          algebra.tensor_product.map_tmul, map_one], }, 
+      { have := ideal.image_eq_map_of_surjective g.to_ring_hom J _, 
+        simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom] at this,
+        rw this, exact hJ'J ha', 
+        simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom], 
+        exact hg, }, }, },
+  { -- ring_hom.ker fg is a “divised ideal”
+    change is_sub_pd_ideal hK (ring_hom.ker (algebra.tensor_product.map f g) ⊓ K A I J),
+    rw roby, 
+
+    sorry,
+   /-  split,
+    -- simp only [inf_le_right],
+    intros n hn x, 
+    simp only [alg_hom.to_ring_hom_eq_coe, mem_inf, and_imp],
+    intros hx1 hxK,
+    apply and.intro _ (hK.dpow_mem hn hxK),
+    suffices : ring_hom.ker ↑fg = ring_hom.ker (algebra.tensor_product.map f g),
+    rw [this, k_fg] at hx1 ⊢,
+    rw ← ideal.add_eq_sup at hx1, 
+    simp only [← set_like.mem_coe] at hx1, 
+    -- rw set.coe_add at hx1,
+    -- simp only [set.mem_add] at hx1, 
+
+    obtain ⟨y, z, hyz⟩:= hx1,  
+ -/
+  },
+  
+  { -- K A I' J' = map fg (K A I J)
+    sorry, },
+  sorry, -- roby condition
+end
+
+
+
+#exit
+
+open_locale pointwise
+example (A : Type*) [comm_ring A] (I : ideal A) (hI : divided_powers I)
+  (J : ideal A) : is_sub_pd_ideal hI (J ⊓ I) ↔ false := sorry
+
+
+example (A : Type*) [comm_ring A] (I : ideal A) (hI : divided_powers I) 
+  (J K : ideal A) (hJ : is_sub_pd_ideal hI (J ⊓ I)) (hK : is_sub_pd_ideal hI (K ⊓ I)) :
+  is_sub_pd_ideal hI ((J ⊔ K) ⊓ I) :=
+begin
+
 
 end
 
 
-#exit
+
 
 -- Roby, lemma 7
 lemma cond_Q_and_cond_T_free_imply_cond_T (A : Type*) [comm_ring A]

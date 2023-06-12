@@ -338,7 +338,7 @@ end
 
 /-- An ideal J of a commutative ring A is an augmentation ideal
 if ideal.quotient.mk J has a right inverse which is a ring_hom -/
-def is_augmentation_ideal (A : Type*) [comm_ring A] (J : ideal A) : Prop :=
+def _root_.is_augmentation_ideal (A : Type*) [comm_ring A] (J : ideal A) : Prop :=
 ∃ g : A⧸J →+* A, (ideal.quotient.mk J) ∘ g = id
 
 /-- The augmentation ideal in the divided_power_algebra -/
