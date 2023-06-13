@@ -98,16 +98,16 @@ lemma on_tensor_product_unique (hK hK' : divided_powers (K A I J))
 begin
   apply eq_of_eq_on_ideal,
   intros n x hx,
-  suffices : x ∈ sub_pd_ideal.pd_equalizer hK hK',  
-  { exact ((sub_pd_ideal.mem_pd_equalizer_iff _ _).mp this).2 n,},
-  suffices h_ss : K A I J ≤ sub_pd_ideal.pd_equalizer hK hK',
+  suffices : x ∈ pd_equalizer hK hK',  
+  { exact ((mem_pd_equalizer_iff _ _).mp this).2 n,},
+  suffices h_ss : K A I J ≤ pd_equalizer hK hK',
   { exact h_ss hx },
   dsimp only [K], 
   rw sup_le_iff,
   split,
-  apply sub_pd_ideal.le_equalizer_of_pd_morphism hI (i_1 A R S).to_ring_hom
+  apply le_equalizer_of_pd_morphism hI (i_1 A R S).to_ring_hom
     le_sup_left hK hK' hIK hIK',
-  apply sub_pd_ideal.le_equalizer_of_pd_morphism hJ (i_2 A R S).to_ring_hom
+  apply le_equalizer_of_pd_morphism hJ (i_2 A R S).to_ring_hom
     le_sup_right hK hK' hJK hJK',
 end
 
@@ -483,24 +483,11 @@ begin
   { -- ring_hom.ker fg is a “divised ideal”
     change is_sub_pd_ideal hK (ring_hom.ker (algebra.tensor_product.map f g) ⊓ K A I J),
     rw roby, 
-
-    sorry,
-   /-  split,
-    -- simp only [inf_le_right],
-    intros n hn x, 
-    simp only [alg_hom.to_ring_hom_eq_coe, mem_inf, and_imp],
-    intros hx1 hxK,
-    apply and.intro _ (hK.dpow_mem hn hxK),
-    suffices : ring_hom.ker ↑fg = ring_hom.ker (algebra.tensor_product.map f g),
-    rw [this, k_fg] at hx1 ⊢,
-    rw ← ideal.add_eq_sup at hx1, 
-    simp only [← set_like.mem_coe] at hx1, 
-    -- rw set.coe_add at hx1,
-    -- simp only [set.mem_add] at hx1, 
-
-    obtain ⟨y, z, hyz⟩:= hx1,  
- -/
-  },
+    apply is_sub_pd_ideal_sup,
+    apply is_sub_pd_ideal_map hI hK hK_pd.1,
+    exact is_sub_pd_ideal_ker hI hI' hf', 
+    apply is_sub_pd_ideal_map hJ hK hK_pd.2,
+    exact is_sub_pd_ideal_ker hJ hJ' hg', },
   
   { -- K A I' J' = map fg (K A I J)
     sorry, },
