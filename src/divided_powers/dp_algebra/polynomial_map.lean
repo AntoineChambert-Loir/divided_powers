@@ -2,6 +2,7 @@ import divided_powers.dp_algebra.init
 import divided_powers.dp_algebra.graded
 import ring_theory.power_series.basic
 import ring_theory.tensor_product 
+import linear_algebra.multilinear.basic
 
 import ...for_mathlib.ring_theory.submodule_mem
 
@@ -13,18 +14,26 @@ Reference : N. Roby, Lois polynômes et lois formelles en théorie des modules�
 
 open algebra function linear_map
 
+
+section  misc
+
+
+
 lemma finsupp.of_support_finite_support {ι α: Type*} [has_zero α] (f : ι → α) 
   (hf : f.support.finite) : (finsupp.of_support_finite f hf).support = hf.to_finset :=
 by { ext, simp only [finsupp.of_support_finite_coe, finsupp.mem_support_iff, 
   set.finite.mem_to_finset, function.mem_support] }
 
-section algebra
+end misc
 
 open_locale tensor_product 
+
+section algebra
 
 variables (A : Type*) [comm_semiring A] (R : Type*) [comm_semiring R] [algebra A R]
 
 namespace algebra.tensor_product
+
 /- The natural `R`-algebra map from `R ⊗[A] A` to `R`. -/
 def rid' : R ⊗[A] A →ₐ[R] R := 
 { map_one'  := by simp only [alg_equiv.to_fun_eq_coe, map_one], 
@@ -36,12 +45,13 @@ def rid' : R ⊗[A] A →ₐ[R] R :=
 
 end algebra.tensor_product
 
-open algebra.tensor_product
 
 variables (M : Type*) [add_comm_monoid M] [module A M]
 
 -- Q (not important): I am not sure if `linear_form` is used in mathlib.
 namespace linear_form
+
+open algebra.tensor_product linear_map
 
 def base_change (f : M →ₗ[A] A) : R ⊗[A] M →ₗ[R] R := 
 (rid' A R).to_linear_map.comp (base_change R f)
@@ -252,11 +262,14 @@ end mv_polynomial_module
 
 open_locale tensor_product
 
+section polynomial_map
+
+
+
 --universes u v₁ v₂ v₃ v₄ w w'
 /- variables {A : Type u} {M : Type v₁} {N : Type v₂} [comm_semiring A] [add_comm_monoid M] 
   [module A M] [add_comm_monoid N] [module A N] -/
-variables {A M N : Type*} [comm_semiring A] [add_comm_monoid M] 
-  [module A M] [add_comm_monoid N] [module A N]
+-- variables {A M N : Type*} [comm_semiring A] [add_comm_monoid M] [module A M] [add_comm_monoid N] [module A N]
 
 /-- A polynomial map M → N between A-modules is a functorial family
 of maps R ⊗[A] M → R ⊗[A] N, for all A-algebras R -/
@@ -270,6 +283,10 @@ of maps R ⊗[A] M → R ⊗[A] N, for all A-algebras R -/
 
 namespace polynomial_map 
 
+section apply
+
+variables {A M N : Type*} [comm_semiring A] [add_comm_monoid M] [module A M] [add_comm_monoid N] [module A N]
+
 /- lemma is_compat_apply (f : polynomial_map A M N) (R : Type w) [comm_semiring R] [algebra A R] 
   (R' : Type w) [comm_semiring R'] [algebra A R'] (φ : R →ₐ[A] R') (x : R ⊗[A] M) : 
   (φ.to_linear_map.rtensor N) ((f.to_fun R) x) = ((f.to_fun R') (φ.to_linear_map.rtensor M x)) :=
@@ -280,7 +297,12 @@ lemma is_compat_apply (f : polynomial_map A M N) (R : Type*) [comm_semiring R] [
   (φ.to_linear_map.rtensor N) ((f.to_fun R) x) = ((f.to_fun R') (φ.to_linear_map.rtensor M x)) :=
 by simpa only using congr_fun (f.is_compat φ) x
 
+
+end apply
+
 section module
+
+variables {A M N : Type*} [comm_semiring A] [add_comm_monoid M] [module A M] [add_comm_monoid N] [module A N]
 
 def add (f g : polynomial_map A M N) : (polynomial_map A M N) := 
 { to_fun    := λ R _, by exactI λ _, by exactI f.to_fun R + g.to_fun R,
@@ -348,6 +370,7 @@ end module
 
 section comp
 
+variables {A M N : Type*} [comm_semiring A] [add_comm_monoid M] [module A M] [add_comm_monoid N] [module A N]
 variables {P : Type*} [add_comm_monoid P] [module A P]
 
 def comp (g : polynomial_map A N P) (f : polynomial_map A M N) : polynomial_map A M P :=
@@ -371,6 +394,9 @@ end comp
 
 section constant_map
 
+variables {A M N : Type*} [comm_semiring A]
+  [add_comm_monoid M] [add_comm_monoid N] [module A M] [module A N]
+
 open_locale tensor_product 
 
 def of_constant (n : N) : polynomial_map A M N := 
@@ -382,6 +408,11 @@ end constant_map
 
 section linear
 
+open_locale tensor_product 
+
+variables {A : Type*} [comm_semiring A] {M N : Type*}
+  [add_comm_monoid M] [add_comm_monoid N] [module A M] [module A N]
+
 def of_linear_map (v : M →ₗ[A] N) : polynomial_map A M N := 
 { to_fun := λ R _ _, by exactI v.base_change R,
   is_compat := λ R _ _ _ _ _ φ, by ext m; simp only [base_change_eq_ltensor, 
@@ -392,7 +423,8 @@ lemma of_linear_map_to_fun (u : M →ₗ[A] N) (R : Type*) [comm_semiring R] [al
 
 def of_linear_map_hom :  (M →ₗ[A] N) →ₗ[A] (polynomial_map A M N):= 
 { to_fun := of_linear_map,
-  map_add' := λ u v, by {ext R _ _ m, simp only [add_def, of_linear_map_to_fun, 
+  map_add' := λ u v, by {ext R _ _ m, 
+  simp only [polynomial_map.add_def, of_linear_map_to_fun, 
     pi.add_apply, base_change_add, add_apply] },
   map_smul' := λ a v, 
   by { ext R _ _ m, simp only [smul_def, of_linear_map_to_fun, base_change_smul], refl }}
@@ -401,9 +433,42 @@ lemma of_linear_map_hom_apply (v : M →ₗ[A] N) : of_linear_map_hom v = of_lin
 
 end linear
 
-.
+/- 
+section multilinear
+
+-- I need to understand how to do base change of multilinear maps  in Lean
+
+variables (A N : Type*) [comm_semiring A]
+variables {ι : Type*} [fintype ι] (M : ι → Type*) [∀ i, add_comm_monoid (M i)] [∀ i, module A (M i)]
+variables  [add_comm_monoid N]  [module A N]
+
+def of_multilinear_map (u : multilinear_map A M N) : polynomial_map A (Π i, M i) N := {
+ to_fun := λ  R _ _, 
+ begin 
+--  by exactI u.base_change R, 
+
+ end,
+ is_compat := sorry } 
+
+def of_multilinear_map_to_fun (u : multilinear_map A M N) (R : Type*) [comm_semiring R] [algebra A R] : false := sorry 
+
+
+def of_multilinear_map : (multilinear_map A M N) 
+  →ₗ[A] (polynomial_map A (Π i, M i) N) := {
+to_fun := of_multilinear_map_to_fun, 
+map_add' := sorry,
+map_smul' := sorry }
+
+
+end multilinear 
+-/
+
 
 section locally_finite
+
+
+variables {A M N : Type*} [comm_semiring A]
+  [add_comm_monoid M] [add_comm_monoid N] [module A M] [module A N]
 
 def locfinsupp {ι : Type*} (f : ι → polynomial_map A M N) : Prop :=
   ∀ (R : Type*) [comm_semiring R], by exactI ∀ [algebra A R], by exactI ∀ (m : R ⊗[A] M), 
@@ -457,8 +522,6 @@ lemma sum_eq {ι : Type*} (f : ι → polynomial_map A M N) (hf : locfinsupp f) 
 
 end locfinsupp
 
-.
-
 --TODO: I don't think this is in the right namespace, but I don't know how to rename it.
 noncomputable def linear_map.locfinsupp.sum {ι : Type*} [decidable_eq ι] : 
   with_locfinsupp A M N ι →ₗ[A] polynomial_map A M N := 
@@ -501,11 +564,15 @@ end locally_finite
 
 section coefficients
 
+
+variables {A M N : Type*} [comm_semiring A]
+  [add_comm_monoid M] [add_comm_monoid N] [module A M] [module A N]
+
 /-- The coefficients of a `polynomial_map` -/
 noncomputable def coeff' {ι : Type*} [fintype ι] (m : ι → M) (k : ι →₀ ℕ) : 
   polynomial_map A M N →ₗ[A] N := 
 { to_fun    := λ f, tensor_product.lid A N ((mv_polynomial.coeff_hom k).rtensor N
-    (f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i)))), 
+    (f.to_fun (mv_polynomial ι A) (k.support.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i)))), 
   map_add'  := λ f g, by simp only [add_def, pi.add_apply, map_add],
   map_smul' := λ a f, by simp only [smul_def, pi.smul_apply, linear_map.map_smulₛₗ, 
     ring_hom.id_apply, linear_equiv.map_smulₛₗ] }
@@ -517,7 +584,6 @@ noncomputable def coeff {ι : Type*} [fintype ι] (m : ι → M) :
       (finset.univ.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i))),
   map_add'  := λ f g, by { rw ← map_add, refl, },
   map_smul' := λ a f, by { simp only [ring_hom.id_apply, ← map_smul], refl, }, }
-
 
 variables {ι : Type*} [fintype ι]
 
@@ -556,6 +622,40 @@ begin
   rw zoo_inv_zoo_apply, refl,
 end
 
+/- Goal : have the preceding formula without [fintype ι],
+but with finite support for r 
+
+How to construct the coefficients:
+one needs to restrict m to r.support
+-/
+
+theorem image_eq_coeff_sum' {ι : Type*} (m : ι → M) (f : polynomial_map A M N) 
+  (R : Type*) [comm_semiring R] [algebra A R] (r : ι →₀ R) :
+  f.to_fun R (r.sum (λ i a, a ⊗ₜ[A] m i)) = 
+(coeff (λ (i : r.support), m i) f).sum (λ k n, r.support.prod (λ i, r i ^ ((function.extend coe k 0) i)) ⊗ₜ[A] n) := 
+begin
+  let m' : r.support → M := λ i, m i,
+  let r' : r.support →₀ R := {
+    to_fun := λ i, r i, 
+    support := finset.univ,
+    mem_support_to_fun := λ ⟨a, ha⟩, by 
+    simpa only [finset.univ_eq_attach, finset.mem_attach, subtype.coe_mk, ne.def, true_iff, finsupp.mem_support_iff] using ha, },
+  convert image_eq_coeff_sum m' f R r', 
+  { simp only [finsupp.sum],
+    simp only [finset.univ_eq_attach, finsupp.coe_mk],
+    rw ← finset.sum_attach,
+    apply finset.sum_congr rfl,
+    intros x hx, simp only [m'], },
+  { ext k n, 
+    apply congr_arg2 _ _ rfl,
+    simp only [finset.univ_eq_attach, finsupp.coe_mk],
+    rw ← finset.prod_attach, 
+    apply finset.prod_congr rfl,
+    intros x hx, 
+    apply congr_arg2 _ rfl,
+    rw subtype.coe_injective.extend_apply, },
+end
+
 variables {R : Type*} [comm_semiring R] [algebra A R]
 
 lemma span_tensor_product_eq_top_of_span_eq_top
@@ -569,8 +669,8 @@ begin
   exact zero_mem _,
   { let f : M →ₗ[A] R ⊗[A] M := {
     to_fun := λ m, (1 : R) ⊗ₜ[A] m, 
-    map_add' := λ x y, sorry,
-    map_smul' := λ a x, sorry, },
+    map_add' := λ x y, by rw tensor_product.tmul_add, 
+    map_smul' := λ a x, by simp only [tensor_product.tmul_smul, ring_hom.id_apply] },
     have hf : ∀ (m : M), (1 : R) ⊗ₜ[A] m = f m, intro m, refl,
     suffices : r ⊗ₜ[A] m = r • ((1 : R) ⊗ₜ[A] m),
     rw this, 
@@ -643,8 +743,6 @@ example (f g : ι → ℕ) (i : ι): (f + g) i = f i + g i :=
 begin
 exact pi.add_apply f g i
 end
-
-.
 
 lemma coeff_of_finsup_polynomial_map (b : basis ι A M) (h : (ι →₀ ℕ) →₀ N) :
   coeff (coe_fn b) (finsupp.polynomial_map b h) = h :=
@@ -723,6 +821,61 @@ left_inv := λ h, by { dsimp, rw coeff_of_finsup_polynomial_map, },
 right_inv := λ f, by { dsimp, rw finsup_polynomial_map_of_coeff b, } }
 
 end coefficients
+
+section graded
+
+variables {A M N : Type*} [comm_semiring A]
+  [add_comm_monoid M] [add_comm_monoid N] [module A M] [module A N]
+
+def is_homogeneous_of_degree {A M N : Type*} [comm_semiring A]
+  [add_comm_monoid M] [add_comm_monoid N] [module A M] [module A N]
+  (p : ℕ) (f : polynomial_map A M N) : Prop :=
+  ∀ (R : Type*) [comm_ring R], 
+    by exactI ∀ [algebra A R],
+    by exactI ∀ (r : R) (m : R ⊗[A] M),
+  f.to_fun R (r • m) = (r ^ p) • f.to_fun R m 
+
+
+lemma _root_.tensor_product.is_finsupp_sum_tmul 
+  {R : Type*} [comm_semiring R] [algebra A R] (m : R ⊗[A] M) :
+  ∃ (r : M →₀ R), m = r.sum (λ x a, a ⊗ₜ[A] x) :=
+begin
+  induction m using tensor_product.induction_on with r m x y hx hy,
+  { use 0, simp only [finsupp.sum_zero_index], },
+  { use finsupp.single m r, simp only [finsupp.sum_single_index, tensor_product.zero_tmul], },
+  { obtain ⟨rx, rfl⟩ := hx, 
+    obtain ⟨ry, rfl⟩ := hy,
+    use rx + ry,
+    rw finsupp.sum_add_index',
+    { intro a, simp only [tensor_product.zero_tmul], },
+    { intros m r₁ r₂, rw tensor_product.add_tmul, } },
+end
+
+
+lemma is_homogeneous_of_degree_iff (p : ℕ) (f : polynomial_map A M N) :
+  f.is_homogeneous_of_degree p ↔ (∀ (ι : Type*) [fintype ι], by exactI 
+  ∀ (m : ι → M) (k : ι →₀ ℕ) (h : coeff m f k ≠ 0), k.sum (λ i n, n) = p) := 
+begin
+  split,
+  { -- difficult direction 
+    intro hf, 
+    intros ι _ m k h,
+    sorry, },
+  { intros hf R _ _ a m, 
+    resetI,
+    obtain ⟨r, rfl⟩ := tensor_product.is_finsupp_sum_tmul m,
+    rw finsupp.smul_sum,
+    simp only [finsupp.sum, tensor_product.smul_tmul'],
+
+
+    
+
+
+sorry },
+end
+
+end graded
+
 
 end polynomial_map 
 

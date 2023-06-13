@@ -530,7 +530,13 @@ end
 -- Roby, lemma 7
 lemma cond_Q_and_cond_T_free_imply_cond_T (A : Type*) [comm_ring A]
   (hQ : cond_Q A) (hT_free: cond_T_free A) : cond_T A := 
-sorry
+begin
+  intros R' _ S' _ _ _ I' J' hI' hJ',
+  resetI,
+  -- new universe issue
+  obtain ⟨R, hR⟩ := hQ R' I' hI',
+  sorry
+end
 
 /- Requires to prove that divided_power_algebra is compatible with restriction of scalars -/
 def dp_scalar_extension (A : Type*) [comm_ring A] (R : Type*) [comm_ring R] [algebra A R]
