@@ -397,6 +397,7 @@ So we assume the `roby` condition in the statement, in the hope
 that will be possible to prove it each time we apply cond_τ_rel
 -/
 
+-- Should be elsewhere, and is probably already there…
 lemma algebra.tensor_product.map_surjective 
   (A : Type*) [comm_ring A] {R S R' S' : Type*} 
   [comm_ring R] [comm_ring S] [comm_ring R'] [comm_ring S']
