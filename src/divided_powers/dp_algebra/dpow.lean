@@ -598,23 +598,28 @@ open divided_power_algebra
 -- namespace divided_power_algebra
 
 -- Part of Roby65 Thm 1
-def divided_powers' (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M]
-  [module A M] : divided_powers (aug_ideal A M) :=
+def divided_powers' (A : Type*) [comm_ring A] 
+  (M : Type*) [add_comm_group M] [module A M] : divided_powers (aug_ideal A M) :=
 (roby_D A M).some
 
-lemma dpow_ι (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M]
-  [module A M] (x : M) (n : ℕ) :
-  dpow (divided_powers' A M) n (ι A x) = dp A n x :=
-(roby_D A M).some_spec x n
+lemma dpow_ι (A : Type*) [comm_ring A] 
+  (M : Type*) [add_comm_group M] [module A M] (x : M) (n : ℕ) :
+  dpow (divided_powers' A M) n (ι A x) = dp A n x := 
+(roby_D A M).some_spec n x
 
-lemma dp_comp (A : Type*) [comm_ring A] (M : Type*) [add_comm_group M]
-  [module A M] (x : M) {n : ℕ} (m : ℕ) (hn : n ≠ 0) :
+
+
+
+lemma dp_comp (A : Type*) [comm_ring A] 
+  (M : Type*) [add_comm_group M] [module A M] 
+  (x : M) {n : ℕ} (m : ℕ) (hn : n ≠ 0) :
   dpow (divided_powers' A M) m (dp A n x) = ↑(mchoose m n) * dp A (m * n) x :=
 by erw [← (roby_D A M).some_spec, dpow_comp _ m hn (ι_mem_aug_ideal A M x),  dpow_ι]
 
-theorem roby_theorem_2 (R : Type*) [comm_ring R] (M : Type*) [add_comm_group M] [module R M]
-  {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) {φ : M →ₗ[R] A} 
-  (hφ : ∀ m, φ m ∈ I) : 
+theorem roby_theorem_2 (R : Type*) [comm_ring R] 
+  (M : Type*) [add_comm_group M] [module R M]
+  {A : Type*} [comm_ring A] [algebra R A] {I : ideal A} (hI : divided_powers I) 
+  {φ : M →ₗ[R] A} (hφ : ∀ m, φ m ∈ I) : 
   is_pd_morphism (divided_powers' R M) hI (divided_power_algebra.lift R M hI φ hφ) :=
 begin
   apply cond_D_uniqueness,
@@ -658,15 +663,47 @@ begin
     ι_mem_aug_ideal S N (f m)],
 end
 
-theorem roby_prop_8 (R : Type*) [comm_ring R] {M : Type*} [add_comm_group M] [module R M]
-  (S : Type*) [comm_ring S] [algebra R S] {N : Type*} [add_comm_group N] [module R N]
-  [module S N] [is_scalar_tower R S N] (f : M →ₗ[R] N) :
+theorem roby_prop_8 (R : Type*) [comm_ring R] 
+  {M : Type*} [add_comm_group M] [module R M]
+  (S : Type*) [comm_ring S] [algebra R S] 
+  {N : Type*} [add_comm_group N] [module R N] 
+  [module S N] [is_scalar_tower R S N] 
+  (f : M →ₗ[R] N) :
   is_pd_morphism (divided_powers' R M) (divided_powers' S N) 
     (divided_power_algebra.lift' R S f) := 
 begin
-  obtain ⟨hφ, h⟩ := lift'_eq_dp_lift R S f, 
-  rw h,
-  apply roby_theorem_2,
+  let φ := ((ι S).restrict_scalars R).comp f,
+  suffices hφ : ∀ m, φ m ∈ aug_ideal S N,
+
+  have roby := roby_theorem_2 R M (divided_powers' S N) hφ,
+  suffices : lift R M (divided_powers' S N) φ hφ = lift' R S f, 
+  rw this at roby, exact roby,
+  
+  -- lift'_eq_dp_lift gives a universe issue
+  -- bizarrely, we can copy its proof
+  ext a,
+  obtain ⟨p, rfl⟩ := ideal.quotient.mk_surjective a, 
+  rw p.as_sum, 
+  simp only [map_sum],
+  apply congr_arg2 _ rfl, 
+  ext, 
+  rw [monomial_eq, finsupp.prod],
+  simp only [mv_polynomial.C_eq_smul_one, algebra.smul_mul_assoc, one_mul],
+  simp only [← mkₐ_eq_mk R (relI R M), map_smul],
+  apply congr_arg2 (•) rfl,
+  simp only [map_prod], 
+  apply congr_arg2 _ rfl,
+  ext ⟨n, m⟩, 
+  simp only [mkₐ_eq_mk, map_pow],
+  apply congr_arg2 _ _ rfl,
+  rw ← dp_eq_mk R n m, 
+  rw lift'_dp_eq, rw lift_dp_eq, 
+  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe,
+    function.comp_app, dpow_ι], 
+
+  intro m,
+  simp only [linear_map.coe_comp, linear_map.coe_restrict_scalars_eq_coe, 
+    function.comp_app, ι_mem_aug_ideal S N (f m)],
 end
 
 end divided_power_algebra
