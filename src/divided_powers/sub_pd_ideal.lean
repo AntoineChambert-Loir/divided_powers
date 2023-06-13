@@ -170,6 +170,18 @@ begin
     intro i, exact (hJ i).1, },
 end
 
+lemma is_sub_pd_ideal_map {B : Type*} [comm_ring B] {J : ideal B} (hJ : divided_powers J) {f : A →+* B} (hf : is_pd_morphism hI hJ f) (K : ideal A) (hK : is_sub_pd_ideal hI K) : is_sub_pd_ideal hJ (ideal.map f K) :=
+begin
+  simp only [ideal.map],
+  rw span_is_sub_pd_ideal_iff, 
+  rintros n hn y ⟨x, hx, rfl⟩, 
+  rw hf.2 n x (hK.1 hx),  
+  apply ideal.mem_map_of_mem, 
+  exact hK.2 n hn x hx, 
+  rintros y ⟨x, hx, rfl⟩, 
+  exact hf.1 (ideal.mem_map_of_mem f (hK.1 hx)),
+end
+
 end is_sub_pd_ideal
 
 /-- A `sub-pd-ideal` of `I` is a sub-ideal `J` of `I` such that for all `n ∈ ℕ ≥ 0` and all

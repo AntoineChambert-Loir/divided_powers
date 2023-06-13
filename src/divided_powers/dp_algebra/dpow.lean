@@ -393,9 +393,8 @@ The proof of proposition goes by using that
 `ideal.span s ⊓ I = ideal.span s ⊓ I`
 if `s` is made of homogeneous elements. 
 
-So this is what we want to assume here. 
-We want something similar on fg.ker ⊓ I : 
-fg.ker ⊓ (I = (f.ker \)
+So we assume the `roby` condition in the statement, in the hope
+that will be possible to prove it each time we apply cond_τ_rel
 -/
 
 
@@ -403,20 +402,17 @@ fg.ker ⊓ (I = (f.ker \)
 lemma cond_τ_rel (A : Type*) [comm_ring A] {R S R' S' : Type*} 
   [comm_ring R] [comm_ring S] [comm_ring R'] [comm_ring S']
   [algebra A R] [algebra A S] [algebra A R'] [algebra A S'] 
-  (f : R →ₐ[A] R') (g : S →ₐ[A] S') 
-  (hf : function.surjective f) (hg : function.surjective g)
-  {I : ideal R} (haug_I : is_augmentation_ideal R I) (hI : divided_powers I) 
-  {J : ideal S} (hJ : divided_powers J)
-  {I' : ideal R'} (hI' : divided_powers I') 
-  {J' : ideal S'} (hJ' : divided_powers J')
-  (hI'I : I' ≤ I.map f) (hJ'J : J' ≤ J.map g)
-  (hf' : is_pd_morphism hI hI' f) (hg' : is_pd_morphism hJ hJ' g)
+  (f : R →ₐ[A] R') (hf : function.surjective f) 
+  {I : ideal R} (hI : divided_powers I) {I' : ideal R'} (hI' : divided_powers I') 
+  (hf' : is_pd_morphism hI hI' f) (hI'I : I' = I.map f)
+  (g : S →ₐ[A] S') (hg : function.surjective g)
+  {J : ideal S} (hJ : divided_powers J) {J' : ideal S'} (hJ' : divided_powers J') 
+  (hg' : is_pd_morphism hJ hJ' g) (hJ'J : J' = J.map g)
+  (roby : ring_hom.ker (algebra.tensor_product.map f g) ⊓ K A I J = 
+    map (algebra.tensor_product.include_left : R →ₐ[A] R ⊗[A] S) (ring_hom.ker f ⊓ I) 
+    ⊔ map (algebra.tensor_product.include_right : S →ₐ[A] R ⊗[A] S) (ring_hom.ker g ⊓ J))
   (hRS : cond_τ A hI hJ) : cond_τ A hI' hJ' :=
 begin
-  suffices roby : ring_hom.ker (algebra.tensor_product.map f g) ⊓ K A I J = 
-    map (algebra.tensor_product.include_left : R →ₐ[A] R ⊗[A] S) (ring_hom.ker f ⊓ I) 
-    ⊔ map (algebra.tensor_product.include_right : S →ₐ[A] R ⊗[A] S) (ring_hom.ker g ⊓ J) ,
-  
   obtain ⟨hK, hK_pd⟩ := hRS, 
   simp only [cond_τ],
   let fg := (algebra.tensor_product.map f g),
@@ -451,7 +447,7 @@ begin
           algebra.tensor_product.map_tmul, map_one], }, 
       { have := ideal.image_eq_map_of_surjective f.to_ring_hom I _, 
         simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom] at this,
-        rw this, exact hI'I ha', 
+        rw this, rw hI'I at ha', exact ha', 
         simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom], 
         exact hf, }, }, },
   { -- hJ'.is_pd_morphism hK' ↑(i_2 A R' S')
@@ -477,7 +473,7 @@ begin
           algebra.tensor_product.map_tmul, map_one], }, 
       { have := ideal.image_eq_map_of_surjective g.to_ring_hom J _, 
         simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom] at this,
-        rw this, exact hJ'J ha', 
+        rw this, rw hJ'J at ha', exact ha',
         simp only [alg_hom.to_ring_hom_eq_coe, alg_hom.coe_to_ring_hom], 
         exact hg, }, }, },
   { -- ring_hom.ker fg is a “divised ideal”
@@ -490,8 +486,24 @@ begin
     exact is_sub_pd_ideal_ker hJ hJ' hg', },
   
   { -- K A I' J' = map fg (K A I J)
-    sorry, },
-  sorry, -- roby condition
+    simp only [K, fg, hI'I, hJ'J], 
+    rw ideal.map_sup,
+    apply congr_arg2,
+    change map (i_1 A R' S').to_ring_hom (map f.to_ring_hom I) = map (algebra.tensor_product.map f g).to_ring_hom (map (i_1 A R S).to_ring_hom I),
+    simp only [ideal.map_map],
+    apply congr_arg2 _ _ rfl,
+    ext x, 
+    simp only [i_1, ring_hom.comp_apply, alg_hom.to_ring_hom_eq_coe, 
+      alg_hom.coe_to_ring_hom, algebra.tensor_product.include_left_apply, 
+      algebra.tensor_product.map_tmul, map_one],
+    change map (i_2 A R' S').to_ring_hom (map g.to_ring_hom J) = map (algebra.tensor_product.map f g).to_ring_hom (map (i_2 A R S).to_ring_hom J),
+    simp only [ideal.map_map],
+    apply congr_arg2 _ _ rfl,
+    ext x, 
+    simp only [i_2, alg_hom.to_ring_hom_eq_coe, ring_hom.coe_comp, 
+      alg_hom.coe_to_ring_hom, function.comp_app, 
+      algebra.tensor_product.include_right_apply, algebra.tensor_product.map_tmul,
+      map_one], },
 end
 
 
