@@ -264,7 +264,7 @@ lemma mem_pd_equalizer_iff {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divi
 by simp only [pd_equalizer, submodule.mem_mk, set.mem_sep_iff, set_like.mem_coe]
 
 lemma pd_equalizer_is_pd_ideal_left {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) :
-  is_sub_pd_ideal hI (pd_equalizer hI hI') :=
+  divided_powers.is_sub_pd_ideal hI (pd_equalizer hI hI') :=
 begin
   apply is_sub_pd_ideal.mk,
   { intros x hx, 
@@ -279,7 +279,7 @@ begin
 end
 
 lemma pd_equalizer_is_pd_ideal_right {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) :
-  is_sub_pd_ideal hI' (pd_equalizer hI hI') :=
+  divided_powers.is_sub_pd_ideal hI' (pd_equalizer hI hI') :=
 begin
   apply is_sub_pd_ideal.mk,
   { intros x hx, 
