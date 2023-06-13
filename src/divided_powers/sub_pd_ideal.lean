@@ -142,6 +142,34 @@ begin
   exact hI.dpow_mem hn (hS hx)
 end
 
+lemma is_sub_pd_ideal_sup {J K : ideal A} (hJ : is_sub_pd_ideal hI J) (hK : is_sub_pd_ideal hI K) : is_sub_pd_ideal hI (J ⊔ K) :=
+begin
+  rw [← J.span_eq,  ← K.span_eq, ← ideal.span_union,
+  span_is_sub_pd_ideal_iff],
+  { intros n hn a ha,
+    cases ha with ha ha,
+    apply ideal.span_mono (set.subset_union_left ↑J ↑K),
+    rw J.span_eq, exact hJ.2 n hn a ha,
+    apply ideal.span_mono (set.subset_union_right ↑J ↑K),
+    rw K.span_eq, exact hK.2 n hn a ha,},
+  rw set.union_subset_iff, exact ⟨hJ.1, hK.1⟩,
+end
+
+lemma ideal.supr_eq_span {ι : Type*} (p : ι → ideal A) : (⨆ i, p i) = ideal.span  (⋃ i, ↑(p i)) := submodule.supr_eq_span p
+
+lemma is_sub_pd_ideal_supr {ι : Type*} {J : ι → ideal A} (hJ : ∀ i, is_sub_pd_ideal hI (J i)) : is_sub_pd_ideal hI (supr J) :=
+begin
+  rw ideal.supr_eq_span,
+  rw [span_is_sub_pd_ideal_iff],
+  { rintros n hn a,
+    rw set.mem_Union,
+    rintro ⟨i, ha⟩,
+    apply ideal.span_mono (set.subset_Union _ i),
+    rw ideal.span_eq, exact (hJ i).2 n hn a ha, },
+  { rw set.Union_subset_iff, 
+    intro i, exact (hJ i).1, },
+end
+
 end is_sub_pd_ideal
 
 /-- A `sub-pd-ideal` of `I` is a sub-ideal `J` of `I` such that for all `n ∈ ℕ ≥ 0` and all
@@ -167,6 +195,34 @@ lemma coe_def (J : sub_pd_ideal hI) : (J : ideal A) = J.carrier := rfl
 
 @[simp] lemma mem_carrier {s : sub_pd_ideal hI} {x : A} : x ∈ s.carrier ↔ x ∈ s := iff.rfl
 
+def is_sub_pd_ideal (J : sub_pd_ideal hI) : is_sub_pd_ideal hI ↑J := 
+⟨J.is_sub_ideal, J.dpow_mem_ideal⟩ 
+
+/-- If J is an ideal of A, then J ⬝ I is a sub-pd-ideal of I. (Berthelot, 1.6.1 (i)) -/
+def prod (J : ideal A) : sub_pd_ideal hI  :=
+{ carrier        := I • J,
+  is_sub_ideal   := ideal.mul_le_right,
+  dpow_mem_ideal := λ n hn x hx,
+  begin
+    revert n,
+    apply submodule.smul_induction_on' hx,
+    { -- mul 
+      intros a ha b hb n hn,
+      rw [algebra.id.smul_eq_mul, mul_comm a b, hI.dpow_smul n ha, mul_comm], 
+      exact submodule.mul_mem_mul (hI.dpow_mem hn ha)
+        (J.pow_mem_of_mem hb n (zero_lt_iff.mpr hn)) },
+    { -- add 
+      intros x hx y hy hx' hy' n hn, 
+      rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy),
+      apply submodule.sum_mem (I • J),
+      intros k hk,
+      by_cases hk0 : k = 0,
+      { rw hk0, apply ideal.mul_mem_left (I • J), exact hy' _ hn, },
+      { apply ideal.mul_mem_right _ (I • J), exact hx' k hk0, }, }
+  end }
+
+
+section equalizer
 
 /- TODO : The set of elements where two divided
 powers coincide is the largest ideal which is a sub-pd-ideal in both -/
@@ -203,8 +259,8 @@ def pd_equalizer {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers
     rw hx.2, 
   end, }
 
-lemma mem_pd_equalizer_iff {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) {x : A}: x ∈ pd_equalizer hI hI' 
-↔ x ∈ I ∧   ∀ (n : ℕ), hI.dpow n x = hI'.dpow n x := 
+lemma mem_pd_equalizer_iff {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) {x : A} : x ∈ pd_equalizer hI hI' 
+↔ x ∈ I ∧  ∀ (n : ℕ), hI.dpow n x = hI'.dpow n x := 
 by simp only [pd_equalizer, submodule.mem_mk, set.mem_sep_iff, set_like.mem_coe]
 
 lemma pd_equalizer_is_pd_ideal_left {A : Type*} [comm_ring A] {I : ideal A} (hI hI': divided_powers I) :
@@ -276,29 +332,8 @@ begin
   rw [hIK.2 n a ha, hIK'.2 n a ha], 
 end
 
+end equalizer
 
-/-- If J is an ideal of A, then J ⬝ I is a sub-pd-ideal of I. (Berthelot, 1.6.1 (i)) -/
-def prod (J : ideal A) : sub_pd_ideal hI  :=
-{ carrier        := I • J,
-  is_sub_ideal   := ideal.mul_le_right,
-  dpow_mem_ideal := λ n hn x hx,
-  begin
-    revert n,
-    apply submodule.smul_induction_on' hx,
-    { -- mul 
-      intros a ha b hb n hn,
-      rw [algebra.id.smul_eq_mul, mul_comm a b, hI.dpow_smul n ha, mul_comm], 
-      exact submodule.mul_mem_mul (hI.dpow_mem hn ha)
-        (J.pow_mem_of_mem hb n (zero_lt_iff.mpr hn)) },
-    { -- add 
-      intros x hx y hy hx' hy' n hn, 
-      rw hI.dpow_add n (ideal.mul_le_right hx) (ideal.mul_le_right hy),
-      apply submodule.sum_mem (I • J),
-      intros k hk,
-      by_cases hk0 : k = 0,
-      { rw hk0, apply ideal.mul_mem_left (I • J), exact hy' _ hn, },
-      { apply ideal.mul_mem_right _ (I • J), exact hx' k hk0, }, }
-  end }
 
 section complete_lattice
 
