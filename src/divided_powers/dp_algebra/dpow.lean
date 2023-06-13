@@ -397,6 +397,25 @@ So we assume the `roby` condition in the statement, in the hope
 that will be possible to prove it each time we apply cond_τ_rel
 -/
 
+lemma algebra.tensor_product.map_surjective 
+  (A : Type*) [comm_ring A] {R S R' S' : Type*} 
+  [comm_ring R] [comm_ring S] [comm_ring R'] [comm_ring S']
+  [algebra A R] [algebra A S] [algebra A R'] [algebra A S'] 
+  (f : R →ₐ[A] R') (hf : function.surjective f) 
+  (g : S →ₐ[A] S') (hg : function.surjective g) :
+  function.surjective (algebra.tensor_product.map f g) :=
+begin
+  rw ← set.range_iff_surjective,
+  rw ← alg_hom.coe_range,
+  rw set.eq_univ_iff_forall, intro x,
+  induction x using tensor_product.induction_on with x y x y hx hy, 
+  use 0, rw map_zero,
+  obtain ⟨x, hx, rfl⟩ := hf x, 
+  obtain ⟨y, hy, rfl⟩ := hg y,
+  use x ⊗ₜy,refl, 
+  simp only [set_like.mem_coe] at hx hy ⊢,
+  exact subalgebra.add_mem _ hx hy,
+end
 
 -- Roby, lemma 6
 lemma cond_τ_rel (A : Type*) [comm_ring A] {R S R' S' : Type*} 
@@ -417,7 +436,8 @@ begin
   simp only [cond_τ],
   let fg := (algebra.tensor_product.map f g),
   let k_fg := algebra.tensor_product.ker_tens hf hg, 
-  have s_fg : function.surjective fg.to_ring_hom, sorry,
+  have s_fg : function.surjective fg.to_ring_hom, 
+  { exact algebra.tensor_product.map_surjective A f hf g hg, },
   suffices hK_map: K A I' J' = (K A I J).map fg,
   rw hK_map,
   suffices hK'_pd : is_sub_pd_ideal hK (ring_hom.ker fg.to_ring_hom ⊓ K A I J), 
