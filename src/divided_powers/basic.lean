@@ -350,6 +350,12 @@ begin
   dsimp at hh', ext, rw hh',
 end }
 
+def pd_morphism.is_pd_morphism {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B }
+  {hI : divided_powers I} {hJ : divided_powers J}
+  (f : pd_morphism hI hJ) : 
+is_pd_morphism hI hJ f.to_ring_hom :=
+⟨f.ideal_comp, f.dpow_comp⟩
+
 /- Roby65, Proposition 2. (TODO: rename?)-/
 /-- The ideal on which two divided power structures on two ideals coincide -/
 def pd_morphism_ideal {A B : Type*} [comm_ring A] [comm_ring B] {I : ideal A} {J : ideal B}
