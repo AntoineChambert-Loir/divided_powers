@@ -527,26 +527,6 @@ begin
       map_one], },
 end
 
-
-
-#exit
-
-open_locale pointwise
-example (A : Type*) [comm_ring A] (I : ideal A) (hI : divided_powers I)
-  (J : ideal A) : is_sub_pd_ideal hI (J ⊓ I) ↔ false := sorry
-
-
-example (A : Type*) [comm_ring A] (I : ideal A) (hI : divided_powers I) 
-  (J K : ideal A) (hJ : is_sub_pd_ideal hI (J ⊓ I)) (hK : is_sub_pd_ideal hI (K ⊓ I)) :
-  is_sub_pd_ideal hI ((J ⊔ K) ⊓ I) :=
-begin
-
-
-end
-
-
-
-
 -- Roby, lemma 7
 lemma cond_Q_and_cond_T_free_imply_cond_T (A : Type*) [comm_ring A]
   (hQ : cond_Q A) (hT_free: cond_T_free A) : cond_T A := 
