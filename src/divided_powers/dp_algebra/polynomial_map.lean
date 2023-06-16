@@ -265,7 +265,6 @@ open_locale tensor_product
 section polynomial_map
 
 
-
 --universes u v₁ v₂ v₃ v₄ w w'
 /- variables {A : Type u} {M : Type v₁} {N : Type v₂} [comm_semiring A] [add_comm_monoid M] 
   [module A M] [add_comm_monoid N] [module A N] -/
@@ -568,14 +567,14 @@ section coefficients
 variables {A M N : Type*} [comm_semiring A]
   [add_comm_monoid M] [add_comm_monoid N] [module A M] [module A N]
 
-/-- The coefficients of a `polynomial_map` -/
-noncomputable def coeff' {ι : Type*} [fintype ι] (m : ι → M) (k : ι →₀ ℕ) : 
+/- The coefficients of a `polynomial_map` -/
+/- noncomputable def coeff' {ι : Type*} [fintype ι] (m : ι → M) (k : ι →₀ ℕ) : 
   polynomial_map A M N →ₗ[A] N := 
 { to_fun    := λ f, tensor_product.lid A N ((mv_polynomial.coeff_hom k).rtensor N
     (f.to_fun (mv_polynomial ι A) (k.support.sum (λ i, (mv_polynomial.X i) ⊗ₜ[A] m i)))), 
   map_add'  := λ f g, by simp only [add_def, pi.add_apply, map_add],
   map_smul' := λ a f, by simp only [smul_def, pi.smul_apply, linear_map.map_smulₛₗ, 
-    ring_hom.id_apply, linear_equiv.map_smulₛₗ] }
+    ring_hom.id_apply, linear_equiv.map_smulₛₗ] } -/
 
 /-- The coefficients of a `polynomial_map` -/
 noncomputable def coeff {ι : Type*} [fintype ι] (m : ι → M) : 
@@ -596,7 +595,7 @@ by simp only [coeff, linear_map.coe_mk, zoo_inv, zoo_inv', finsupp.of_support_fi
 theorem image_eq_coeff_sum {ι : Type*} [fintype ι] (m : ι → M) (f : polynomial_map A M N) 
   (R : Type*) [comm_semiring R] [algebra A R] (r : ι → R) :
   f.to_fun R (finset.univ.sum (λ i, r i ⊗ₜ[A] m i)) =
-(coeff m f).sum (λ k n, finset.univ.prod (λ i, r i ^ (k i)) ⊗ₜ[A] n) := 
+    (coeff m f).sum (λ k n, finset.univ.prod (λ i, r i ^ (k i)) ⊗ₜ[A] n) := 
 begin
   classical,
   suffices : f.to_fun (mv_polynomial ι A) (finset.univ.sum (λ i, mv_polynomial.X i ⊗ₜ[A] m i)) = 
@@ -632,14 +631,16 @@ one needs to restrict m to r.support
 theorem image_eq_coeff_sum' {ι : Type*} (m : ι → M) (f : polynomial_map A M N) 
   (R : Type*) [comm_semiring R] [algebra A R] (r : ι →₀ R) :
   f.to_fun R (r.sum (λ i a, a ⊗ₜ[A] m i)) = 
-(coeff (λ (i : r.support), m i) f).sum (λ k n, r.support.prod (λ i, r i ^ ((function.extend coe k 0) i)) ⊗ₜ[A] n) := 
+  (coeff (λ (i : r.support), m i) f).sum 
+    (λ k n, r.support.prod (λ i, r i ^ ((function.extend coe k 0) i)) ⊗ₜ[A] n) := 
 begin
   let m' : r.support → M := λ i, m i,
   let r' : r.support →₀ R := {
     to_fun := λ i, r i, 
     support := finset.univ,
     mem_support_to_fun := λ ⟨a, ha⟩, by 
-    simpa only [finset.univ_eq_attach, finset.mem_attach, subtype.coe_mk, ne.def, true_iff, finsupp.mem_support_iff] using ha, },
+    simpa only [finset.univ_eq_attach, finset.mem_attach, subtype.coe_mk, ne.def, true_iff, 
+      finsupp.mem_support_iff] using ha, },
   convert image_eq_coeff_sum m' f R r', 
   { simp only [finsupp.sum],
     simp only [finset.univ_eq_attach, finsupp.coe_mk],
@@ -744,7 +745,7 @@ begin
 exact pi.add_apply f g i
 end
 
-lemma coeff_of_finsup_polynomial_map (b : basis ι A M) (h : (ι →₀ ℕ) →₀ N) :
+lemma coeff_of_finsupp_polynomial_map (b : basis ι A M) (h : (ι →₀ ℕ) →₀ N) :
   coeff (coe_fn b) (finsupp.polynomial_map b h) = h :=
 begin
   classical,
@@ -777,7 +778,7 @@ begin
   { rw _root_.eq_top_iff, intros m hm,
     apply submodule.span_mono _ (basis.mem_span_repr_support b m),
     apply set.image_subset_range, },
-  rw coeff_of_finsup_polynomial_map, 
+  rw coeff_of_finsupp_polynomial_map, 
 end
 
 example [decidable_eq ι] (b : basis ι A M) (i j : ι) :
@@ -817,7 +818,7 @@ begin
   intros k hk, rw tensor_product.tmul_zero,
 end,
 inv_fun := λ f,  coeff (coe_fn b) f, 
-left_inv := λ h, by { dsimp, rw coeff_of_finsup_polynomial_map, },
+left_inv := λ h, by { dsimp, rw coeff_of_finsupp_polynomial_map, },
 right_inv := λ f, by { dsimp, rw finsup_polynomial_map_of_coeff b, } }
 
 end coefficients
@@ -868,9 +869,6 @@ begin
     simp only [finsupp.sum, tensor_product.smul_tmul'],
 
 
-    
-
-
 sorry },
 end
 
@@ -879,4 +877,5 @@ end graded
 
 end polynomial_map 
 
-#lint
+end polynomial_map
+

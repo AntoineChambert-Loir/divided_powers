@@ -57,10 +57,7 @@ def decomposition :=
 quot_decomposition R (weighted_homogeneous_submodule R (prod.fst : ℕ × M → ℕ)) 
   (divided_power_algebra.relI R M) (relI_is_homogeneous R M)
 
-
-
 end decidable_eq
-
 
 /-- The graded algebra structure on the divided power algebra-/
 def divided_power_galgebra [decidable_eq R] [decidable_eq M] :
@@ -95,9 +92,8 @@ divided_power_galgebra R M
 
 end decidable_eq
 
-variable {M}
-
 variable (M)
+
 lemma mkₐ_comp_to_supported : 
   (mkₐ R (relI R M)).comp ((subalgebra.val _).comp (to_supported R)) = (mkₐ R _) :=
 begin
@@ -113,6 +109,7 @@ begin
 end
 
 variable {M}
+
 lemma surjective_of_supported : function.surjective ((mkₐ R (relI R M)).comp 
   (subalgebra.val (supported R {nm : ℕ × M | 0 < nm.1 }))) := 
 begin
@@ -509,7 +506,6 @@ lift_ι_apply R _ _ _ x
 lemma to_triv_sq_zero_ext_snd [module Rᵐᵒᵖ M] [is_central_scalar R M] (m : M) :
   ((to_triv_sq_zero_ext R M) ((mkₐ R (relI R M)) (X (1, m)))).snd = m :=
 by rw [← dp_eq_mkₐ, ← ι_def, to_triv_sq_zero_ext_ι]; refl
-.
 
 lemma deg_one_left_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
   function.left_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
@@ -584,20 +580,13 @@ begin
   rw [hm, decompose_of_mem_same _ (dp_mem_grade R M 1 m), subtype.coe_mk],
 end
 
-
--- TODO: decide whether to change def of inv_fun
-lemma deg_one_right_inv' [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
-  function.right_inverse (λ (x : (grade R M 1)), (to_triv_sq_zero_ext R M x.1).snd) 
-    ((proj' R M 1) ∘ (ι R)) := --try with snd_hom , submodule.val
-deg_one_right_inv R M
-
 /- ι : M → grade R M 1 is isomorphism -/
 def linear_equiv_degree_one [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M]
-  [is_central_scalar R M] :  linear_equiv (ring_hom.id R) M (grade R M 1) :=
-{ to_fun    := (proj' R M 1) ∘ ι R,
-  inv_fun   := λ x, (to_triv_sq_zero_ext R M x.1).snd, 
-  map_add'  := λ x y, by simp only [function.comp_app, map_add],
-  map_smul' := λ r x, by simp only [function.comp_app, linear_map.map_smulₛₗ, ring_hom.id_apply],
+  [is_central_scalar R M] : linear_equiv (ring_hom.id R) M (grade R M 1) :=
+{ to_fun    := (proj' R M 1).comp (ι R),
+  inv_fun   := λ x, triv_sq_zero_ext.snd_hom R M (to_triv_sq_zero_ext R M x.1),
+  map_add'  := λ x y, by simp only [map_add],
+  map_smul' := λ r x, by simp only [linear_map.map_smulₛₗ],
   left_inv  := deg_one_left_inv R M,
   right_inv := deg_one_right_inv R M }
 
