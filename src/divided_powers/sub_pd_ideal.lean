@@ -726,9 +726,10 @@ divided_powers.quotient.of_surjective.dpow hI (ideal.quotient.mk J)
 
 include hIJ
 
-private def is_sub_pd_aux : is_sub_pd_ideal hI ((ideal.quotient.mk J).ker ⊓ I) :=
-by simpa [ideal.mk_ker] using hIJ 
 
+--TODO: think about whether this should be a lemma
+private lemma is_sub_pd_aux : is_sub_pd_ideal hI ((ideal.quotient.mk J).ker ⊓ I) :=
+by simpa [ideal.mk_ker] using hIJ 
 
 -- We wish for a better API to denote I.map (ideal.quotient.mk J) as I ⧸ J 
 /-- When `I ⊓ J` is a `sub_pd_ideal` of `I`, the dpow map for the ideal `I(A⧸J)` of the quotient -/

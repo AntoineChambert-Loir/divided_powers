@@ -81,7 +81,7 @@ begin
 end
 
 theorem dp_envelope_of_included_is_universal : is_universal hI J (dp_ideal_of_included hI J hIJ)
-  (quot.divided_powers (divided_power_algebra.divided_powers' B J) (J12_is_sub_pd_ideal hI J hIJ))
+  (quotient.divided_powers (divided_power_algebra.divided_powers' B J) (J12_is_sub_pd_ideal hI J hIJ))
   (algebra_map B (dp_envelope_of_included hI J hIJ)) (sub_ideal_dp_ideal_of_included hI J hIJ) :=
 sorry
 
@@ -145,7 +145,7 @@ end -/
 
 
 theorem dp_envelope_is_universal : is_universal hI J (dp_ideal hI J) 
-  (quot.divided_powers (divided_power_algebra.divided_powers' B (J' I J))
+  (quotient.divided_powers (divided_power_algebra.divided_powers' B (J' I J))
     (J12_is_sub_pd_ideal hI (J' I J) (sub_ideal_J' I J))) 
   (algebra_map B (dp_envelope hI J)) (sub_ideal_dp_ideal hI J) :=
 begin
@@ -171,10 +171,10 @@ begin
     rw sup_le_iff,
     split,
     { exact le_trans hJK (le_sup_of_le_left (le_refl _)) },
-    { have : (algebra_map B C).comp (algebra_map A B) = (algebra_map A C) := sorry,
-      rw ideal.map_map,
-      rw this,
-      exact le_trans hJK (le_sup_of_le_right (le_refl _)),
+    { have halg : (algebra_map B C).comp (algebra_map A B) = (algebra_map A C),
+      { sorry },
+      rw [ideal.map_map, halg],
+      exact (le_sup_of_le_right (le_refl _)),
       },
   },
 
@@ -187,7 +187,7 @@ begin
   obtain ⟨φ, hφ, hφ_unique⟩ := 
   dp_envelope_of_included_is_universal hI (J' I J) (sub_ideal_J' I J) C _ h1 hg' hI1,
   -- TODO: generalize (map to sub-pd-structure)
-  set ψ : (quot.divided_powers (divided_power_algebra.divided_powers' B (J' I J))
+  set ψ : (quotient.divided_powers (divided_power_algebra.divided_powers' B (J' I J))
     (J12_is_sub_pd_ideal hI (J' I J) (sub_ideal_J' I J))).pd_morphism hK :=
    { to_ring_hom := φ.to_ring_hom,
      ideal_comp  := sorry,
