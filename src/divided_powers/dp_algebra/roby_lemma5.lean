@@ -158,23 +158,28 @@ function.left_inverse (algebra.tensor_product.product_map
   (inv_f f g hf) (inv_g f g hg)) id := sorry
  -/
 
+set_option profiler true
+
 -- Roby, lemma 5
 lemma ker_tens (hf : function.surjective f) (hg : function.surjective g) : 
   ring_hom.ker (algebra.tensor_product.map f g) 
   = (f.to_ring_hom.ker.map (algebra.tensor_product.include_left : R →ₐ[A] (R ⊗[A] S))) 
   ⊔ ((g.to_ring_hom.ker.map (algebra.tensor_product.include_right : S →ₐ[A] (R ⊗[A] S)))) :=
 begin  
-  change _ = I f g,
+  rw [← I], -- change _ = I f g,
   rw alg_hom.ker_eq_ideal_iff,
   use I_le_ker f g, 
   suffices : function.left_inverse (algebra.tensor_product.product_map
   (inv_f g hf) (inv_g f hg)) _,
   apply function.left_inverse.injective this,
-  rw function.left_inverse_iff_comp, 
-  rw ← alg_hom.coe_comp _ _,
-  have : @id (R ⊗[A] S ⧸ I f g) = alg_hom.id A _, 
+  sorry,
+  rw [function.left_inverse_iff_comp, 
+   ← alg_hom.coe_comp,
+   ← alg_hom.coe_id A], 
+  /- have : @id (R ⊗[A] S ⧸ I f g) = alg_hom.id A _, 
   { ext, rw alg_hom.id_apply, refl, },
   rw this,
+   -/
   apply congr_arg, 
   apply ideal.quotient.alg_hom_ext, 
   apply fun_like.coe_injective,
