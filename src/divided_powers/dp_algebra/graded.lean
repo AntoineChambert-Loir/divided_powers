@@ -255,6 +255,7 @@ submodule.add_submonoid_class
 section grade_zero
 
 variables (R)
+-- TODO: use divided_powers.bot instead of of_square_zero
 def algebra_map_inv : divided_power_algebra R M →ₐ[R] R :=
 lift R M (divided_powers.of_square_zero.divided_powers (by rw [zero_eq_bot, pow_two, bot_mul]))
   (0 : M →ₗ[R] R) (λ m, by simp only [linear_map.zero_apply, zero_eq_bot, mem_bot])
@@ -402,6 +403,7 @@ lemma aug_ideal_eq_span' :
   aug_ideal R M = span (set.image2 (dp R) {n : ℕ | 0 < n} ⊤) := sorry
 
 
+-- TODO: is it better to use ⊤ or set.univ? Is it the same?
 lemma aug_ideal_eq_span :
 --  aug_ideal R M = span (set.image (λ nm, mk _ (X nm)) { nm : ℕ × M | 0 < nm.1 }) := 
   aug_ideal R M = span (set.image2 (dp R) {n : ℕ | 0 < n} set.univ) :=
@@ -550,36 +552,16 @@ begin
     exact dp_mem_grade R M 1 m, }
 end
 
-
 theorem grade_one_eq_span' (R M : Type*) [comm_ring R] [add_comm_group M]
   [module R M] [decidable_eq R] [decidable_eq M] : 
   (⊤ : submodule R (grade R M 1)) = 
     submodule.span R (set.range (λ m, ⟨dp R 1 m, dp_mem_grade R M 1 m⟩)) := 
 begin
-  have h := grade_one_eq_span R M,
-  ext x,
-  have hx := submodule.coe_mem x,
-
-  have : submodule.span R (set.range (dp R 1)) = 
-  submodule.map ((grade R M 1).subtype)
-    (submodule.span R (set.range (λm:M, ⟨dp R 1 m, by sorry⟩))),
-  { ext z,
-    simp only [submodule.mem_map, submodule.coe_subtype],
-    split; intro hz,
-    { 
-      --use z,
-      sorry },
-    { obtain ⟨y, hy, hyz⟩ := hz,
-      rw ← hyz,
-      sorry }},
-  simp only [h] at hx,
-  simp only [submodule.mem_top, true_iff],
-  rw ← submodule.subtype_apply at hx,
-  rw this at hx,
-   simp only [submodule.coe_subtype, submodule.mem_map, set_like.coe_eq_coe, 
-    exists_eq_right] at hx,
-  exact hx,
-
+  apply submodule.map_injective_of_injective (grade R M 1).injective_subtype,
+  simp only [submodule.map_subtype_top],
+  rw submodule.map_span,
+  simp_rw grade_one_eq_span R M,
+  rw ← set.range_comp, refl,
 end
 
 lemma deg_one_right_inv [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ M] [is_central_scalar R M] :
@@ -620,7 +602,5 @@ def linear_equiv_degree_one [decidable_eq R] [decidable_eq M] [module Rᵐᵒᵖ
   right_inv := deg_one_right_inv R M }
 
 end grade_one
-
-end divided_power_algebra
 
 end divided_power_algebra

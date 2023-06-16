@@ -185,6 +185,8 @@ variables {A : Type*} [comm_ring A] {I : ideal A} (hI2 : I^2 = 0)
 noncomputable def divided_powers  :
   divided_powers I := of_invertible_factorial.divided_powers (by simp) hI2
 
+-- TODO: generalize to I^p = 0 in a ring A with prime characteristic p
+
 /- -- Keep ?
 lemma dpow_one (a : A) [decidable (a ∈ I)]:
   (divided_powers hI2) 1 a = ite (a ∈ I) a 0 :=
