@@ -131,20 +131,22 @@ begin
   exact sub_mem_rel_of_rel rel.add,
 end
 
+lemma dp_sum {ι : Type*} [decidable_eq ι] (x : ι → M) 
+  (s : finset ι) (q : ℕ):
+  dp R q (s.sum x) = (finset.sym s q).sum (λ k, s.prod (λ i, dp R (multiset.count i k) (x i))) := 
+begin
+  apply divided_powers.dpow_sum_aux', 
+  { intro x, rw dp_zero, }, 
+  { intros n x y, rw dp_add, },
+  { intros n hn, rw [dp_null R n, if_neg hn], },
+end
+
 lemma dp_sum_smul {ι : Type*} [decidable_eq ι] (a : ι → R) (n : ι → ℕ) (x : ι → M) 
   (s : finset ι) (q : ℕ):
   dp R q (s.sum (λ i, a i • x i)) = 
-    (finset.sym s q).sum (λ k, s.prod (λ i, (a i) ^ (multiset.count i k)) • s.prod (λ i, dp R (multiset.count i k) (x i))) := 
-begin
-  induction s using finset.induction with i s hi hs,
-  { simp only [sum_empty, prod_empty, one_smul, sum_const, nat.smul_one_eq_coe, dp_null],
-    induction q with q hq,
-    simp only [eq_self_iff_true, if_true, sym_zero, card_singleton, algebra_map.coe_one],
-    simp only [nat.succ_ne_zero, if_false, sym_empty, card_empty, algebra_map.coe_zero], },
-  
-  rw finset.sum_insert,
-
-end
+    (finset.sym s q).sum (λ k, s.prod (λ i, (a i) ^ (multiset.count i k)) • 
+      s.prod (λ i, dp R (multiset.count i k) (x i))) := 
+by simp_rw [dp_sum, dp_smul, algebra.smul_def, map_prod,← finset.prod_mul_distrib]
 
 
 lemma unique_on_dp {A : Type*} [comm_ring A] [algebra R A]
@@ -290,7 +292,8 @@ end lift'
 
 end functoriality
 
-
 end divided_power_algebra
+
+end 
 
 #lint

@@ -238,12 +238,10 @@ begin
   rw [nat.multinomial_insert _ _ hi, mul_comm, nat.cast_mul, finset.sum_insert hi] }
 end
 
--- A slightly more general result is in free.lean 
+-- A slightly more general result is below but it is awkward to apply it 
 -- TODO : can probably be simplified using exponential series
 -- Also : can it be used to deduce dpow_comp from the rest?
-/-- A generic “multinomial” theorem for divided powers — but without multinomial coefficients 
-  — using only dpow_zero, dpow_add and dpow_eval_zero  -/
-lemma sum_dpow_aux (dpow : ℕ → A → A) 
+lemma dpow_sum_aux (dpow : ℕ → A → A) 
   (dpow_zero : ∀ {x} (hx : x ∈ I), dpow 0 x = 1)
   (dpow_add : ∀ n {x y} (hx : x ∈ I) (hy : y ∈ I) , dpow n (x + y) =
     finset.sum (finset.range (n + 1)) (λ k, (dpow k x) * (dpow (n - k) y)))
@@ -284,12 +282,64 @@ begin
     { exact sym.filter_ne_fill a m (mt (mem_sym_iff.1 (mem_sigma.1 hm).2 a) ha) }},
 end
 
+/-- A generic “multinomial” theorem for divided powers — but without multinomial coefficients 
+  — using only dpow_zero, dpow_add and dpow_eval_zero  -/
+lemma dpow_sum_aux' {M D : Type*} [add_comm_group M] [comm_ring D] 
+  (dp: ℕ → M → D) 
+  (dpow_zero : ∀ x, dp 0 x = 1)
+  (dpow_add : ∀ n x y, dp n (x + y) =
+    finset.sum (finset.range (n + 1)) (λ k, (dp k x) * (dp (n - k) y)))
+--  (dpow_smul : ∀ {n a x}, dp n (a • x) = a ^ n • dp n x)
+  (dpow_eval_zero : ∀ {n : ℕ} (hn : n ≠ 0), dp n 0 = 0) 
+  {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → M} : 
+  ∀ (n : ℕ), dp n (s.sum x) = 
+    (finset.sym s n).sum (λ k, s.prod (λ i, dp (multiset.count i k) (x i))) := 
+begin
+  induction s using finset.induction with a s ha ih,
+  { rw sum_empty,
+    rintro (_ | n),
+    { rw [dpow_zero, sum_unique_nonempty, prod_empty],
+      exact univ_nonempty },
+    { rw [dpow_eval_zero (nat.succ_ne_zero n), sym_empty, sum_empty] }},
+  { intro n,
+    simp_rw [sum_insert ha, dpow_add n, sum_range, ih, mul_sum, sum_sigma'], 
+
+    refine (sum_bij' (λ m _, sym.filter_ne a m) (λ m hm, finset.mem_sigma.2 ⟨mem_univ _, _⟩)
+      (λ m hm, _) (λ m _, m.2.fill a m.1) _ (λ m _, m.fill_filter_ne a) (λ m hm, _)).symm,
+      -- explicit arguments above rather than m.fill_filter_ne a
+      -- adjust once multinomial has been incorporated to mathlib
+    
+  -- #3
+    { convert sym_filter_ne_mem a hm, rw erase_insert ha },
+  -- #4
+    { dsimp only [sym.filter_ne, fin.coe_mk],
+      rw finset.prod_insert ha, 
+      apply congr_arg2 _ rfl, 
+      apply finset.prod_congr rfl,
+      intros i hi, simp only [subtype.val_eq_coe, sym.mk_coe], 
+      apply congr_arg2 _ _ rfl,
+      have ha : a ≠ i,
+      { intro hi', rw hi' at ha, exact ha hi,},
+      rw [multiset.count_filter, if_pos ha] },
+    { exact λ m hm, sym_fill_mem a (mem_sigma.1 hm).2 },
+    { exact sym.filter_ne_fill a m (mt (mem_sym_iff.1 (mem_sigma.1 hm).2 a) ha) }},
+end
+
 /-- A “multinomial” theorem for divided powers — without multinomial coefficients -/
-lemma sum_dpow {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A} (hx : ∀ i ∈ s, x i ∈ I) :
+lemma dpow_sum {ι : Type*} [decidable_eq ι] {s : finset ι} {x : ι → A} (hx : ∀ i ∈ s, x i ∈ I) :
   ∀ (n : ℕ), hI.dpow n (s.sum x) = 
     (finset.sym s n).sum (λ k, s.prod (λ i, hI.dpow (multiset.count i k) (x i))) :=
-sum_dpow_aux hI.dpow (λ x hx, hI.dpow_zero hx) 
-  (λ n x y hx hy, hI.dpow_add n hx hy) (λ n hn, hI.dpow_eval_zero hn) hx
+dpow_sum_aux hI.dpow (λ x hx, hI.dpow_zero hx) (λ n x y hx hy, hI.dpow_add n hx hy) (λ n hn, hI.dpow_eval_zero hn) hx
+/- 
+  let x' : s → I := λ i, ⟨x i, hx i i.prop⟩,
+  haveI : fintype s, exact fintype_of_option,
+  suffices :  s.sum x = coe(finset.univ.sum x'),  rw this,
+  intro n,
+--  simp only [submodule.coe_sum, submodule.coe_mk],
+  have := @dpow_sum_aux I A _ _ (λ (n : ℕ) (a : I), hI.dpow n a) (λ x, hI.dpow_zero x.prop) _ _
+    s _ finset.univ x' n,  
+
+  -/
 
 lemma prod_dpow_self {ι : Type*} {s : finset ι} {n : ι → ℕ} (a : A) (ha : a ∈ I) :
   s.prod (λ i, hI.dpow (n i) a) = nat.multinomial s n * hI.dpow (s.sum n) a :=
