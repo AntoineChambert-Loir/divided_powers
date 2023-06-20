@@ -4,24 +4,28 @@ import topology.algebra.infinite_sum.basic
 import topology.algebra.ring.basic
 import topology.uniform_space.basic
 import topology.uniform_space.pi
+import topology.uniform_space.separation
 
 section mv_power_series
 
 variables (σ : Type*)
-variables (α : Type*) [topological_space α] 
+variables (α : Type*) 
 
+section topological
+
+variable [topological_space α] 
+
+/-- The pointwise topology on mv_power_series -/
 instance : topological_space (mv_power_series σ α) := 
 Pi.topological_space 
 
-lemma mv_power_series.continuous_component (d : σ →₀ ℕ) :
-  continuous (λ a : mv_power_series σ α, a d) :=
-begin
-  revert d,
-  rw ← continuous_pi_iff,
-  exact continuous_id,
-end
+/-- Components are continuous -/
+lemma mv_power_series.continuous_component :
+  ∀  (d : σ →₀ ℕ), continuous (λ a : mv_power_series σ α, a d) :=
+continuous_pi_iff.mp continuous_id
 
-instance mv_power_series.topological_semiring [semiring α] [topological_semiring α] :
+/-- The semiring topology on mv_power_series of a topological semiring -/
+def mv_power_series.topological_semiring [semiring α] [topological_semiring α] :
   topological_semiring (mv_power_series σ α) := 
 {  to_has_continuous_add := 
   begin
@@ -57,7 +61,8 @@ instance mv_power_series.topological_semiring [semiring α] [topological_semirin
     exact continuous.snd' (mv_power_series.continuous_component σ α i.snd),
   end }
 
-instance mv_power_series.topological_ring [ring α] [topological_ring α] :
+/-- The ring topology on mv_power_series of a topological ring -/
+def mv_power_series.topological_ring [ring α] [topological_ring α] :
   topological_ring (mv_power_series σ α) := 
 { to_topological_semiring := mv_power_series.topological_semiring σ α,
   to_has_continuous_neg := 
@@ -71,36 +76,111 @@ instance mv_power_series.topological_ring [ring α] [topological_ring α] :
     exact mv_power_series.continuous_component σ α d,
   end  }
 
-instance [ring α] [uniform_space α] [uniform_add_group α][topological_ring α] : uniform_space (mv_power_series σ α) := 
-topological_add_group.to_uniform_space (mv_power_series σ α)
+end topological
 
-example [ring α] [uniform_space α] [uniform_add_group α][topological_ring α] [complete_space α] :
+section uniform
+
+variable [uniform_space α]
+
+/-- The componentwise uniformity on mv_power_series -/
+instance mv_power_series.uniform_space [uniform_space α] : uniform_space (mv_power_series σ α) := 
+Pi.uniform_space (λ (i : σ →₀ ℕ), α)
+
+/-- Components are uniformly continuous -/
+lemma mv_power_series.uniform_continuous_component :
+  ∀  (d : σ →₀ ℕ), uniform_continuous (λ a : mv_power_series σ α, a d) :=
+uniform_continuous_pi.mp uniform_continuous_id
+
+/-- The uniform_add_group structure on mv_power_series of a uniform_add_group -/
+def mv_power_series.uniform_add_group [add_group α] [uniform_space α]
+  [uniform_add_group α] : uniform_add_group (mv_power_series σ α) :=
+begin
+  apply uniform_add_group.mk,
+  rw uniform_continuous_pi,
+  intros d,
+  let g : mv_power_series σ α × mv_power_series σ α → α := 
+  (λ (u : α × α) , u.fst - u.snd) ∘ (λ x, (x.fst d, x.snd d)),
+  change uniform_continuous g,
+  apply uniform_continuous.comp,
+  exact uniform_continuous_sub,
+  apply uniform_continuous.prod_mk,
+
+  change uniform_continuous ((λ x : mv_power_series σ α, x d) ∘ (λ a : mv_power_series σ α × mv_power_series σ α, a.fst)), 
+  apply uniform_continuous.comp,
+  apply mv_power_series.uniform_continuous_component,
+  exact uniform_continuous_fst,
+
+  change uniform_continuous ((λ x : mv_power_series σ α, x d) ∘ (λ a : mv_power_series σ α × mv_power_series σ α, a.snd)), 
+  apply uniform_continuous.comp,
+  apply mv_power_series.uniform_continuous_component,
+  exact uniform_continuous_snd,
+end
+
+/-- Completeness of the uniform structure on mv_power_series -/
+lemma mv_power_series.complete_space [add_group α] [uniform_space α] [uniform_add_group α] [complete_space α] :
 complete_space (mv_power_series σ α) :=
 begin
   apply complete_space.mk,
   intros f hf, 
-  let φ : (σ →₀ ℕ)→ filter α := λ d, f.map (mv_power_series.coeff α d),
-  -- suffices hφ : ∀ d, cauchy (φ d),
-  suffices : ∀ d, ∃ x, φ d ≤ nhds x,
-  let ξ := (λ d, (this d).some),
-  use ξ,
-  -- suffices : f.tendsto ξ, 
-  rw nhds_pi, 
-  rw filter.le_pi , 
+  suffices : ∀ d, ∃ x, f.map (λ a, a d) ≤ nhds x,
+  use (λ d, (this d).some),
+  rw [nhds_pi, filter.le_pi], 
   intro d, 
---  simp only [ξ],
   exact (this d).some_spec,
   intro d,
-  suffices : cauchy (φ d),
---   haveI : (φ d).ne_bot, sorry,
-  use Lim (φ d), sorry, -- exact this.le_nhds_Lim,
-  simp only [φ],
-  rw cauchy_map_iff,
-  split,
-  rw cauchy_iff at hf, exact hf.1,
+  use Lim (f.map (λ a, a d)), 
+  exact (cauchy.map hf (mv_power_series.uniform_continuous_component σ α d)).le_nhds_Lim, 
 end
 
+/-- Separation of the uniform structure on mv_power_series -/
+lemma mv_power_series.separated_space [add_group α] [uniform_space α]
+  [uniform_add_group α] [separated_space α] :
+  separated_space (mv_power_series σ α) := 
+begin
+  rw separated_def,
+  intros x y hr,
+  ext d,
+  exact uniform_space.eq_of_separated_of_uniform_continuous
+    (mv_power_series.uniform_continuous_component σ α d) hr,
+end
 
+lemma mv_power_series.uniform_topological_ring [ring α] [uniform_space α]
+  [uniform_add_group α] [topological_ring α] : 
+  topological_ring (mv_power_series σ α) :=
+{ to_has_continuous_add := 
+  begin
+    haveI := mv_power_series.uniform_add_group σ α ,
+    apply has_continuous_add.mk,
+    apply uniform_continuous.continuous, 
+    exact uniform_continuous_add , 
+  end,
+  to_has_continuous_mul := 
+  begin
+    apply has_continuous_mul.mk,
+    apply continuous_pi,
+    intro d,
+    change continuous (λ (a : mv_power_series σ α × mv_power_series σ α),
+      d.antidiagonal.sum (λ (x : (σ →₀ ℕ) × (σ →₀ ℕ)), a.fst x.fst * a.snd x.snd)), 
+    apply continuous_finset_sum,
+    intros i hi, 
+    change continuous ((λ (u : α × α), u.fst * u.snd) 
+      ∘ λ (a : mv_power_series σ α × mv_power_series σ α), 
+        (a.fst i.fst, a.snd i.snd)), 
+    apply continuous.comp,
+    exact continuous_mul,
+    apply continuous.prod_mk,
+    exact continuous.fst' (mv_power_series.continuous_component σ α i.fst),
+    exact continuous.snd' (mv_power_series.continuous_component σ α i.snd),
+  end,
+  to_has_continuous_neg := 
+  begin
+    haveI := mv_power_series.uniform_add_group σ α ,
+    apply has_continuous_neg.mk,
+    apply uniform_continuous.continuous, 
+    exact uniform_continuous_neg,   
+  end }
+
+end uniform
 
 example [σ_ne : nonempty σ]: no_max_order (σ →₀ ℕ) :=
 begin
