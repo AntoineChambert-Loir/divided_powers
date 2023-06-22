@@ -5,6 +5,8 @@ namespace mv_power_series
 
 noncomputable theory 
 
+open_locale big_operators 
+
 variables {σ α : Type*} [decidable_eq σ] [semiring α]
 
 lemma exists_coeff_ne_zero_iff_ne_zero (f : mv_power_series σ α) : 
@@ -35,7 +37,7 @@ def weight : (σ →₀ ℕ) →+ ℕ :=
     intros i m n, rw mul_add, 
   end }
 
-lemma exists_coeff_ne_zero_iff_ne_zero' : 
+lemma exists_coeff_ne_zero_of_weight_iff_ne_zero : 
   (∃ (n : ℕ), ∃ (d : σ →₀ ℕ), weight w d = n ∧ coeff α d f ≠ 0) ↔ f ≠ 0 :=
 begin
   refine not_iff_not.mp _,
@@ -51,7 +53,7 @@ end
 def weighted_order (f : mv_power_series σ α) : part_enat :=
 begin
   classical,
-  exact dite (f = 0) (λ h, ⊤) (λ h, nat.find ((exists_coeff_ne_zero_iff_ne_zero' w f).mpr h))
+  exact dite (f = 0) (λ h, ⊤) (λ h, nat.find ((exists_coeff_ne_zero_of_weight_iff_ne_zero w f).mpr h))
 end
 
 @[simp]
@@ -91,7 +93,7 @@ begin
   rw [weighted_order, dif_neg],
   { simp only [part_enat.coe_le_coe, nat.find_le_iff],
     exact ⟨weight w d, le_rfl, d, rfl, h⟩ },
-  { exact (f.exists_coeff_ne_zero_iff_ne_zero' w).mp ⟨weight w d, d, rfl, h⟩ , }
+  { exact (f.exists_coeff_ne_zero_of_weight_iff_ne_zero w).mp ⟨weight w d, d, rfl, h⟩ , }
 end
 
 /-- The `n`th coefficient of a formal power series is `0` if `n` is strictly
@@ -277,8 +279,6 @@ lemma coeff_mul_one_sub_of_lt_weighted_order {α : Type*} [comm_ring α] {f g : 
   coeff α d (f * (1 - g)) = coeff α d f :=
 by simp [coeff_mul_of_lt_weighted_order w h, mul_sub]
 
-open_locale big_operators 
-
 lemma coeff_mul_prod_one_sub_of_lt_weighted_order {α ι : Type*} [comm_ring α] (d : σ →₀ ℕ) (s : finset ι)
   (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
   (∀ i ∈ s, ↑(weight w d) < weighted_order w (g i)) → coeff α d (f * ∏ i in s, (1 - g i)) = coeff α d f :=
@@ -294,6 +294,112 @@ end
 end weighted_order 
 
 section order
+
+variable (f : mv_power_series σ α)
+
+/-- The degree of a monomial -/
+def degree : (σ →₀ ℕ) →+ ℕ := weight (λ i, 1)
+
+lemma exists_coeff_ne_zero_of_degree_iff_ne_zero : 
+  (∃ (n : ℕ), ∃ (d : σ →₀ ℕ), degree d = n ∧ coeff α d f ≠ 0) ↔ f ≠ 0 := exists_coeff_ne_zero_of_weight_iff_ne_zero (λ i, 1) f
+
+/-- The weighted order of a mv_power_series -/
+def order (f : mv_power_series σ α) : part_enat :=
+weighted_order (λ i, 1) f
+
+@[simp]
+lemma order_zero : (0 : mv_power_series σ α).order = ⊤ := 
+weighted_order_zero _
+
+lemma order_finite_iff_ne_zero : 
+  (f.order).dom ↔ f ≠ 0 :=
+  weighted_order_finite_iff_ne_zero (λ i, 1) f
+
+/-- If the order of a formal power series is finite,
+then some coefficient of degree the order is nonzero.-/
+lemma exists_coeff_ne_zero_of_order (h : (f.order).dom) :
+  ∃ (d : σ →₀ ℕ), ↑(degree d) = f.order ∧ coeff α d f ≠ 0 :=
+exists_coeff_ne_zero_of_weighted_order _ f h
+
+/-- If `d`th coefficient of a formal power series is nonzero,
+then the order of the power series is less than or equal to `degree d`.-/
+lemma order_le (d : σ →₀ ℕ) (h : coeff α d f ≠ 0) :f.order ≤ degree d := weighted_order_le _ f d h
+
+/-- The `n`th coefficient of a formal power series is `0` if `n` is strictly
+smaller than the order of the power series.-/
+lemma coeff_of_lt_order (d : σ →₀ ℕ) (h: ↑(degree d) < f.order) :
+  coeff α d f = 0 :=
+coeff_of_lt_weighted_order _ f d h
+
+/-- The `0` power series is the unique power series with infinite order.-/
+@[simp] lemma order_eq_top {f : mv_power_series σ α} :
+  f.order = ⊤ ↔ f = 0 :=
+weighted_order_eq_top _
+
+/-- The order of a formal power series is at least `n` if
+the `d`th coefficient is `0` for all `d` such that `degree d < n`.-/
+lemma nat_le_order (f : mv_power_series σ α) (n : ℕ) (h : ∀ d, degree d < n → coeff α d f = 0) :
+  ↑n ≤ f.order :=
+nat_le_weighted_order _ f n h
+
+/-- The order of a formal power series is at least `n` if
+the `d`th coefficient is `0` for all `d` such that `degree d < n`.-/
+lemma le_order (f : mv_power_series σ α) (n : part_enat) 
+  (h : ∀ (d : σ →₀ ℕ) , ↑(degree d) < n → coeff α d f = 0) :
+  n ≤ f.order :=
+le_weighted_order _ f n h
+
+/-- The order of a formal power series is exactly `n` some coefficient 
+of degree `n` is nonzero, 
+and the `d`th coefficient is `0` for all `d` such that `degree d < n`.-/
+lemma order_eq_nat {f : mv_power_series σ α} {n : ℕ} :
+  f.order = n ↔ (∃ d, degree d = n ∧ coeff α d f ≠ 0) ∧ (∀ d, degree d < n → coeff α d f = 0) :=
+weighted_order_eq_nat _ 
+
+/-- The order of the sum of two formal power series
+ is at least the minimum of their orders.-/
+lemma le_order_add (f g : mv_power_series σ α) :
+  min (f.order) (g.order) ≤ (f + g).order :=
+le_weighted_order_add _ f g 
+
+/-- The order of the sum of two formal power series
+ is the minimum of their orders if their orders differ.-/
+lemma order_add_of_order_eq (f g : mv_power_series σ α) (h : f.order ≠ g.order) :
+ order (f + g) = order f ⊓ order g :=
+weighted_order_add_of_weighted_order_eq _ f g h
+
+/-- The order of the product of two formal power series
+ is at least the sum of their orders.-/
+lemma order_mul_ge (f g : mv_power_series σ α) :
+  f.order + g.order ≤ order (f * g) :=
+weighted_order_mul_ge _ f g
+
+/-- The order of the monomial `a*X^d` is infinite if `a = 0` and `degree d` otherwise.-/
+lemma order_monomial (d : σ →₀ ℕ) (a : α) [decidable (a = 0)] :
+  order (monomial α d a) = if a = 0 then ⊤ else degree d :=
+weighted_order_monomial _ d a
+
+/-- The order of the monomial `a*X^n` is `n` if `a ≠ 0`.-/
+lemma order_monomial_of_ne_zero (d : σ →₀ ℕ) (a : α) (h : a ≠ 0) :
+ order (monomial α d a) = degree d :=
+weighted_order_monomial_of_ne_zero _ d a h 
+
+/-- If `degree d` is strictly smaller than the order of `g`, then the `d`th coefficient of its product
+with any other power series is `0`. -/
+lemma coeff_mul_of_lt_order {f g : mv_power_series σ α} {d : σ →₀ ℕ} (h : ↑(degree d) < g.order) :
+  coeff α d (f * g) = 0 :=
+coeff_mul_of_lt_weighted_order _ h
+
+lemma coeff_mul_one_sub_of_lt_order {α : Type*} [comm_ring α] {f g : mv_power_series σ α}
+  (d : σ →₀ ℕ) (h : ↑(degree d) < g.order) :
+  coeff α d (f * (1 - g)) = coeff α d f :=
+coeff_mul_one_sub_of_lt_weighted_order _ d h
+
+
+lemma coeff_mul_prod_one_sub_of_lt_order {α ι : Type*} [comm_ring α] (d : σ →₀ ℕ) (s : finset ι)
+  (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
+  (∀ i ∈ s, ↑(degree d) < order (g i)) → coeff α d (f * ∏ i in s, (1 - g i)) = coeff α d f :=
+coeff_mul_prod_one_sub_of_lt_weighted_order _ d s f g
 
 end order
 
