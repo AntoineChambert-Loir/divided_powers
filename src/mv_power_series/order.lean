@@ -236,60 +236,59 @@ begin
   rw [← hij, map_add, nat.cast_add],
 end
 
-#exit
-
--- TODO 
-
-/-- The order of the monomial `a*X^n` is infinite if `a = 0` and `n` otherwise.-/
-lemma weighted_order_monomial (n : ℕ) (a : R) [decidable (a = 0)] :
-  order (monomial R n a) = if a = 0 then ⊤ else n :=
+/-- The weighted_order of the monomial `a*X^d` is infinite if `a = 0` and `weight w d` otherwise.-/
+lemma weighted_order_monomial (d : σ →₀ ℕ) (a : α) [decidable (a = 0)] :
+  weighted_order w (monomial α d a) = if a = 0 then ⊤ else weight w d :=
 begin
   split_ifs with h,
-  { rw [h, order_eq_top, linear_map.map_zero] },
-  { rw [order_eq], split; intros i hi,
-    { rw [part_enat.coe_inj] at hi, rwa [hi, coeff_monomial_same] },
-    { rw [part_enat.coe_lt_coe] at hi, rw [coeff_monomial, if_neg], exact ne_of_lt hi } }
+  { rw [h, weighted_order_eq_top, linear_map.map_zero] },
+  { rw [weighted_order_eq_nat], split, -- intros i hi,
+    { use d, simp only [coeff_monomial_same, eq_self_iff_true, ne.def, true_and], exact h, },
+    { intros b hb, rw [coeff_monomial, if_neg], 
+      intro h, simpa only [h, lt_self_iff_false] using hb, } }
 end
 
 /-- The order of the monomial `a*X^n` is `n` if `a ≠ 0`.-/
-lemma order_monomial_of_ne_zero (n : ℕ) (a : R) (h : a ≠ 0) :
-  order (monomial R n a) = n :=
-by rw [order_monomial, if_neg h]
+lemma weighted_order_monomial_of_ne_zero (d : σ →₀ ℕ) (a : α) (h : a ≠ 0) :
+  weighted_order w (monomial α d a) = weight w d :=
+by rw [weighted_order_monomial, if_neg h]
 
-/-- If `n` is strictly smaller than the order of `ψ`, then the `n`th coefficient of its product
+/-- If `weight w d` is strictly smaller than the weighted_order of `g`, then the `d`th coefficient of its product
 with any other power series is `0`. -/
-lemma coeff_mul_of_lt_order {φ ψ : power_series R} {n : ℕ} (h : ↑n < ψ.order) :
-  coeff R n (φ * ψ) = 0 :=
+lemma coeff_mul_of_lt_weighted_order {f g : mv_power_series σ α} {d : σ →₀ ℕ} (h : ↑(weight w d) < g.weighted_order w) :
+  coeff α d (f * g) = 0 :=
 begin
-  suffices : coeff R n (φ * ψ) = ∑ p in finset.nat.antidiagonal n, 0,
-    rw [this, finset.sum_const_zero],
+ -- suffices : coeff α d (f * g) = ∑ p in d.antidiagonal, 0,
+  --  rw [this, finset.sum_const_zero],
   rw [coeff_mul],
-  apply finset.sum_congr rfl (λ x hx, _),
-  refine mul_eq_zero_of_right (coeff R x.fst φ) (coeff_of_lt_order x.snd (lt_of_le_of_lt _ h)),
-  rw finset.nat.mem_antidiagonal at hx,
-  norm_cast,
-  linarith,
+  apply finset.sum_eq_zero,
+  rintros ⟨i, j⟩ hij,
+  refine mul_eq_zero_of_right (coeff α i f) _,
+  refine coeff_of_lt_weighted_order w g j (lt_of_le_of_lt _ h),
+  dsimp,
+  simp only [finsupp.mem_antidiagonal] at hij,
+  simp only [part_enat.coe_le_coe, ←hij, map_add, le_add_iff_nonneg_left, zero_le'],
 end
 
-lemma coeff_mul_one_sub_of_lt_order {R : Type*} [comm_ring R] {φ ψ : power_series R}
-  (n : ℕ) (h : ↑n < ψ.order) :
-  coeff R n (φ * (1 - ψ)) = coeff R n φ :=
-by simp [coeff_mul_of_lt_order h, mul_sub]
+lemma coeff_mul_one_sub_of_lt_weighted_order {α : Type*} [comm_ring α] {f g : mv_power_series σ α}
+  (d : σ →₀ ℕ) (h : ↑(weight w d) < g.weighted_order w) :
+  coeff α d (f * (1 - g)) = coeff α d f :=
+by simp [coeff_mul_of_lt_weighted_order w h, mul_sub]
 
-lemma coeff_mul_prod_one_sub_of_lt_order {R ι : Type*} [comm_ring R] (k : ℕ) (s : finset ι)
-  (φ : power_series R) (f : ι → power_series R) :
-  (∀ i ∈ s, ↑k < (f i).order) → coeff R k (φ * ∏ i in s, (1 - f i)) = coeff R k φ :=
+open_locale big_operators 
+
+lemma coeff_mul_prod_one_sub_of_lt_weighted_order {α ι : Type*} [comm_ring α] (d : σ →₀ ℕ) (s : finset ι)
+  (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
+  (∀ i ∈ s, ↑(weight w d) < weighted_order w (g i)) → coeff α d (f * ∏ i in s, (1 - g i)) = coeff α d f :=
 begin
   apply finset.induction_on s,
   { simp },
   { intros a s ha ih t,
     simp only [finset.mem_insert, forall_eq_or_imp] at t,
-    rw [finset.prod_insert ha, ← mul_assoc, mul_right_comm, coeff_mul_one_sub_of_lt_order _ t.1],
+    rw [finset.prod_insert ha, ← mul_assoc, mul_right_comm, coeff_mul_one_sub_of_lt_weighted_order w _ t.1],
     exact ih t.2 },
 end
 
-
-end order 
-
+end weighted_order 
 
 end mv_power_series
