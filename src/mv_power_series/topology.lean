@@ -1,4 +1,5 @@
 import ring_theory.power_series.basic
+import mv_power_series.order
 import topology.algebra.infinite_sum.basic
 import topology.algebra.ring.basic
 import topology.uniform_space.basic
@@ -267,12 +268,84 @@ begin
   exact classical.some_spec this, 
 end
 
-
 example {ι : Type*} (f : ι → mv_power_series σ α) :
   summable f ↔ ∀ d, summable (λ i, f i d) := pi.summable
 
 example {ι : Type*} (f : ι → mv_power_series σ α) (a : mv_power_series σ α) (ha : ∀ (d : σ →₀ ℕ), _root_.has_sum (λ (i : ι), f i d) (a d)) : _root_.has_sum (λ (i : ι), f i) a := pi.has_sum.mpr ha
 
 end summable
+
+section strongly_summable
+
+variables {ι : Type*} 
+
+variable [semiring α]
+variables {σ α}
+
+def strongly_summable (f : ι → mv_power_series σ α) : Prop :=
+  ∀ (d : σ →₀ ℕ), (λ i, coeff α d (f i)).support.finite 
+
+namespace strongly_summable 
+
+lemma add {f g : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (hg : strongly_summable g) :
+  strongly_summable (f + g) := 
+begin
+  intro d, 
+  apply set.finite.subset (set.finite.union (hf d) (hg d)),
+  intro i, 
+  simp only [pi.add_apply, function.mem_support, ne.def, set.mem_union],
+  intro h,
+  by_cases h₁ : coeff α d (f i) = 0,
+  right, simpa [h₁] using h,
+  left, exact h₁,
+end
+
+lemma strongly_summable.smul {f : ι → mv_power_series σ α} (a : ι → α) 
+  (hf : strongly_summable f) : strongly_summable (a • f) := 
+begin
+  intro d,
+  apply set.finite.subset (hf d),
+  intro i, 
+  simp only [pi.smul_apply', pi.smul_apply, function.mem_support, ne.def],
+  intros h h', apply h, rw [coeff_smul, h', mul_zero],
+end
+
+lemma strongly_summable.mul {f : ι → mv_power_series σ α} {κ : Type*} {g : κ → mv_power_series σ α}
+  (hf : strongly_summable f) (hg : strongly_summable g) :
+  strongly_summable (λ (i : ι × κ), (f i.fst) * (g i.snd)) := 
+begin
+  intro d, dsimp only,
+  simp_rw coeff_mul, 
+  apply set.finite.subset _ (function.support_sum d.antidiagonal _),
+  apply set.finite.bUnion (d.antidiagonal.finite_to_set), 
+  rintros ⟨i,j⟩ hij,
+  dsimp,
+  apply set.finite.subset (set.finite.prod (hf i) (hg j)), 
+  rintro ⟨x,y⟩,
+  simp only [function.mem_support, ne.def, set.prod_mk_mem_set_prod_eq], 
+  rw ← not_or_distrib, rw not_imp_not,
+  intro h,
+  cases h with h h;
+  simp only [h, mul_zero, zero_mul],
+end
+
+noncomputable 
+def sum {f : ι → mv_power_series σ α} (hf : strongly_summable f) : mv_power_series σ α :=
+ λ d, (hf d).to_finset.sum (λ i, coeff α d (f i)) 
+
+lemma sum_add {f g : ι → mv_power_series σ α} (hf : strongly_summable f) (hg : strongly_summable g) : 
+  ∀ (hh : strongly_summable (f + g)),
+  hh.sum = hf.sum + hg.sum :=
+sorry
+
+lemma sum_mul {f : ι → mv_power_series σ α} {κ : Type*} {g : κ → mv_power_series σ α}
+  (hf : strongly_summable f) (hg : strongly_summable g) :
+  ∀ (hh : strongly_summable (λ (i : ι × κ), (f i.fst) * (g i.snd))),
+  hh.sum = hf.sum * hg.sum := sorry 
+
+end strongly_summable
+
+end strongly_summable
 
 end mv_power_series
