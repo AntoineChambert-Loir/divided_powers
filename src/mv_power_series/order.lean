@@ -28,9 +28,11 @@ variable (f : mv_power_series σ α)
 def weight : (σ →₀ ℕ) →+ ℕ := 
 { to_fun := λ d, d.sum (λ x y, w x * y),
   map_zero' := by simp, 
-  map_add' := λ x y, begin 
-  rw finsupp.sum_add_index ,
-  sorry,
+  map_add' := λ x y, 
+  begin 
+    rw finsupp.sum_add_index',
+    intro i, rw mul_zero,
+    intros i m n, rw mul_add, 
   end }
 
 lemma exists_coeff_ne_zero_iff_ne_zero' : 
@@ -290,5 +292,9 @@ begin
 end
 
 end weighted_order 
+
+section order
+
+end order
 
 end mv_power_series
