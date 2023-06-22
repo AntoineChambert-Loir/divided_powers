@@ -334,10 +334,42 @@ noncomputable
 def sum {f : ι → mv_power_series σ α} (hf : strongly_summable f) : mv_power_series σ α :=
  λ d, (hf d).to_finset.sum (λ i, coeff α d (f i)) 
 
+
+lemma coeff_sum.def {f : ι → mv_power_series σ α} {hf : strongly_summable f} (d : σ →₀ ℕ) : 
+  coeff α d (hf.sum) = (hf d).to_finset.sum (λ i, coeff α d (f i)) :=  rfl
+
+lemma coeff_sum {f : ι → mv_power_series σ α} {hf : strongly_summable f} (d : σ →₀ ℕ) (s : finset ι) (hs : 
+  (λ i, coeff α d (f i)).support ⊆ s) : 
+  coeff α d (hf.sum) = s.sum (λ i, coeff α d (f i)) := 
+begin
+  simp only [coeff_sum.def],
+  rw finset.sum_subset (set.finite.to_finset_subset.mpr hs),
+  { intros i hi hi', 
+    simpa only [set.finite.mem_to_finset, function.mem_support, not_not] using hi', },
+end
+
 lemma sum_add {f g : ι → mv_power_series σ α} (hf : strongly_summable f) (hg : strongly_summable g) : 
   ∀ (hh : strongly_summable (f + g)),
   hh.sum = hf.sum + hg.sum :=
-sorry
+begin
+  classical,
+  intro hh,
+  ext d, 
+  simp only [coeff_sum, pi.add_apply, map_add],
+  rw [coeff_sum d ((hf d).to_finset ∪ (hg d).to_finset ∪ (hh d).to_finset)],  
+  rw [coeff_sum d ((hf d).to_finset ∪ (hg d).to_finset ∪ (hh d).to_finset)],  
+  rw [coeff_sum d ((hf d).to_finset ∪ (hg d).to_finset ∪ (hh d).to_finset)],  
+  simp only [pi.add_apply, map_add, finset.union_assoc],
+  rw finset.sum_add_distrib,
+  simp only [finset.union_assoc, finset.coe_union, set.finite.coe_to_finset],
+  apply set.subset_union_of_subset_right,
+  apply set.subset_union_left,
+  simp only [finset.union_assoc, finset.coe_union, set.finite.coe_to_finset],
+  apply set.subset_union_left,
+  simp only [finset.union_assoc, finset.coe_union, set.finite.coe_to_finset],
+  apply set.subset_union_of_subset_right,
+  apply set.subset_union_right,
+end
 
 lemma sum_mul {f : ι → mv_power_series σ α} {κ : Type*} {g : κ → mv_power_series σ α}
   (hf : strongly_summable f) (hg : strongly_summable g) :
