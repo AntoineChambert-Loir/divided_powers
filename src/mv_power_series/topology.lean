@@ -5,6 +5,7 @@ import topology.algebra.ring.basic
 import topology.uniform_space.basic
 import topology.uniform_space.pi
 import topology.uniform_space.separation
+import data.set.finite
 
 namespace mv_power_series
 
@@ -277,7 +278,7 @@ end summable
 
 section strongly_summable
 
-variables {ι : Type*} 
+variables {ι : Type*}
 
 variable [semiring α]
 variables {σ α}
@@ -287,21 +288,28 @@ def strongly_summable (f : ι → mv_power_series σ α) : Prop :=
 
 namespace strongly_summable 
 
-lemma add {f g : ι → mv_power_series σ α} 
-  (hf : strongly_summable f) (hg : strongly_summable g) :
-  strongly_summable (f + g) := 
+lemma support_add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (hg : strongly_summable g):
+  ∀ (d : σ →₀ ℕ), (λ i, coeff α d ((f + g) i)).support ⊆ ((hf d).to_finset ∪ (hg d).to_finset : finset ι) := 
 begin
-  intro d, 
-  apply set.finite.subset (set.finite.union (hf d) (hg d)),
-  intro i, 
-  simp only [pi.add_apply, function.mem_support, ne.def, set.mem_union],
+  intros d i,
+  simp only [pi.add_apply, map_add, function.mem_support, ne.def, finset.coe_union, set.finite.coe_to_finset, set.mem_union],
   intro h,
   by_cases h₁ : coeff α d (f i) = 0,
   right, simpa [h₁] using h,
   left, exact h₁,
 end
 
-lemma strongly_summable.smul {f : ι → mv_power_series σ α} (a : ι → α) 
+lemma add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (hg : strongly_summable g):
+  strongly_summable (f + g) :=
+begin
+  intro d,
+  apply set.finite.subset _ (support_add hf hg d),
+  apply finset.finite_to_set,
+end
+
+lemma smul {f : ι → mv_power_series σ α} (a : ι → α) 
   (hf : strongly_summable f) : strongly_summable (a • f) := 
 begin
   intro d,
@@ -311,35 +319,52 @@ begin
   intros h h', apply h, rw [coeff_smul, h', mul_zero],
 end
 
-lemma strongly_summable.mul {f : ι → mv_power_series σ α} {κ : Type*} {g : κ → mv_power_series σ α}
+lemma support_mul [decidable_eq ι] {f : ι → mv_power_series σ α} 
+  {κ : Type*} [decidable_eq κ] {g : κ → mv_power_series σ α} 
+  (hf : strongly_summable f) (hg : strongly_summable g) :
+  ∀ (d : σ →₀ ℕ), (λ (i : ι × κ), coeff α d ((f i.fst) * (g i.snd))).support 
+    ⊆ finset.product (finset.bUnion d.antidiagonal (λ b, (hf b.fst).to_finset))
+      (finset.bUnion d.antidiagonal (λ b, (hg b.snd).to_finset)) := 
+begin
+  intro d, 
+  dsimp only,
+  rintro ⟨i, j⟩,
+  intro h,
+  simp only [function.mem_support, coeff_mul] at h,
+  suffices : ∃ p ∈ d.antidiagonal,  
+    (coeff α (p.fst : σ →₀ ℕ) (f i)) * ((coeff α p.snd) (g j)) ≠ 0,
+  obtain ⟨⟨b,c⟩, hbc, h'⟩ := this,
+  simp only [finsupp.mem_antidiagonal] at hbc,
+  simp only [finset.coe_product, finset.coe_bUnion, finset.mem_coe, 
+    finsupp.mem_antidiagonal, set.finite.coe_to_finset, set.prod_mk_mem_set_prod_eq, 
+    set.mem_Union, function.mem_support, ne.def, exists_prop, prod.exists],
+  split,
+  use b, use c, apply and.intro hbc, intro h₁, apply h', rw h₁, rw zero_mul,
+  use b, use c, apply and.intro hbc, intro h₂, apply h', rw h₂, rw mul_zero,
+  
+  by_contradiction h', push_neg at h',
+  exact h (finset.sum_eq_zero h'),
+end
+
+lemma mul [decidable_eq ι] {f : ι → mv_power_series σ α} 
+  {κ : Type*} [decidable_eq κ] {g : κ → mv_power_series σ α}
   (hf : strongly_summable f) (hg : strongly_summable g) :
   strongly_summable (λ (i : ι × κ), (f i.fst) * (g i.snd)) := 
 begin
-  intro d, dsimp only,
-  simp_rw coeff_mul, 
-  apply set.finite.subset _ (function.support_sum d.antidiagonal _),
-  apply set.finite.bUnion (d.antidiagonal.finite_to_set), 
-  rintros ⟨i,j⟩ hij,
-  dsimp,
-  apply set.finite.subset (set.finite.prod (hf i) (hg j)), 
-  rintro ⟨x,y⟩,
-  simp only [function.mem_support, ne.def, set.prod_mk_mem_set_prod_eq], 
-  rw ← not_or_distrib, rw not_imp_not,
-  intro h,
-  cases h with h h;
-  simp only [h, mul_zero, zero_mul],
+  intro d, 
+  apply set.finite.subset _ (support_mul hf hg d),
+  apply finset.finite_to_set,
 end
 
 noncomputable 
 def sum {f : ι → mv_power_series σ α} (hf : strongly_summable f) : mv_power_series σ α :=
  λ d, (hf d).to_finset.sum (λ i, coeff α d (f i)) 
 
-
 lemma coeff_sum.def {f : ι → mv_power_series σ α} {hf : strongly_summable f} (d : σ →₀ ℕ) : 
   coeff α d (hf.sum) = (hf d).to_finset.sum (λ i, coeff α d (f i)) :=  rfl
 
-lemma coeff_sum {f : ι → mv_power_series σ α} {hf : strongly_summable f} (d : σ →₀ ℕ) (s : finset ι) (hs : 
-  (λ i, coeff α d (f i)).support ⊆ s) : 
+lemma coeff_sum {f : ι → mv_power_series σ α} {hf : strongly_summable f} (d : σ →₀ ℕ) 
+  (s : finset ι) (hs : (λ i, coeff α d (f i)).support ⊆ s) : 
   coeff α d (hf.sum) = s.sum (λ i, coeff α d (f i)) := 
 begin
   simp only [coeff_sum.def],
@@ -348,33 +373,42 @@ begin
     simpa only [set.finite.mem_to_finset, function.mem_support, not_not] using hi', },
 end
 
-lemma sum_add {f g : ι → mv_power_series σ α} (hf : strongly_summable f) (hg : strongly_summable g) : 
+lemma sum_add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (hg : strongly_summable g) : 
   ∀ (hh : strongly_summable (f + g)),
   hh.sum = hf.sum + hg.sum :=
 begin
-  classical,
   intro hh,
   ext d, 
   simp only [coeff_sum, pi.add_apply, map_add],
-  rw [coeff_sum d ((hf d).to_finset ∪ (hg d).to_finset ∪ (hh d).to_finset)],  
-  rw [coeff_sum d ((hf d).to_finset ∪ (hg d).to_finset ∪ (hh d).to_finset)],  
-  rw [coeff_sum d ((hf d).to_finset ∪ (hg d).to_finset ∪ (hh d).to_finset)],  
+  rw coeff_sum d _ (support_add hf hg d), 
+  rw coeff_sum d, 
+  rw coeff_sum d, 
   simp only [pi.add_apply, map_add, finset.union_assoc],
   rw finset.sum_add_distrib,
-  simp only [finset.union_assoc, finset.coe_union, set.finite.coe_to_finset],
-  apply set.subset_union_of_subset_right,
-  apply set.subset_union_left,
-  simp only [finset.union_assoc, finset.coe_union, set.finite.coe_to_finset],
-  apply set.subset_union_left,
-  simp only [finset.union_assoc, finset.coe_union, set.finite.coe_to_finset],
-  apply set.subset_union_of_subset_right,
-  apply set.subset_union_right,
+  all_goals { simp only [finset.coe_union, set.finite.coe_to_finset,
+      set.subset_union_right, set.subset_union_left], },
 end
 
-lemma sum_mul {f : ι → mv_power_series σ α} {κ : Type*} {g : κ → mv_power_series σ α}
+lemma sum_mul [decidable_eq ι] {f : ι → mv_power_series σ α} 
+  {κ : Type*} [decidable_eq κ] {g : κ → mv_power_series σ α}
   (hf : strongly_summable f) (hg : strongly_summable g) :
   ∀ (hh : strongly_summable (λ (i : ι × κ), (f i.fst) * (g i.snd))),
-  hh.sum = hf.sum * hg.sum := sorry 
+  hh.sum = hf.sum * hg.sum := 
+begin
+  intro hh,
+  ext d,
+  rw coeff_sum d _ (support_mul hf hg d),
+  simp_rw coeff_mul,
+  rw finset.sum_comm,
+  apply finset.sum_congr rfl,
+  intros bc hbc,
+  rw coeff_sum bc.fst, rw coeff_sum bc.snd, 
+  rw finset.sum_mul_sum,
+  all_goals { 
+    simp only [finset.coe_bUnion, set.finite.coe_to_finset, finset.mem_coe],
+    exact @set.subset_bUnion_of_mem _ _ _ _ bc hbc, },
+end
 
 end strongly_summable
 
