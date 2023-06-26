@@ -7,6 +7,82 @@ import topology.uniform_space.pi
 import topology.uniform_space.separation
 import data.set.finite
 
+
+section topology
+
+open_locale pointwise
+
+variables {α : Type*} {ι : Type*}
+
+lemma finite_support_of_tendsto_zero [add_comm_monoid α] 
+  [topological_space α] [discrete_topology α] 
+  {f : ι → α}
+  (hf : filter.tendsto f filter.cofinite (nhds 0)) : f.support.finite :=
+begin
+  classical,
+  simp only [nhds_discrete, filter.tendsto_pure] at hf,
+  obtain ⟨s, H, p⟩ := filter.eventually.exists_mem hf, 
+  simp only [filter.mem_cofinite] at H,
+  apply set.finite.subset H,
+  intros x hx,
+  simp only [set.mem_compl_iff],
+  by_contradiction hxs, 
+  exact hx (p x hxs),
+end
+
+lemma finite_support_of_summable [add_comm_group α] [topological_space α] [discrete_topology α] [topological_add_group α] (f : ι → α) 
+  (hf : summable f) : f.support.finite :=
+finite_support_of_tendsto_zero hf.tendsto_cofinite_zero
+
+lemma tendsto_zero_of_summable [add_comm_group α] [topological_space α] [topological_add_group α] 
+  (f : ι → α) (hf : summable f) :
+  filter.tendsto f filter.cofinite (nhds 0) :=
+begin
+  classical,
+  obtain ⟨a, ha⟩ := hf, 
+  simp [_root_.has_sum] at ha,
+  rw [tendsto_at_top_nhds] at ha,
+  simp only [tendsto_nhds],
+  intros U₀ hU₀ memU₀,
+  suffices : ∃ (U₁ : set α), is_open U₁ ∧ (0 : α) ∈ U₁ ∧ U₁ - U₁ ≤ U₀, 
+  obtain ⟨U₁, hU₁, memU₁, addU₁_subset⟩ := this,
+  specialize ha ((λ x, x - a) ⁻¹' U₁) _ _ ,
+  simp only [memU₁, set.mem_preimage, sub_self],
+  exact is_open.preimage (continuous_sub_right a) hU₁,
+  obtain ⟨S, hS⟩ := ha,
+  simp only [filter.mem_cofinite],
+  apply set.finite.subset S.finite_to_set,
+  intros i hi,
+  simp only [set.mem_compl_iff, set.mem_preimage] at hi,
+  by_contradiction his, apply hi,
+  have hS' := hS (insert i S) (finset.subset_insert i S), 
+  specialize hS S (le_rfl),
+  apply addU₁_subset,
+  use (insert i S).sum f - a, 
+  use S.sum f - a, 
+  split, simpa only [set.mem_preimage] using hS',
+  split, simpa only [set.mem_preimage] using hS,
+  simp only [finset.sum_insert his, sub_sub_sub_cancel_right, add_sub_cancel],
+
+  suffices : is_open ((λ (xy : α × α), xy.fst - xy.snd) ⁻¹' U₀),
+  rw is_open_prod_iff at this,
+  specialize this 0 0 (by simp only [set.mem_preimage, sub_self, memU₀]), 
+  obtain ⟨u, v, hu, hv, mem_u, mem_v, H⟩ := this,
+  use (u ∩ v),
+  split, exact is_open.inter hu hv,
+  split, exact ⟨mem_u, mem_v⟩,
+  rw ← set.image_subset_iff at H,
+  apply subset_trans _ H,
+  simp only [set.image_prod, set.image2_sub],
+  rintros z ⟨x, y, hx, hy, rfl⟩,
+  exact ⟨x, y, set.mem_of_mem_inter_left hx, set.mem_of_mem_inter_right hy, rfl⟩,
+
+  exact is_open.preimage continuous_sub hU₀,
+end
+
+end topology
+
+
 namespace mv_power_series
 
 variables (σ : Type*)
@@ -263,10 +339,8 @@ lemma as_tsum [_root_.t2_space α] (f : mv_power_series σ α) :
 begin
   classical,
   haveI := mv_power_series.t2_space σ α, 
-  have := (has_sum f).summable, 
-  simp only [tsum, dif_pos this],
-  apply has_sum.unique (has_sum f),
-  exact classical.some_spec this, 
+  simp only [tsum, dif_pos (has_sum f).summable],
+  exact has_sum.unique (has_sum f) (classical.some_spec _),
 end
 
 example {ι : Type*} (f : ι → mv_power_series σ α) :
@@ -279,9 +353,11 @@ end summable
 section strongly_summable
 
 variables {ι : Type*}
+variables {σ α}
+
+section semiring 
 
 variable [semiring α]
-variables {σ α}
 
 def strongly_summable (f : ι → mv_power_series σ α) : Prop :=
   ∀ (d : σ →₀ ℕ), (λ i, coeff α d (f i)).support.finite 
@@ -410,7 +486,96 @@ begin
     exact @set.subset_bUnion_of_mem _ _ _ _ bc hbc, },
 end
 
+lemma has_sum_coeff [topological_space α] {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (d : σ →₀ ℕ) : 
+  _root_.has_sum (λ i, coeff α d (f i)) (coeff α d hf.sum) := 
+begin
+  apply has_sum_sum_of_ne_finset_zero, 
+  intros b hb, 
+  simp only [set.finite.mem_to_finset, function.mem_support, not_not] at hb,
+  exact hb,
+end
+
+lemma summable_coeff [topological_space α] {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (d : σ →₀ ℕ) : summable (λ i, coeff α d (f i)) :=
+⟨coeff α d hf.sum, hf.has_sum_coeff d⟩
+
+lemma has_sum [topological_space α] {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) : _root_.has_sum f hf.sum :=  
+pi.has_sum.mpr (hf.has_sum_coeff)
+
+lemma summable [topological_space α] {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) : summable f := ⟨hf.sum, hf.has_sum⟩
+
+lemma sum_eq_tsum [topological_space α] [_root_.t2_space α] {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) : hf.sum = tsum f :=
+begin
+  classical,
+  ext d,
+  haveI := mv_power_series.t2_space σ α, 
+  simp only [tsum, dif_pos hf.summable],
+  exact has_sum.unique (hf.has_sum_coeff d) 
+    (has_sum.map (classical.some_spec hf.summable) _ (continuous_component σ α d)),
+end
+
 end strongly_summable
+
+end semiring
+
+section ring 
+
+
+namespace strongly_summable 
+
+
+variable [ring α]
+/- 
+# Comparisons of the various convergences on `mv_power_series σ α`
+
+Ref. : Bourbaki, *Algèbre*, IV, §4, n°2, Lemme 1.
+
+* pour toute topologie : 
+support fini => sommable : `strongly_summable.summable`
+sommable => tend vers 0  : `tendsto_zero_of_summable` 
+
+* pour topologie discrète : 
+tend vers 0 => support fini : `summable.tendsto_cofinite_zero`
+-/
+
+
+example [topological_space α] {f : ι → mv_power_series σ α} :
+  (strongly_summable f) → (_root_.summable f) := strongly_summable.summable 
+
+-- TODO (?): replace topological_ring instance by topological_add_group…
+example [topological_space α] [_root_.topological_ring α] {f : ι → mv_power_series σ α} :
+  (_root_.summable f) → filter.tendsto f filter.cofinite (nhds 0) := 
+begin
+  haveI := topological_ring σ α,
+  exact tendsto_zero_of_summable f ,
+end
+
+lemma iff_summable [topological_space α] [discrete_topology α] 
+  {f : ι → mv_power_series σ α} : (strongly_summable f) ↔ (_root_.summable f) :=
+⟨summable, 
+  λ hf d, finite_support_of_summable _ (hf.map _ (continuous_component σ α d))⟩
+
+lemma iff_summable' [topological_space α] [discrete_topology α] 
+  {f : ι → mv_power_series σ α} : (strongly_summable f) ↔ filter.tendsto f 
+    filter.cofinite (nhds 0):=
+begin
+  haveI := topological_ring σ α,
+  split,
+  intro hf, exact hf.summable.tendsto_cofinite_zero, 
+
+  simp only [strongly_summable, nhds_pi, filter.tendsto_pi],
+  apply forall_imp,
+  intro d,
+  exact finite_support_of_tendsto_zero, 
+end
+
+end strongly_summable
+
+end ring
 
 end strongly_summable
 
