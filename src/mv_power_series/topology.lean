@@ -540,12 +540,10 @@ begin
   rw pi.has_sum,
   intro d,
   convert has_sum_single d _,
-  { change _ = coeff α d 
-    ((monomial α d) ((coeff α d) f)),
-    rw [coeff_monomial_same],
-    refl, },
+  { rw [← coeff_apply f d, ← coeff_apply (monomial α d (coeff α d f)) d, coeff_apply],
+    rw [coeff_monomial_same], },
   { intros b h,
-    change coeff α d ((monomial α b) ((coeff α b) f))= 0,
+    change coeff α d ((monomial α b) ((coeff α b) f)) = 0,
     rw coeff_monomial_ne (ne.symm h), },
 end  
 
@@ -563,8 +561,7 @@ end -/
 
 /-- If the coefficient space is T2, then the power series is `tsum` of its monomials -/
 lemma as_tsum [_root_.t2_space α] (f : mv_power_series σ α) :
-  f = tsum (λ (d : σ →₀ ℕ),
-    monomial α d (coeff α d f)) := 
+  f = tsum (λ (d : σ →₀ ℕ), monomial α d (coeff α d f)) := 
 begin
   classical,
   haveI := mv_power_series.t2_space σ α, 
@@ -579,21 +576,110 @@ example {ι : Type*} (f : ι → mv_power_series σ α) (a : mv_power_series σ 
 
 
 /-- A power series is the sum (in the sense of summable families) of its monomials -/
-lemma has_sum_of_homogeneous_monomials_self (w : σ → ℕ) (f : mv_power_series σ α) :
+lemma has_sum_of_homogeneous_components_self (w : σ → ℕ) (f : mv_power_series σ α) :
   has_sum (λ p, homogeneous_component w p f) f := 
 begin
   rw pi.has_sum,
   intro d,
-  convert has_sum_single d _,
-  { change _ = coeff α d 
-    ((monomial α d) ((coeff α d) f)),
-    rw [coeff_monomial_same],
-    refl, },
-  { intros b h,
-    change coeff α d ((monomial α b) ((coeff α b) f))= 0,
-    rw coeff_monomial_ne (ne.symm h), },
+  convert has_sum_single (weight w d) _,
+  { rw ← coeff_apply f d, 
+    rw ← coeff_apply (homogeneous_component w (weight w d) f) d, 
+    rw coeff_homogeneous_component,
+    simp only [eq_self_iff_true, if_true], },
+  { intros p h,
+    rw ← coeff_apply (homogeneous_component w p f) d, 
+    rw coeff_homogeneous_component,
+    rw if_neg (ne.symm h), },
 end  
 
+lemma homogeneous_components_self_summable (w : σ → ℕ) (f : mv_power_series σ α) :
+  summable (λ p, homogeneous_component w p f) := 
+(has_sum_of_homogeneous_components_self w f).summable 
+
+lemma as_tsum_of_homogeneous_components_self [_root_.t2_space α] (w : σ → ℕ) (f : mv_power_series σ α) :
+  f = tsum (λ p, homogeneous_component w p f) := 
+begin
+  classical,
+  haveI := t2_space σ α,
+  apply has_sum.unique (has_sum_of_homogeneous_components_self w f),
+  simp only [tsum, dif_pos (homogeneous_components_self_summable w f)],
+  apply classical.some_spec _,
+end
+
 end summable
+
+section strongly_summable
+
+
+variables [semiring α]
+
+variables {σ α}
+
+lemma homogeneous_components_self_strongly_summable (w : σ → ℕ) (f : mv_power_series σ α) :
+  strongly_summable (λ p, homogeneous_component w p f) := 
+begin
+  intro d,
+  apply set.finite.subset (finset.finite_to_set {weight w d}),
+  intro p,
+  simp only [function.mem_support, ne.def, finset.mem_coe, coeff_homogeneous_component],
+  rw finset.mem_singleton,
+  simp only [ite_eq_right_iff, not_forall, exists_prop, and_imp],
+  intros h h', exact h.symm,
+end
+
+lemma as_sum_of_homogeneous_components (w : σ → ℕ) (f : mv_power_series σ α) :
+  ∀ (hf : strongly_summable (λ p, homogeneous_component w p f)), f = hf.sum := 
+begin
+  intro hf,
+  ext d,
+  simp only [strongly_summable.sum],
+  simp only [coeff_apply, coeff_homogeneous_component],
+  rw finset.sum_eq_single (weight w d),
+  simp only [eq_self_iff_true, if_true],
+  { intros b h h', rw if_neg (ne.symm h'), },
+  { simp only [set.finite.mem_to_finset, function.mem_support, not_not, imp_self], }
+end
+
+end strongly_summable
+
+section summable
+
+variables [semiring α] 
+
+variables {σ α}
+
+-- Bourbaki, *Algèbre*, chap. 4, §4, page IV.25, exemple c)
+/-- A family of power series is strongly summable if their weighted orders tend to infinity. -/
+lemma strongly_summable_of_order_tendsto_at_top {ι : Type*} 
+  (w : σ → ℕ) (f : ι → mv_power_series σ α) 
+  (hf : filter.tendsto (λ i, weighted_order w (f i)) filter.cofinite filter.at_top) :
+  strongly_summable f := 
+begin
+  intro d,
+  rw ← compl_compl (function.support _),
+  rw ← filter.mem_cofinite,
+  rw filter.tendsto_def at hf, 
+  specialize hf (set.Ici (weight w d).succ) (filter.Ici_mem_at_top _),
+  apply filter.mem_of_superset hf, 
+  intro i,
+  simp only [set.mem_preimage, set.mem_Ici, set.mem_compl_iff, function.mem_support, not_not],
+  intro h,
+  apply coeff_of_lt_weighted_order w,
+  apply lt_of_lt_of_le _ h,
+  rw part_enat.coe_lt_coe,
+  exact lt_add_one ((weight w) d),
+end
+
+
+variable  [topological_space α]
+
+/-- A family of power series is summable if their weighted orders tend to infinity. -/
+lemma summable_of_order_tendsto_at_top {ι : Type*} 
+  (w : σ → ℕ) (f : ι → mv_power_series σ α) 
+  (hf : filter.tendsto (λ i, weighted_order w (f i)) filter.cofinite filter.at_top) :
+  summable f := (strongly_summable_of_order_tendsto_at_top w f hf).summable 
+
+end summable
+
 
 end mv_power_series

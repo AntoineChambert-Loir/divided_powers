@@ -440,6 +440,12 @@ def homogeneous_component [semiring α] (p : ℕ) :
     simp only [coeff_apply, pi.smul_apply, smul_eq_mul, ring_hom.id_apply, mul_ite, mul_zero], 
   end, }
 
+  lemma coeff_homogeneous_component [semiring α] (p : ℕ)
+    (d : σ →₀ ℕ) (f : mv_power_series σ α) :
+    coeff α d (homogeneous_component w p f) =
+    ite (weight w d = p) (coeff α d f) 0 :=
+   rfl
+
 end homogeneous_component
 
 end mv_power_series
