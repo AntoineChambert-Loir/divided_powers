@@ -7,9 +7,19 @@ noncomputable theory
 
 open_locale big_operators 
 
-variables {σ α : Type*} [decidable_eq σ] [semiring α]
+variables {σ α : Type*} 
 
-lemma exists_coeff_ne_zero_iff_ne_zero (f : mv_power_series σ α) : 
+
+lemma coeff_apply [semiring α] (f : mv_power_series σ α) (d : σ →₀ ℕ) :
+  coeff α d f = f d := rfl
+
+section decidable_eq
+
+-- variable [decidable_eq σ] 
+
+lemma exists_coeff_ne_zero_iff_ne_zero 
+-- [decidable_eq σ] 
+  [semiring α] (f : mv_power_series σ α) : 
   (∃ (d : σ →₀ ℕ), coeff α d f ≠ 0) ↔ f ≠ 0 :=
 begin
   refine not_iff_not.mp _,
@@ -18,6 +28,8 @@ begin
 end
 
 section weighted_order
+
+variable [semiring α]
 
 /-- The weight of the variables -/
 variable (w : σ → ℕ)
@@ -295,6 +307,8 @@ end weighted_order
 
 section order
 
+variable [semiring α]
+
 variable (f : mv_power_series σ α)
 
 /-- The degree of a monomial -/
@@ -402,5 +416,30 @@ lemma coeff_mul_prod_one_sub_of_lt_order {α ι : Type*} [comm_ring α] (d : σ 
 coeff_mul_prod_one_sub_of_lt_weighted_order _ d s f g
 
 end order
+
+end decidable_eq 
+
+section homogeneous_component
+
+variable (w : σ → ℕ)
+
+def homogeneous_component [semiring α] (p : ℕ) :
+  mv_power_series σ α →ₗ[α] mv_power_series σ α :=
+{ to_fun := λ f d, ite (weight w d = p) (coeff α d f) (0),
+  map_add' := λ f g, 
+  begin
+    ext d,
+    simp only [coeff_apply, pi.add_apply],
+    split_ifs,
+    refl,
+    rw add_zero,
+  end,
+  map_smul' := λ a f, 
+  begin
+    ext d,
+    simp only [coeff_apply, pi.smul_apply, smul_eq_mul, ring_hom.id_apply, mul_ite, mul_zero], 
+  end, }
+
+end homogeneous_component
 
 end mv_power_series
