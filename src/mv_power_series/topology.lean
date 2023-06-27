@@ -88,6 +88,7 @@ namespace mv_power_series
 variables (σ : Type*)
 variables (α : Type*) 
 
+
 section topological
 
 variable [topological_space α] 
@@ -295,60 +296,7 @@ begin
     nat.one_ne_zero, not_false_iff, and_self],
 end
 
-section summable
 
-variables [semiring α] [topological_space α]
-
-variables {σ α}
-
-lemma coeff_apply (f : mv_power_series σ α) (d : σ →₀ ℕ) :
-  coeff α d f = f d := rfl
-
-/-- A power series is the sum (in the sense of summable families) of its monomials -/
-lemma has_sum (f : mv_power_series σ α): _root_.has_sum (λ (d : σ →₀ ℕ),
-  monomial α d (coeff α d f)) f := 
-begin
-  rw pi.has_sum,
-  intro d,
-  convert has_sum_single d _,
-  { change _ = coeff α d 
-    ((monomial α d) ((coeff α d) f)),
-    rw [coeff_monomial_same],
-    refl, },
-  { intros b h,
-    change coeff α d ((monomial α b) ((coeff α b) f))= 0,
-    rw coeff_monomial_ne (ne.symm h), },
-end  
-
-/- /-- If the coefficient space is T2, then a power series is the unique sum of its monomials -/
-lemma has_unique_sum [t2_space α] (f g : mv_power_series σ α) : 
-  has_sum (λ (d : σ →₀ ℕ), monomial α d (coeff α d f)) g 
-  ↔ f = g := 
-begin
-  haveI : t2_space (mv_power_series σ α) := t2_space σ α,
-  split,
-  { intro h,
-    exact has_sum.unique (has_sum f) h, },
-  intro h, rw ← h, exact has_sum f, 
-end -/
-
-/-- If the coefficient space is T2, then the power series is `tsum` of its monomials -/
-lemma as_tsum [_root_.t2_space α] (f : mv_power_series σ α) :
-  f = tsum (λ (d : σ →₀ ℕ),
-    monomial α d (coeff α d f)) := 
-begin
-  classical,
-  haveI := mv_power_series.t2_space σ α, 
-  simp only [tsum, dif_pos (has_sum f).summable],
-  exact has_sum.unique (has_sum f) (classical.some_spec _),
-end
-
-example {ι : Type*} (f : ι → mv_power_series σ α) :
-  summable f ↔ ∀ d, summable (λ i, f i d) := pi.summable
-
-example {ι : Type*} (f : ι → mv_power_series σ α) (a : mv_power_series σ α) (ha : ∀ (d : σ →₀ ℕ), _root_.has_sum (λ (i : ι), f i d) (a d)) : _root_.has_sum (λ (i : ι), f i) a := pi.has_sum.mpr ha
-
-end summable
 
 section strongly_summable
 
@@ -578,5 +526,74 @@ end strongly_summable
 end ring
 
 end strongly_summable
+
+section summable
+
+variables [semiring α] [topological_space α]
+
+variables {σ α}
+
+/-- A power series is the sum (in the sense of summable families) of its monomials -/
+lemma has_sum_of_monomials_self (f : mv_power_series σ α): has_sum (λ (d : σ →₀ ℕ),
+  monomial α d (coeff α d f)) f := 
+begin
+  rw pi.has_sum,
+  intro d,
+  convert has_sum_single d _,
+  { change _ = coeff α d 
+    ((monomial α d) ((coeff α d) f)),
+    rw [coeff_monomial_same],
+    refl, },
+  { intros b h,
+    change coeff α d ((monomial α b) ((coeff α b) f))= 0,
+    rw coeff_monomial_ne (ne.symm h), },
+end  
+
+/- /-- If the coefficient space is T2, then a power series is the unique sum of its monomials -/
+lemma has_unique_sum [t2_space α] (f g : mv_power_series σ α) : 
+  has_sum (λ (d : σ →₀ ℕ), monomial α d (coeff α d f)) g 
+  ↔ f = g := 
+begin
+  haveI : t2_space (mv_power_series σ α) := t2_space σ α,
+  split,
+  { intro h,
+    exact has_sum.unique (has_sum f) h, },
+  intro h, rw ← h, exact has_sum f, 
+end -/
+
+/-- If the coefficient space is T2, then the power series is `tsum` of its monomials -/
+lemma as_tsum [_root_.t2_space α] (f : mv_power_series σ α) :
+  f = tsum (λ (d : σ →₀ ℕ),
+    monomial α d (coeff α d f)) := 
+begin
+  classical,
+  haveI := mv_power_series.t2_space σ α, 
+  simp only [tsum, dif_pos f.has_sum_of_monomials_self.summable],
+  exact has_sum.unique f.has_sum_of_monomials_self (classical.some_spec _),
+end
+
+example {ι : Type*} (f : ι → mv_power_series σ α) :
+  summable f ↔ ∀ d, summable (λ i, f i d) := pi.summable
+
+example {ι : Type*} (f : ι → mv_power_series σ α) (a : mv_power_series σ α) (ha : ∀ (d : σ →₀ ℕ), has_sum (λ (i : ι), f i d) (a d)) : has_sum (λ (i : ι), f i) a := pi.has_sum.mpr ha
+
+
+/-- A power series is the sum (in the sense of summable families) of its monomials -/
+lemma has_sum_of_homogeneous_monomials_self (w : σ → ℕ) (f : mv_power_series σ α) :
+  has_sum (λ p, homogeneous_component w p f) f := 
+begin
+  rw pi.has_sum,
+  intro d,
+  convert has_sum_single d _,
+  { change _ = coeff α d 
+    ((monomial α d) ((coeff α d) f)),
+    rw [coeff_monomial_same],
+    refl, },
+  { intros b h,
+    change coeff α d ((monomial α b) ((coeff α b) f))= 0,
+    rw coeff_monomial_ne (ne.symm h), },
+end  
+
+end summable
 
 end mv_power_series
