@@ -7,29 +7,16 @@ noncomputable theory
 
 open_locale big_operators 
 
-variables {σ α : Type*} 
+variables {σ α : Type*} [semiring α]
 
-
-lemma coeff_apply [semiring α] (f : mv_power_series σ α) (d : σ →₀ ℕ) :
+lemma coeff_apply (f : mv_power_series σ α) (d : σ →₀ ℕ) :
   coeff α d f = f d := rfl
 
-section decidable_eq
-
--- variable [decidable_eq σ] 
-
-lemma exists_coeff_ne_zero_iff_ne_zero 
--- [decidable_eq σ] 
-  [semiring α] (f : mv_power_series σ α) : 
+lemma exists_coeff_ne_zero_iff_ne_zero (f : mv_power_series σ α) : 
   (∃ (d : σ →₀ ℕ), coeff α d f ≠ 0) ↔ f ≠ 0 :=
-begin
-  refine not_iff_not.mp _,
-  push_neg,
-  simp [ext_iff]
-end
+by simp only [ext_iff, ne.def, coeff_zero, not_forall]
 
 section weighted_order
-
-variable [semiring α]
 
 /-- The weight of the variables -/
 variable (w : σ → ℕ)
@@ -41,12 +28,12 @@ variable (f : mv_power_series σ α)
 /-- The weight of a monomial -/
 def weight : (σ →₀ ℕ) →+ ℕ := 
 { to_fun := λ d, d.sum (λ x y, w x * y),
-  map_zero' := by simp, 
+  map_zero' := finsupp.sum_zero_index,
   map_add' := λ x y, 
   begin 
     rw finsupp.sum_add_index',
-    intro i, rw mul_zero,
-    intros i m n, rw mul_add, 
+    { intro i, rw mul_zero },
+    { intros i m n, rw mul_add }, 
   end }
 
 lemma exists_coeff_ne_zero_of_weight_iff_ne_zero : 
@@ -56,20 +43,19 @@ begin
   push_neg,
   split,
   { intro h, ext d, 
-    simp only [coeff_zero], 
-    refine h _ d rfl, },
-  rintros rfl n d hn, simp only [coeff_zero],
+    exact h _ d rfl, },
+  { rintros rfl n d hn, exact coeff_zero _ }, 
 end
 
 /-- The weighted order of a mv_power_series -/
 def weighted_order (f : mv_power_series σ α) : part_enat :=
 begin
   classical,
-  exact dite (f = 0) (λ h, ⊤) (λ h, nat.find ((exists_coeff_ne_zero_of_weight_iff_ne_zero w f).mpr h))
+  exact dite (f = 0) (λ h, ⊤) 
+    (λ h, nat.find ((exists_coeff_ne_zero_of_weight_iff_ne_zero w f).mpr h))
 end
 
-@[simp]
-lemma weighted_order_zero : (0 : mv_power_series σ α).weighted_order w = ⊤ := 
+@[simp] lemma weighted_order_zero : (0 : mv_power_series σ α).weighted_order w = ⊤ := 
 by simp only [weighted_order, dif_pos rfl]
 
 lemma weighted_order_finite_iff_ne_zero : 
@@ -79,26 +65,26 @@ begin
   split,
   { split_ifs with h h; intro H,
     { contrapose! H,
-      simpa [←part.eq_none_iff'] },
+      simpa [← part.eq_none_iff'] },
     { exact h, } },
   { intro h,
-    simp [h] }
+    simp only [h] }
 end
 
-/-- If the order of a formal power series is finite,
-then some coefficient of weight the order is nonzero.-/
+/-- If the order of a formal power series `f` is finite,
+then some coefficient of weight equal to the order of `f` is nonzero.-/
 lemma exists_coeff_ne_zero_of_weighted_order (h : (f.weighted_order w).dom) :
   ∃ (d : σ →₀ ℕ), ↑(weight w d) = f.weighted_order w ∧ coeff α d f ≠ 0 :=
 begin
-  simp only [weighted_order], 
-  simp only [(weighted_order_finite_iff_ne_zero w f).mp h, not_false_iff, ne.def, dif_neg, part_enat.coe_inj],
+  simp only [weighted_order, (weighted_order_finite_iff_ne_zero _ f).mp h, not_false_iff, ne.def, 
+    dif_neg, part_enat.coe_inj],
   generalize_proofs h,
   exact nat.find_spec h,
 end
 
-/-- If `d`th coefficient of a formal power series is nonzero,
+/-- If the `d`th coefficient of a formal power series is nonzero,
 then the weighted order of the power series is less than or equal to `weight d w`.-/
-lemma weighted_order_le (d : σ →₀ ℕ) (h : coeff α d f ≠ 0) :
+lemma weighted_order_le {d : σ →₀ ℕ} (h : coeff α d f ≠ 0) :
   f.weighted_order w ≤ weight w d:=
 begin
   have := exists.intro d h,
@@ -110,27 +96,27 @@ end
 
 /-- The `n`th coefficient of a formal power series is `0` if `n` is strictly
 smaller than the order of the power series.-/
-lemma coeff_of_lt_weighted_order (d : σ →₀ ℕ) (h: ↑(weight w d) < f.weighted_order w) :
+lemma coeff_of_lt_weighted_order {d : σ →₀ ℕ} (h: ↑(weight w d) < f.weighted_order w) :
   coeff α d f = 0 :=
-by { contrapose! h, exact weighted_order_le w f d h }
+by { contrapose! h, exact weighted_order_le w f h }
 
 /-- The `0` power series is the unique power series with infinite order.-/
-@[simp] lemma weighted_order_eq_top {f : mv_power_series σ α} :
+@[simp] lemma weighted_order_eq_top_iff {f : mv_power_series σ α} :
   f.weighted_order w = ⊤ ↔ f = 0 :=
 begin
   split,
-  { intro h, ext d, rw [(coeff α d).map_zero, coeff_of_lt_weighted_order w], simp [h] },
+  { intro h, ext d, simp only [(coeff α d).map_zero, coeff_of_lt_weighted_order w, h, 
+      part_enat.coe_lt_top]},
   { rintros rfl, exact weighted_order_zero w }
 end
 
 /-- The order of a formal power series is at least `n` if
 the `d`th coefficient is `0` for all `d` such that `weight w d < n`.-/
-lemma nat_le_weighted_order (f : mv_power_series σ α) (n : ℕ) (h : ∀ d, weight w d < n → coeff α d f = 0) :
-  ↑n ≤ f.weighted_order w :=
+lemma nat_le_weighted_order {f : mv_power_series σ α} {n : ℕ} 
+  (h : ∀ d, weight w d < n → coeff α d f = 0) : ↑n ≤ f.weighted_order w :=
 begin
   by_contra H, rw not_le at H,
   have : (f.weighted_order w).dom := part_enat.dom_of_le_coe H.le,
---  rw [← part_enat.coe_get this, part_enat.coe_lt_coe] at H,
   obtain ⟨d, hd, hfd⟩ := exists_coeff_ne_zero_of_weighted_order w f this,
   simp only [← hd, part_enat.coe_lt_coe] at H,
   exact hfd (h d H),
@@ -138,41 +124,41 @@ end
 
 /-- The order of a formal power series is at least `n` if
 the `d`th coefficient is `0` for all `d` such that `weight w d < n`.-/
-lemma le_weighted_order (f : mv_power_series σ α) (n : part_enat) 
+lemma le_weighted_order {f : mv_power_series σ α} {n : part_enat}
   (h : ∀ (d : σ →₀ ℕ) , ↑(weight w d) < n → coeff α d f = 0) :
   n ≤ f.weighted_order w :=
 begin
   induction n using part_enat.cases_on,
-  { show _ ≤ _, rw [top_le_iff, weighted_order_eq_top],
+  { show _ ≤ _, rw [top_le_iff, weighted_order_eq_top_iff],
     ext d, exact h d (part_enat.coe_lt_top _), },
   { apply nat_le_weighted_order, simpa only [part_enat.coe_lt_coe] using h }
 end
 
-/-- The order of a formal power series is exactly `n` some coefficient 
-of weight `n` is nonzero, 
-and the `d`th coefficient is `0` for all `d` such that `weight w d < n`.-/
-lemma weighted_order_eq_nat {f : mv_power_series σ α} {n : ℕ} :
-  f.weighted_order w = n ↔ (∃ d, weight w d = n ∧ coeff α d f ≠ 0) ∧ (∀ d, weight w d < n → coeff α d f = 0) :=
+/-- The order of a formal power series is exactly `n` if and only if some coefficient of weight `n`
+is nonzero, and the `d`th coefficient is `0` for all `d` such that `weight w d < n`.-/
+lemma weighted_order_eq_nat {f : mv_power_series σ α} {n : ℕ} : f.weighted_order w = n ↔ 
+  (∃ d, weight w d = n ∧ coeff α d f ≠ 0) ∧ (∀ d, weight w d < n → coeff α d f = 0) :=
 begin
   rcases eq_or_ne f 0 with rfl|hf,
   { simpa using (part_enat.coe_ne_top _).symm },
-  simp only [weighted_order, dif_neg hf, part_enat.coe_inj, nat.find_eq_iff], 
-  apply and_congr_right', 
-  simp only [not_exists, not_and, not_not],
-  simp_rw imp_forall_iff, rw forall_swap,
-  apply forall_congr,
-  intro d,
-  split,
-  { intros h hd,
-    exact h (weight w d) hd rfl, },
-  { intros h m hm hd, rw ← hd at hm, exact h hm, },
+  { simp only [weighted_order, dif_neg hf, part_enat.coe_inj, nat.find_eq_iff], 
+    apply and_congr_right', 
+    simp only [not_exists, not_and, not_not, imp_forall_iff],
+    rw forall_swap,
+    apply forall_congr,
+    intro d,
+    split,
+    { intros h hd,
+      exact h (weight w d) hd rfl, },
+    { intros h m hm hd, rw ← hd at hm, exact h hm, }},
 end
 
 /- /-- The weighted_order of a formal power series is exactly `n` 
 if some coefficient of weight `n` is nonzero,
 and the `d`th coefficient is `0` for all `d` such that `weight w d` < n`.-/
 lemma order_eq {f : mv_power_series σ α} {n : part_enat} :
-  f.weighted_order w = n ↔ (∃ d, (↑(weight w d) = n ∧ coeff α d f ≠ 0)) ∧ (∀ d, ↑(weight w d) < n → coeff α d f = 0) :=
+  f.weighted_order w = n ↔ 
+  (∃ d, (↑(weight w d) = n ∧ coeff α d f ≠ 0)) ∧ (∀ d, ↑(weight w d) < n → coeff α d f = 0) :=
 begin
   induction n using part_enat.cases_on,
   { rw weighted_order_eq_top, split,
@@ -185,16 +171,16 @@ begin
   { simpa [part_enat.coe_inj] using order_eq_nat }
 end -/
 
-/-- The order of the sum of two formal power series
- is at least the minimum of their orders.-/
+/-- The order of the sum of two formal power series is at least the minimum of their orders.-/
 lemma le_weighted_order_add (f g : mv_power_series σ α) :
   min (f.weighted_order w) (g.weighted_order w) ≤ (f + g).weighted_order w :=
 begin
-  refine le_weighted_order w _ _ _,
-  simp [coeff_of_lt_weighted_order w] {contextual := tt},
+  refine le_weighted_order w _,
+  simp only [coeff_of_lt_weighted_order w, lt_min_iff, map_add, add_zero, eq_self_iff_true, 
+    implies_true_iff] {contextual := tt},
 end
 
-private lemma weighted_order_add_of_weighted_order_lt.aux (f g : mv_power_series σ α)
+private lemma weighted_order_add_of_weighted_order_lt.aux {f g : mv_power_series σ α}
   (H : f.weighted_order w < g.weighted_order w) :
   (f + g).weighted_order w = f.weighted_order w :=
 begin
@@ -205,32 +191,29 @@ begin
   split,
   { use d, use hd, 
     rw [hn, ← hd]  at H,
-    rw [(coeff _ _).map_add,  coeff_of_lt_weighted_order w g d H, add_zero], 
+    rw [(coeff _ _).map_add,  coeff_of_lt_weighted_order w g H, add_zero], 
     exact hd', },
   { intros b hb, 
     suffices : ↑(weight w b) < weighted_order w f,
-    rw [(coeff _ _).map_add,
-      coeff_of_lt_weighted_order w f b this,
-      coeff_of_lt_weighted_order w g b (lt_trans this H),
-      add_zero],
+    { rw [(coeff _ _).map_add, coeff_of_lt_weighted_order w f this,
+      coeff_of_lt_weighted_order w g (lt_trans this H), add_zero] },
     rw [hn, part_enat.coe_lt_coe], exact hb, },
 end
 
 /-- The weighted_order of the sum of two formal power series
  is the minimum of their orders if their orders differ.-/
-lemma weighted_order_add_of_weighted_order_eq (f g : mv_power_series σ α) (h : f.weighted_order w ≠ g.weighted_order w) :
+lemma weighted_order_add_of_weighted_order_eq {f g : mv_power_series σ α}
+  (h : f.weighted_order w ≠ g.weighted_order w) :
   weighted_order w (f + g) = weighted_order w f ⊓ weighted_order w g :=
 begin
   refine le_antisymm _ (le_weighted_order_add w _ _),
   by_cases H₁ : f.weighted_order w < g.weighted_order w,
-  { simp only [le_inf_iff], 
-    rw weighted_order_add_of_weighted_order_lt.aux w _ _ H₁, 
+  { simp only [le_inf_iff, weighted_order_add_of_weighted_order_lt.aux w H₁], 
     exact ⟨le_rfl, le_of_lt H₁⟩, },
-  by_cases H₂ : g.weighted_order w < f.weighted_order w,
-  { simp only [add_comm f g, le_inf_iff],
-    rw weighted_order_add_of_weighted_order_lt.aux w _ _ H₂, 
-    exact ⟨le_of_lt H₂, le_rfl⟩, },
-  exfalso, exact h (le_antisymm (not_lt.1 H₂) (not_lt.1 H₁))
+  { by_cases H₂ : g.weighted_order w < f.weighted_order w,
+    { simp only [add_comm f g, le_inf_iff, weighted_order_add_of_weighted_order_lt.aux w H₂], 
+      exact ⟨le_of_lt H₂, le_rfl⟩, },
+    { exact absurd (le_antisymm (not_lt.1 H₂) (not_lt.1 H₁)) h }}
 end
 
 /-- The weighted_order of the product of two formal power series
@@ -242,14 +225,14 @@ begin
   intros d hd, rw [coeff_mul, finset.sum_eq_zero],
   rintros ⟨i,j⟩ hij,
   by_cases hi : ↑(weight w i) < f.weighted_order w,
-  { rw [coeff_of_lt_weighted_order w f i hi, zero_mul] },
-  by_cases hj : ↑(weight w j) < g.weighted_order w,
-  { rw [coeff_of_lt_weighted_order w g j hj, mul_zero] },
-  rw not_lt at hi hj, 
-  simp only [finsupp.mem_antidiagonal] at hij,
-  exfalso,
-  apply ne_of_lt (lt_of_lt_of_le hd $ add_le_add hi hj),
-  rw [← hij, map_add, nat.cast_add],
+  { rw [coeff_of_lt_weighted_order w f hi, zero_mul] },
+  { by_cases hj : ↑(weight w j) < g.weighted_order w,
+    { rw [coeff_of_lt_weighted_order w g hj, mul_zero] },
+    { rw not_lt at hi hj, 
+      simp only [finsupp.mem_antidiagonal] at hij,
+      exfalso,
+      apply ne_of_lt (lt_of_lt_of_le hd $ add_le_add hi hj),
+      rw [← hij, map_add, nat.cast_add] }},
 end
 
 /-- The weighted_order of the monomial `a*X^d` is infinite if `a = 0` and `weight w d` otherwise.-/
@@ -257,8 +240,9 @@ lemma weighted_order_monomial (d : σ →₀ ℕ) (a : α) [decidable (a = 0)] :
   weighted_order w (monomial α d a) = if a = 0 then ⊤ else weight w d :=
 begin
   split_ifs with h,
-  { rw [h, weighted_order_eq_top, linear_map.map_zero] },
-  { rw [weighted_order_eq_nat], split, -- intros i hi,
+  { rw [h, weighted_order_eq_top_iff, linear_map.map_zero] },
+  { rw [weighted_order_eq_nat], 
+    split, 
     { use d, simp only [coeff_monomial_same, eq_self_iff_true, ne.def, true_and], exact h, },
     { intros b hb, rw [coeff_monomial, if_neg], 
       intro h, simpa only [h, lt_self_iff_false] using hb, } }
@@ -269,19 +253,16 @@ lemma weighted_order_monomial_of_ne_zero (d : σ →₀ ℕ) (a : α) (h : a ≠
   weighted_order w (monomial α d a) = weight w d :=
 by rw [weighted_order_monomial, if_neg h]
 
-/-- If `weight w d` is strictly smaller than the weighted_order of `g`, then the `d`th coefficient of its product
-with any other power series is `0`. -/
-lemma coeff_mul_of_lt_weighted_order {f g : mv_power_series σ α} {d : σ →₀ ℕ} (h : ↑(weight w d) < g.weighted_order w) :
-  coeff α d (f * g) = 0 :=
+/-- If `weight w d` is strictly smaller than the weighted_order of `g`, then the `d`th coefficient 
+of its product with any other power series is `0`. -/
+lemma coeff_mul_of_lt_weighted_order (f : mv_power_series σ α) {g : mv_power_series σ α} 
+  {d : σ →₀ ℕ} (h : ↑(weight w d) < g.weighted_order w) : coeff α d (f * g) = 0 :=
 begin
- -- suffices : coeff α d (f * g) = ∑ p in d.antidiagonal, 0,
-  --  rw [this, finset.sum_const_zero],
   rw [coeff_mul],
   apply finset.sum_eq_zero,
   rintros ⟨i, j⟩ hij,
   refine mul_eq_zero_of_right (coeff α i f) _,
-  refine coeff_of_lt_weighted_order w g j (lt_of_le_of_lt _ h),
-  dsimp,
+  refine coeff_of_lt_weighted_order w g (lt_of_le_of_lt _ h),
   simp only [finsupp.mem_antidiagonal] at hij,
   simp only [part_enat.coe_le_coe, ←hij, map_add, le_add_iff_nonneg_left, zero_le'],
 end
@@ -289,17 +270,19 @@ end
 lemma coeff_mul_one_sub_of_lt_weighted_order {α : Type*} [comm_ring α] {f g : mv_power_series σ α}
   (d : σ →₀ ℕ) (h : ↑(weight w d) < g.weighted_order w) :
   coeff α d (f * (1 - g)) = coeff α d f :=
-by simp [coeff_mul_of_lt_weighted_order w h, mul_sub]
+by simp only [coeff_mul_of_lt_weighted_order w f h, mul_sub, mul_one, map_sub, sub_zero]
 
-lemma coeff_mul_prod_one_sub_of_lt_weighted_order {α ι : Type*} [comm_ring α] (d : σ →₀ ℕ) (s : finset ι)
-  (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
-  (∀ i ∈ s, ↑(weight w d) < weighted_order w (g i)) → coeff α d (f * ∏ i in s, (1 - g i)) = coeff α d f :=
+lemma coeff_mul_prod_one_sub_of_lt_weighted_order {α ι : Type*} [comm_ring α] (d : σ →₀ ℕ) 
+  (s : finset ι) (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
+  (∀ i ∈ s, ↑(weight w d) < weighted_order w (g i)) → 
+    coeff α d (f * ∏ i in s, (1 - g i)) = coeff α d f :=
 begin
   apply finset.induction_on s,
-  { simp },
+  { simp only [implies_true_iff, finset.prod_empty, mul_one, eq_self_iff_true]},
   { intros a s ha ih t,
     simp only [finset.mem_insert, forall_eq_or_imp] at t,
-    rw [finset.prod_insert ha, ← mul_assoc, mul_right_comm, coeff_mul_one_sub_of_lt_weighted_order w _ t.1],
+    rw [finset.prod_insert ha, ← mul_assoc, mul_right_comm, 
+      coeff_mul_one_sub_of_lt_weighted_order w _ t.1],
     exact ih t.2 },
 end
 
@@ -307,61 +290,56 @@ end weighted_order
 
 section order
 
-variable [semiring α]
-
 variable (f : mv_power_series σ α)
 
 /-- The degree of a monomial -/
 def degree : (σ →₀ ℕ) →+ ℕ := weight (λ i, 1)
 
 lemma exists_coeff_ne_zero_of_degree_iff_ne_zero : 
-  (∃ (n : ℕ), ∃ (d : σ →₀ ℕ), degree d = n ∧ coeff α d f ≠ 0) ↔ f ≠ 0 := exists_coeff_ne_zero_of_weight_iff_ne_zero (λ i, 1) f
+  (∃ (n : ℕ), ∃ (d : σ →₀ ℕ), degree d = n ∧ coeff α d f ≠ 0) ↔ f ≠ 0 := 
+exists_coeff_ne_zero_of_weight_iff_ne_zero (λ i, 1) f
 
-/-- The weighted order of a mv_power_series -/
+/-- The order of a mv_power_series -/
 def order (f : mv_power_series σ α) : part_enat :=
 weighted_order (λ i, 1) f
 
-@[simp]
-lemma order_zero : (0 : mv_power_series σ α).order = ⊤ := 
+@[simp] lemma order_zero : (0 : mv_power_series σ α).order = ⊤ := 
 weighted_order_zero _
 
-lemma order_finite_iff_ne_zero : 
-  (f.order).dom ↔ f ≠ 0 :=
-  weighted_order_finite_iff_ne_zero (λ i, 1) f
+lemma order_finite_iff_ne_zero : (f.order).dom ↔ f ≠ 0 :=
+weighted_order_finite_iff_ne_zero _ f
 
-/-- If the order of a formal power series is finite,
-then some coefficient of degree the order is nonzero.-/
+/-- If the order of a formal power series `f` is finite,
+then some coefficient of degree the order of `f` is nonzero.-/
 lemma exists_coeff_ne_zero_of_order (h : (f.order).dom) :
   ∃ (d : σ →₀ ℕ), ↑(degree d) = f.order ∧ coeff α d f ≠ 0 :=
 exists_coeff_ne_zero_of_weighted_order _ f h
 
-/-- If `d`th coefficient of a formal power series is nonzero,
-then the order of the power series is less than or equal to `degree d`.-/
-lemma order_le (d : σ →₀ ℕ) (h : coeff α d f ≠ 0) :f.order ≤ degree d := weighted_order_le _ f d h
+/-- If the `d`th coefficient of a formal power series is nonzero,
+then the order of the power series is less than or equal to `degree d`. -/
+lemma order_le (d : σ →₀ ℕ) (h : coeff α d f ≠ 0) : f.order ≤ degree d := weighted_order_le _ f h
 
 /-- The `n`th coefficient of a formal power series is `0` if `n` is strictly
 smaller than the order of the power series.-/
-lemma coeff_of_lt_order (d : σ →₀ ℕ) (h: ↑(degree d) < f.order) :
-  coeff α d f = 0 :=
-coeff_of_lt_weighted_order _ f d h
+lemma coeff_of_lt_order (d : σ →₀ ℕ) (h: ↑(degree d) < f.order) : coeff α d f = 0 :=
+coeff_of_lt_weighted_order _ f h
 
 /-- The `0` power series is the unique power series with infinite order.-/
-@[simp] lemma order_eq_top {f : mv_power_series σ α} :
-  f.order = ⊤ ↔ f = 0 :=
-weighted_order_eq_top _
+@[simp] lemma order_eq_top {f : mv_power_series σ α} : f.order = ⊤ ↔ f = 0 :=
+weighted_order_eq_top_iff _
 
 /-- The order of a formal power series is at least `n` if
 the `d`th coefficient is `0` for all `d` such that `degree d < n`.-/
-lemma nat_le_order (f : mv_power_series σ α) (n : ℕ) (h : ∀ d, degree d < n → coeff α d f = 0) :
+lemma nat_le_order {f : mv_power_series σ α} {n : ℕ} (h : ∀ d, degree d < n → coeff α d f = 0) :
   ↑n ≤ f.order :=
-nat_le_weighted_order _ f n h
+nat_le_weighted_order _ h
 
 /-- The order of a formal power series is at least `n` if
 the `d`th coefficient is `0` for all `d` such that `degree d < n`.-/
-lemma le_order (f : mv_power_series σ α) (n : part_enat) 
+lemma le_order {f : mv_power_series σ α} {n : part_enat} 
   (h : ∀ (d : σ →₀ ℕ) , ↑(degree d) < n → coeff α d f = 0) :
   n ≤ f.order :=
-le_weighted_order _ f n h
+le_weighted_order _ h
 
 /-- The order of a formal power series is exactly `n` some coefficient 
 of degree `n` is nonzero, 
@@ -378,9 +356,9 @@ le_weighted_order_add _ f g
 
 /-- The order of the sum of two formal power series
  is the minimum of their orders if their orders differ.-/
-lemma order_add_of_order_eq (f g : mv_power_series σ α) (h : f.order ≠ g.order) :
+lemma order_add_of_order_eq {f g : mv_power_series σ α} (h : f.order ≠ g.order) :
  order (f + g) = order f ⊓ order g :=
-weighted_order_add_of_weighted_order_eq _ f g h
+weighted_order_add_of_weighted_order_eq _ h
 
 /-- The order of the product of two formal power series
  is at least the sum of their orders.-/
@@ -394,21 +372,20 @@ lemma order_monomial (d : σ →₀ ℕ) (a : α) [decidable (a = 0)] :
 weighted_order_monomial _ d a
 
 /-- The order of the monomial `a*X^n` is `n` if `a ≠ 0`.-/
-lemma order_monomial_of_ne_zero (d : σ →₀ ℕ) (a : α) (h : a ≠ 0) :
+lemma order_monomial_of_ne_zero (d : σ →₀ ℕ) {a : α} (h : a ≠ 0) :
  order (monomial α d a) = degree d :=
 weighted_order_monomial_of_ne_zero _ d a h 
 
-/-- If `degree d` is strictly smaller than the order of `g`, then the `d`th coefficient of its product
-with any other power series is `0`. -/
+/-- If `degree d` is strictly smaller than the order of `g`, then the `d`th coefficient of its 
+product with any other power series is `0`. -/
 lemma coeff_mul_of_lt_order {f g : mv_power_series σ α} {d : σ →₀ ℕ} (h : ↑(degree d) < g.order) :
   coeff α d (f * g) = 0 :=
-coeff_mul_of_lt_weighted_order _ h
+coeff_mul_of_lt_weighted_order _ f h
 
 lemma coeff_mul_one_sub_of_lt_order {α : Type*} [comm_ring α] {f g : mv_power_series σ α}
   (d : σ →₀ ℕ) (h : ↑(degree d) < g.order) :
   coeff α d (f * (1 - g)) = coeff α d f :=
 coeff_mul_one_sub_of_lt_weighted_order _ d h
-
 
 lemma coeff_mul_prod_one_sub_of_lt_order {α ι : Type*} [comm_ring α] (d : σ →₀ ℕ) (s : finset ι)
   (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
@@ -417,13 +394,12 @@ coeff_mul_prod_one_sub_of_lt_weighted_order _ d s f g
 
 end order
 
-end decidable_eq 
-
 section homogeneous_component
 
 variable (w : σ → ℕ)
 
-def homogeneous_component [semiring α] (p : ℕ) :
+/-- Given an `mv_power_series f`, it returns the homogeneous component of degree `p`. -/
+def homogeneous_component (p : ℕ) :
   mv_power_series σ α →ₗ[α] mv_power_series σ α :=
 { to_fun := λ f d, ite (weight w d = p) (coeff α d f) (0),
   map_add' := λ f g, 
@@ -438,13 +414,11 @@ def homogeneous_component [semiring α] (p : ℕ) :
   begin
     ext d,
     simp only [coeff_apply, pi.smul_apply, smul_eq_mul, ring_hom.id_apply, mul_ite, mul_zero], 
-  end, }
+  end }
 
-  lemma coeff_homogeneous_component [semiring α] (p : ℕ)
-    (d : σ →₀ ℕ) (f : mv_power_series σ α) :
-    coeff α d (homogeneous_component w p f) =
-    ite (weight w d = p) (coeff α d f) 0 :=
-   rfl
+lemma coeff_homogeneous_component (p : ℕ) (d : σ →₀ ℕ) (f : mv_power_series σ α) :
+  coeff α d (homogeneous_component w p f) = ite (weight w d = p) (coeff α d f) 0 :=
+rfl
 
 end homogeneous_component
 
