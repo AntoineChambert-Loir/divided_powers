@@ -683,9 +683,8 @@ lemma tprod_prod {f : γ → β → α} {s : finset γ} (hf : ∀i∈s, multipli
 
 /-- Version of `tprod_eq_mul_tprod_ite` for `comm_monoid` rather than `comm_group`.
 Requires a different convergence assumption involving `function.update`. -/
-/- @[to_additive "Version of `tsum_eq_add_tsum_ite` for `add_comm_monoid` rather than `add_comm_group`.
+@[to_additive "Version of `tsum_eq_add_tsum_ite` for `add_comm_monoid` rather than `add_comm_group`.
 Requires a different convergence assumption involving `function.update`."]
--/
 lemma tprod_eq_mul_tprod_ite' {f : β → α} (b : β) (hf : multipliable (f.update b 1)) :
   ∏' x, f x = f b * ∏' x, ite (x = b) 1 (f x) :=
 calc ∏' x, f x = ∏' x, ((ite (x = b) (f x) 1) * (f.update b 1 x)) :
