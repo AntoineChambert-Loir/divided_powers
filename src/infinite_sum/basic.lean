@@ -70,12 +70,12 @@ def tprod {β} (f : β → α) := if h : multipliable f then classical.some h el
 
 -- see Note [operator precedence of big operators]
 notation `∏'` binders `, ` r:(scoped:67 f, tprod f) := r
-notation `∑'` binders `, ` r:(scoped:67 f, tprod f) := r
+notation `∑'` binders `, ` r:(scoped:67 f, tsum f) := r
 
 variables {f g : β → α} {a b : α} {s : finset β}
 
 @[to_additive]
-lemma multipliable.has_prod (ha : multipliable f) : has_prod f (∑'b, f b) :=
+lemma multipliable.has_prod (ha : multipliable f) : has_prod f (∏'b, f b) :=
 by simp [ha, tprod]; exact some_spec ha
 
 @[to_additive]
@@ -184,7 +184,7 @@ lemma multipliable_of_ne_finset_one (hf : ∀b∉s, f b = 1) : multipliable f :=
 (has_prod_prod_of_ne_finset_one hf).multipliable
 
 @[to_additive]
-lemma has_prod_single {f : β → α} (b : β) (hf : ∀b' ≠ b, f b' = 1) :
+lemma has_prod_mul_single {f : β → α} (b : β) (hf : ∀b' ≠ b, f b' = 1) :
   has_prod f (f b) :=
 suffices has_prod f (∏ b' in {b}, f b'),
   by simpa using this,
@@ -194,14 +194,14 @@ has_prod_prod_of_ne_finset_one $ by simpa [hf]
 lemma has_prod_ite_eq (b : β) [decidable_pred (= b)] (a : α) :
   has_prod (λb', if b' = b then a else 1) a :=
 begin
-  convert has_prod_single b _,
+  convert has_prod_mul_single b _,
   { exact (if_pos rfl).symm },
   assume b' hb',
   exact if_neg hb'
 end
 
 @[to_additive]
-lemma has_prod_pi_single [decidable_eq β] (b : β) (a : α) :
+lemma has_prod_pi_mul_single [decidable_eq β] (b : β) (a : α) :
   has_prod (pi.mul_single b a) a :=
 show has_prod (λ x, pi.mul_single b a x) a, by simpa only [pi.mul_single_apply] using has_prod_ite_eq b a
 
@@ -215,7 +215,7 @@ lemma function.injective.has_prod_range_iff {g : γ → β} (hg : injective g) :
   has_prod (λ x : set.range g, f x) a ↔ has_prod (f ∘ g) a :=
 (equiv.of_injective g hg).has_prod_iff.symm
 
-@[to_additive equiv.summable]
+@[to_additive equiv.summable_iff]
 lemma equiv.multipliable_iff (e : γ ≃ β) :
   multipliable (f ∘ e) ↔ multipliable f :=
 exists_congr $ λ a, e.has_prod_iff
@@ -225,7 +225,7 @@ lemma multipliable.prod_symm {f : β × γ → α} (hf : multipliable f) : multi
 (equiv.prod_comm γ β).multipliable_iff.2 hf
 
 @[to_additive]
-lemma equiv.has_prod_iff_of_support {g : γ → α} (e : mul_support f ≃ mul_support g)
+lemma equiv.has_prod_iff_of_mul_support {g : γ → α} (e : mul_support f ≃ mul_support g)
   (he : ∀ x : mul_support f, g (e x) = f x) :
   has_prod f a ↔ has_prod g a :=
 have (g ∘ coe) ∘ e = f ∘ coe, from funext he,
@@ -236,7 +236,7 @@ lemma has_prod_iff_has_prod_of_ne_one_bij {g : γ → α} (i : mul_support g →
   (hi : ∀ ⦃x y⦄, i x = i y → (x : γ) = y)
   (hf : mul_support f ⊆ set.range i) (hfg : ∀ x, f (i x) = g x) :
   has_prod f a ↔ has_prod g a :=
-iff.symm $ equiv.has_prod_iff_of_support
+iff.symm $ equiv.has_prod_iff_of_mul_support
   (equiv.of_bijective (λ x, ⟨i x, λ hx, x.coe_prop $ hfg x ▸ hx⟩)
     ⟨λ x y h, subtype.ext $ hi $ subtype.ext_iff.1 h,
       λ y, (hf y.coe_prop).imp $ λ x hx, subtype.ext hx⟩)
@@ -246,7 +246,7 @@ iff.symm $ equiv.has_prod_iff_of_support
 lemma equiv.multipliable_iff_of_mul_support {g : γ → α} (e : mul_support f ≃ mul_support g)
   (he : ∀ x : mul_support f, g (e x) = f x) :
   multipliable f ↔ multipliable g :=
-exists_congr $ λ _, e.has_prod_iff_of_support he
+exists_congr $ λ _, e.has_prod_iff_of_mul_support he
 
 @[protected, to_additive]
 lemma has_prod.map [comm_monoid γ] [topological_space γ] (hf : has_prod f a)
@@ -311,12 +311,12 @@ hes.exists.trans $ exists_congr $ @he
 @[to_additive]
 variable [has_continuous_mul α]
 
-@[to_additive]
+@[to_additive has_sum.add]
 lemma has_prod.mul (hf : has_prod f a) (hg : has_prod g b) : has_prod (λb, f b * g b) (a * b) :=
 by simp only [has_prod, prod_mul_distrib]; exact hf.mul hg
 
-@[to_additive]
-lemma multipliable.add (hf : multipliable f) (hg : multipliable g) : multipliable (λb, f b * g b) :=
+@[to_additive summable.add]
+lemma multipliable.mul (hf : multipliable f) (hg : multipliable g) : multipliable (λb, f b * g b) :=
 (hf.has_prod.mul hg.has_prod).multipliable
 
 @[to_additive]
@@ -508,7 +508,7 @@ begin
   { simp }
 end
 
-@[simp] lemma tprod_one [t1_space α] : ∏' b : β, (1 : α) = 1 := tprod_one' is_closed_singleton
+@[simp, to_additive] lemma tprod_one [t1_space α] : ∏' b : β, (1 : α) = 1 := tprod_one' is_closed_singleton
 
 variables [t2_space α] {f g : β → α} {a a₁ a₂ : α}
 
@@ -520,7 +520,8 @@ lemma has_prod.tprod_eq (ha : has_prod f a) : ∏'b, f b = a :=
 lemma multipliable.has_prod_iff (h : multipliable f) : has_prod f a ↔ ∏'b, f b = a :=
 iff.intro has_prod.tprod_eq (assume eq, eq ▸ h.has_prod)
 
-@[simp] lemma tprod_empty [is_empty β] : ∏'b, f b = 1 := has_prod_empty.tprod_eq
+@[simp, to_additive tsum_empty] 
+lemma tprod_empty [is_empty β] : ∏'b, f b = 1 := has_prod_empty.tprod_eq
 
 @[to_additive]
 lemma tprod_eq_prod {f : β → α} {s : finset β} (hf : ∀b∉s, f b = 1)  :
@@ -544,42 +545,42 @@ congr_arg tprod (funext hfg)
 lemma tprod_fintype [fintype β] (f : β → α) : ∏'b, f b = ∏ b, f b :=
 (has_prod_fintype f).tprod_eq
 
-@[to_additive]
-lemma tprod_bool (f : bool → α) : ∏' i : bool, f i = f false + f true :=
-by { rw [tprod_fintype, finset.sum_eq_add]; simp }
+@[to_additive tsum_bool]
+lemma tprod_bool (f : bool → α) : ∏' i : bool, f i = f false * f true :=
+by { rw [tprod_fintype, finset.prod_eq_mul]; simp }
 
 @[to_additive]
-lemma tprod_eq_single {f : β → α} (b : β) (hf : ∀b' ≠ b, f b' = 1)  :
+lemma tprod_eq_mul_single {f : β → α} (b : β) (hf : ∀b' ≠ b, f b' = 1)  :
   ∏'b, f b = f b :=
-(has_prod_single b hf).tprod_eq
+(has_prod_mul_single b hf).tprod_eq
 
 @[to_additive]
-lemma tprod_tprod_eq_single (f : β → γ → α) (b : β) (c : γ) (hfb : ∀ b' ≠ b, f b' c = 1)
+lemma tprod_tprod_eq_mul_single (f : β → γ → α) (b : β) (c : γ) (hfb : ∀ b' ≠ b, f b' c = 1)
   (hfc : ∀ (b' : β) (c' : γ), c' ≠ c → f b' c' = 1) :
   ∏' b' c', f b' c' = f b c :=
-calc ∏' b' c', f b' c' = ∏' b', f b' c : tprod_congr $ λ b', tprod_eq_single _ (hfc b')
-... = f b c : tprod_eq_single _ hfb
+calc ∏' b' c', f b' c' = ∏' b', f b' c : tprod_congr $ λ b', tprod_eq_mul_single _ (hfc b')
+... = f b c : tprod_eq_mul_single _ hfb
 
-@[simp] lemma tprod_ite_eq (b : β) [decidable_pred (= b)] (a : α) :
+@[simp, to_additive tsum_ite_eq] lemma tprod_ite_eq (b : β) [decidable_pred (= b)] (a : α) :
   ∏' b', (if b' = b then a else 1) = a :=
 (has_prod_ite_eq b a).tprod_eq
 
-@[simp] lemma tprod_pi_single [decidable_eq β] (b : β) (a : α) :
-  ∏' b', pi.single b a b' = a :=
-(has_prod_pi_single b a).tprod_eq
+@[simp, to_additive] lemma tprod_pi_mul_single [decidable_eq β] (b : β) (a : α) :
+  ∏' b', pi.mul_single b a b' = a :=
+(has_prod_pi_mul_single b a).tprod_eq
 
-@[to_additive]
+@[to_additive tsum_dite_right]
 lemma tprod_dite_right (P : Prop) [decidable P] (x : β → ¬ P → α) :
   ∏' (b : β), (if h : P then (1 : α) else x b h) = if h : P then (1 : α) else ∏' (b : β), x b h :=
 by by_cases hP : P; simp [hP]
 
-@[to_additive]
+@[to_additive tsum_dite_left]
 lemma tprod_dite_left (P : Prop) [decidable P] (x : β → P → α) :
   ∏' (b : β), (if h : P then x b h else 1) = if h : P then (∏' (b : β), x b h) else 1 :=
 by by_cases hP : P; simp [hP]
 
 @[to_additive]
-lemma function.surjective.tprod_eq_tprod_of_has_prod_iff_has_prod {α' : Type*} [add_comm_monoid α']
+lemma function.surjective.tprod_eq_tprod_of_has_prod_iff_has_prod {α' : Type*} [comm_monoid α']
   [topological_space α'] {e : α' → α} (hes : function.surjective e) (h1 : e 1 = 1)
   {f : β → α} {g : γ → α'}
   (h : ∀ {a}, has_prod f (e a) ↔ has_prod g a) :
@@ -596,94 +597,109 @@ lemma tprod_eq_tprod_of_has_prod_iff_has_prod {f : β → α} {g : γ → α}
   ∏'b, f b = ∏'c, g c :=
 surjective_id.tprod_eq_tprod_of_has_prod_iff_has_prod rfl @h
 
-@[to_additive]
+@[to_additive equiv.tsum_eq]
 lemma equiv.tprod_eq (j : γ ≃ β) (f : β → α) : ∏'c, f (j c) = ∏'b, f b :=
 tprod_eq_tprod_of_has_prod_iff_has_prod $ λ a, j.has_prod_iff
 
-@[to_additive]
-lemma equiv.tprod_eq_tprod_of_support {f : β → α} {g : γ → α} (e : mul_support f ≃ mul_support g)
+@[to_additive equiv.tsum_eq_tsup_of_support]
+lemma equiv.tprod_eq_tprod_of_mul_support {f : β → α} {g : γ → α} (e : mul_support f ≃ mul_support g)
   (he : ∀ x, g (e x) = f x) :
   (∏' x, f x) = ∏' y, g y :=
-tprod_eq_tprod_of_has_prod_iff_has_prod $ λ _, e.has_prod_iff_of_support he
+tprod_eq_tprod_of_has_prod_iff_has_prod $ λ _, e.has_prod_iff_of_mul_support he
 
 @[to_additive]
-lemma tprod_eq_tprod_of_ne_zero_bij {g : γ → α} (i : mul_support g → β)
+lemma tprod_eq_tprod_of_ne_one_bij {g : γ → α} (i : mul_support g → β)
   (hi : ∀ ⦃x y⦄, i x = i y → (x : γ) = y)
   (hf : mul_support f ⊆ set.range i) (hfg : ∀ x, f (i x) = g x) :
   ∏' x, f x  = ∏' y, g y :=
-tprod_eq_tprod_of_has_prod_iff_has_prod $ λ _, has_prod_iff_has_prod_of_ne_zero_bij i hi hf hfg
+tprod_eq_tprod_of_has_prod_iff_has_prod $ λ _, has_prod_iff_has_prod_of_ne_one_bij i hi hf hfg
 
 /-! ### `tprod` on subsets -/
 
-@[simp] lemma finset.tprod_subtype (s : finset β) (f : β → α) :
-  ∏' x : {x // x ∈ s}, f x = ∑ x in s, f x :=
+@[simp, to_additive finset.tsum_subtype]
+lemma finset.tprod_subtype (s : finset β) (f : β → α) :
+  ∏' x : {x // x ∈ s}, f x = ∏ x in s, f x :=
 (s.has_prod f).tprod_eq
 
-@[simp] lemma finset.tprod_subtype' (s : finset β) (f : β → α) :
-  ∏' x : (s : set β), f x = ∑ x in s, f x :=
+@[simp, to_additive finset.tsum_subtype'] 
+lemma finset.tprod_subtype' (s : finset β) (f : β → α) :
+  ∏' x : (s : set β), f x = ∏ x in s, f x :=
 s.tprod_subtype f
 
-@[to_additive]
+@[to_additive tsum_subtype]
 lemma tprod_subtype (s : set β) (f : β → α) :
-  ∏' x : s, f x = ∏' x, s.indicator f x :=
-tprod_eq_tprod_of_has_prod_iff_has_prod $ λ _, has_prod_subtype_iff_indicator
+  ∏' x : s, f x = ∏' x, s.mul_indicator f x :=
+begin 
+exact (tprod_eq_tprod_of_has_prod_iff_has_prod $ λ _, has_prod_subtype_iff_mul_indicator),
+end
 
 @[to_additive]
-lemma tprod_subtype_eq_of_support_subset {f : β → α} {s : set β} (hs : mul_support f ⊆ s) :
+lemma tprod_subtype_eq_of_mul_support_subset {f : β → α} {s : set β} (hs : mul_support f ⊆ s) :
   ∏' x : s, f x = ∏' x, f x :=
-tprod_eq_tprod_of_has_prod_iff_has_prod $ λ x, has_prod_subtype_iff_of_support_subset hs
+tprod_eq_tprod_of_has_prod_iff_has_prod $ λ x, has_prod_subtype_iff_of_mul_support_subset hs
 
-@[simp] lemma tprod_univ (f : β → α) : ∏' x : (set.univ : set β), f x = ∏' x, f x :=
-tprod_subtype_eq_of_support_subset $ set.subset_univ _
+@[simp, to_additive tsum_univ] 
+lemma tprod_univ (f : β → α) : ∏' x : (set.univ : set β), f x = ∏' x, f x :=
+tprod_subtype_eq_of_mul_support_subset $ set.subset_univ _
 
-@[simp] lemma tprod_singleton (b : β) (f : β → α) :
-  ∏' x : ({b} : set β), f x = f b :=
+@[simp, to_additive tsum_singleton] 
+lemma tprod_singleton (b : β) (f : β → α) : ∏' x : ({b} : set β), f x = f b :=
 begin
-  rw [tprod_subtype, tprod_eq_single b],
+  rw [tprod_subtype, tprod_eq_mul_single b],
   { simp },
   { intros b' hb',
-    rw set.indicator_of_not_mem,
+    rw set.mul_indicator_of_not_mem,
     rwa set.mem_singleton_iff },
   { apply_instance }
 end
 
-@[to_additive]
+@[to_additive tsum_image]
 lemma tprod_image {g : γ → β} (f : β → α) {s : set γ} (hg : set.inj_on g s) :
   ∏' x : g '' s, f x = ∏' x : s, f (g x) :=
-((equiv.set.image_of_inj_on _ _ hg).tprod_eq (λ x, f x)).symm
+begin
+exact ((equiv.set.image_of_inj_on _ _ hg).tprod_eq (λ x, f x)).symm
+end
 
-@[to_additive]
+
+@[to_additive tsum_range]
 lemma tprod_range {g : γ → β} (f : β → α) (hg : injective g) :
   ∏' x : set.range g, f x = ∏' x, f (g x) :=
 by rw [← set.image_univ, tprod_image f (hg.inj_on _), tprod_univ (f ∘ g)]
 
 section has_continuous_add
-variable [has_continuous_add α]
 
 @[to_additive]
-lemma tprod_add (hf : multipliable f) (hg : multipliable g) : ∏'b, (f b + g b) = (∏'b, f b) + (∏'b, g b) :=
-(hf.has_prod.add hg.has_prod).tprod_eq
+variable [has_continuous_mul α]
 
-@[to_additive]
-lemma tprod_sum {f : γ → β → α} {s : finset γ} (hf : ∀i∈s, multipliable (f i)) :
-  ∏'b, ∑ i in s, f i b = ∑ i in s, ∏'b, f i b :=
-(has_prod_sum $ assume i hi, (hf i hi).has_prod).tprod_eq
+@[to_additive tsum_add]
+lemma tprod_mul (hf : multipliable f) (hg : multipliable g) : ∏'b, (f b * g b) = (∏'b, f b) * (∏'b, g b) :=
+begin
+exact (hf.has_prod.mul hg.has_prod).tprod_eq, end
 
-/-- Version of `tprod_eq_add_tprod_ite` for `add_comm_monoid` rather than `add_comm_group`.
+@[to_additive tsum_sum]
+lemma tprod_prod {f : γ → β → α} {s : finset γ} (hf : ∀i∈s, multipliable (f i)) :
+  ∏'b, ∏ i in s, f i b = ∏ i in s, ∏'b, f i b :=
+(has_prod_mul $ assume i hi, (hf i hi).has_prod).tprod_eq
+
+/-- Version of `tprod_eq_mul_tprod_ite` for `comm_monoid` rather than `comm_group`.
 Requires a different convergence assumption involving `function.update`. -/
-@[to_additive]
-lemma tprod_eq_add_tprod_ite' {f : β → α} (b : β) (hf : multipliable (f.update b 1)) :
-  ∏' x, f x = f b + ∏' x, ite (x = b) 1 (f x) :=
-calc ∏' x, f x = ∏' x, ((ite (x = b) (f x) 1) + (f.update b 1 x)) :
+/- @[to_additive "Version of `tsum_eq_add_tsum_ite` for `add_comm_monoid` rather than `add_comm_group`.
+Requires a different convergence assumption involving `function.update`."]
+-/
+lemma tprod_eq_mul_tprod_ite' {f : β → α} (b : β) (hf : multipliable (f.update b 1)) :
+  ∏' x, f x = f b * ∏' x, ite (x = b) 1 (f x) :=
+calc ∏' x, f x = ∏' x, ((ite (x = b) (f x) 1) * (f.update b 1 x)) :
     tprod_congr (λ n, by split_ifs; simp [function.update_apply, h])
-  ... = ∏' x, ite (x = b) (f x) 1 + ∏' x, f.update b 1 x :
-    tprod_add ⟨ite (b = b) (f b) 1, has_prod_single b (λ b hb, if_neg hb)⟩ (hf)
-  ... = (ite (b = b) (f b) 1) + ∏' x, f.update b 1 x :
-    by { congr, exact (tprod_eq_single b (λ b' hb', if_neg hb')) }
-  ... = f b + ∏' x, ite (x = b) 1 (f x) :
+  ... = ∏' x, ite (x = b) (f x) 1 * ∏' x, f.update b 1 x :
+    tprod_mul ⟨ite (b = b) (f b) 1, has_prod_mul_single b (λ b hb, if_neg hb)⟩ (hf)
+  ... = (ite (b = b) (f b) 1) * ∏' x, f.update b 1 x :
+    by { congr, exact (tprod_eq_mul_single b (λ b' hb', if_neg hb')) }
+  ... = f b * ∏' x, ite (x = b) 1 (f x) :
     by simp only [function.update, eq_self_iff_true, if_true, eq_rec_constant, dite_eq_ite]
 
-variables [add_comm_monoid δ] [topological_space δ] [t3_space δ] [has_continuous_add δ]
+variables [topological_space δ] [t3_space δ]
+
+@[to_additive] variables [add_comm_monoid δ]  [has_continuous_add δ]
 
 @[to_additive]
 lemma tprod_sigma' {γ : β → Type*} {f : (Σb:β, γ b) → δ} (h₁ : ∀b, multipliable (λc, f ⟨b, c⟩))
