@@ -8,35 +8,37 @@ import topology.uniform_space.separation
 import data.set.finite
 
 
-section topology
+namespace function
 
 open_locale pointwise
 
 variables {α : Type*} {ι : Type*}
 
-lemma finite_support_of_tendsto_zero [add_comm_monoid α] 
-  [topological_space α] [discrete_topology α] 
-  {f : ι → α}
-  (hf : filter.tendsto f filter.cofinite (nhds 0)) : f.support.finite :=
+/-- If a function `f` to an additive commutative monoid with the discrete topology tends to zero
+along the cofinite filter, then `f` has finite support. -/
+lemma finite_support_of_tendsto_zero [add_comm_monoid α] [topological_space α] [discrete_topology α] 
+  {f : ι → α} (hf : filter.tendsto f filter.cofinite (nhds 0)) : f.support.finite :=
 begin
-  classical,
   simp only [nhds_discrete, filter.tendsto_pure] at hf,
   obtain ⟨s, H, p⟩ := filter.eventually.exists_mem hf, 
   simp only [filter.mem_cofinite] at H,
   apply set.finite.subset H,
   intros x hx,
-  simp only [set.mem_compl_iff],
+  rw [set.mem_compl_iff],
   by_contradiction hxs, 
   exact hx (p x hxs),
 end
 
-lemma finite_support_of_summable [add_comm_group α] [topological_space α] [discrete_topology α] [topological_add_group α] (f : ι → α) 
-  (hf : summable f) : f.support.finite :=
+/-- If a function `f` to a discrete topological commutative additive group is summable, then it has
+finite support. -/
+lemma finite_support_of_summable [add_comm_group α] [topological_space α] [discrete_topology α] 
+  [topological_add_group α] {f : ι → α} (hf : summable f) : f.support.finite :=
 finite_support_of_tendsto_zero hf.tendsto_cofinite_zero
 
+/-- If a function `f` to a topological commutative additive group is summable, then it tends to zero
+along the cofinite filter. -/
 lemma tendsto_zero_of_summable [add_comm_group α] [topological_space α] [topological_add_group α] 
-  (f : ι → α) (hf : summable f) :
-  filter.tendsto f filter.cofinite (nhds 0) :=
+  {f : ι → α} (hf : summable f) : filter.tendsto f filter.cofinite (nhds 0) :=
 begin
   classical,
   obtain ⟨a, ha⟩ := hf, 
@@ -80,13 +82,14 @@ begin
   exact is_open.preimage continuous_sub hU₀,
 end
 
-end topology
+end function
 
 
 namespace mv_power_series
 
-variables (σ : Type*)
-variables (α : Type*) 
+open function
+
+variables (σ : Type*) (α : Type*) 
 
 
 section topological
@@ -499,13 +502,13 @@ example [topological_space α] [_root_.topological_ring α] {f : ι → mv_power
   (_root_.summable f) → filter.tendsto f filter.cofinite (nhds 0) := 
 begin
   haveI := topological_ring σ α,
-  exact tendsto_zero_of_summable f ,
+  exact tendsto_zero_of_summable,
 end
 
 lemma iff_summable [topological_space α] [discrete_topology α] 
   {f : ι → mv_power_series σ α} : (strongly_summable f) ↔ (_root_.summable f) :=
 ⟨summable, 
-  λ hf d, finite_support_of_summable _ (hf.map _ (continuous_component σ α d))⟩
+  λ hf d, finite_support_of_summable (hf.map _ (continuous_component σ α d))⟩
 
 lemma iff_summable' [topological_space α] [discrete_topology α] 
   {f : ι → mv_power_series σ α} : (strongly_summable f) ↔ filter.tendsto f 
