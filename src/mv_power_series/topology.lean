@@ -103,7 +103,7 @@ lemma continuous_component :
 continuous_pi_iff.mp continuous_id
 
 /-- The semiring topology on mv_power_series of a topological semiring -/
-def topological_semiring [semiring α] [topological_semiring α] :
+lemma topological_semiring [semiring α] [topological_semiring α] :
   topological_semiring (mv_power_series σ α) := 
 {  to_has_continuous_add := 
   begin
@@ -140,7 +140,7 @@ def topological_semiring [semiring α] [topological_semiring α] :
   end }
 
 /-- The ring topology on mv_power_series of a topological ring -/
-def topological_ring [ring α] [topological_ring α] :
+lemma topological_ring [ring α] [topological_ring α] :
   topological_ring (mv_power_series σ α) := 
 { to_topological_semiring := topological_semiring σ α,
   to_has_continuous_neg := 
@@ -184,7 +184,7 @@ section uniform
 variable [uniform_space α]
 
 /-- The componentwise uniformity on mv_power_series -/
-instance uniform_space [uniform_space α] : uniform_space (mv_power_series σ α) := 
+instance uniform_space : uniform_space (mv_power_series σ α) := 
 Pi.uniform_space (λ (i : σ →₀ ℕ), α)
 
 /-- Components are uniformly continuous -/
@@ -193,8 +193,8 @@ lemma uniform_continuous_component :
 uniform_continuous_pi.mp uniform_continuous_id
 
 /-- The uniform_add_group structure on mv_power_series of a uniform_add_group -/
-def uniform_add_group [add_group α] [uniform_space α]
-  [uniform_add_group α] : uniform_add_group (mv_power_series σ α) :=
+lemma uniform_add_group [add_group α] [uniform_add_group α] :
+  uniform_add_group (mv_power_series σ α) :=
 begin
   apply uniform_add_group.mk,
   rw uniform_continuous_pi,
@@ -218,7 +218,7 @@ begin
 end
 
 /-- Completeness of the uniform structure on mv_power_series -/
-lemma complete_space [add_group α] [uniform_space α] [_root_.uniform_add_group α] [complete_space α] :
+lemma complete_space [add_group α] [complete_space α] :
 complete_space (mv_power_series σ α) :=
 begin
   apply complete_space.mk,
@@ -234,8 +234,7 @@ begin
 end
 
 /-- Separation of the uniform structure on mv_power_series -/
-lemma separated_space [add_group α] [uniform_space α]
-  [_root_.uniform_add_group α] [_root_.separated_space α] :
+lemma separated_space [_root_.separated_space α] :
   separated_space (mv_power_series σ α) := 
 begin
   rw separated_iff_t2,
@@ -249,8 +248,7 @@ begin
 end
 
 
-lemma uniform_topological_ring [ring α] [uniform_space α]
-  [_root_.uniform_add_group α] [_root_.topological_ring α] : 
+lemma uniform_topological_ring [ring α] [_root_.uniform_add_group α] [_root_.topological_ring α] : 
   _root_.topological_ring (mv_power_series σ α) :=
 { to_has_continuous_add := 
   begin
@@ -324,10 +322,10 @@ begin
   left, exact h₁,
 end
 
-lemma add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
-  (hf : strongly_summable f) (hg : strongly_summable g):
+lemma add {f g : ι → mv_power_series σ α} (hf : strongly_summable f) (hg : strongly_summable g):
   strongly_summable (f + g) :=
 begin
+  classical,
   intro d,
   apply set.finite.subset _ (support_add hf hg d),
   apply finset.finite_to_set,
@@ -370,11 +368,11 @@ begin
   exact h (finset.sum_eq_zero h'),
 end
 
-lemma mul [decidable_eq ι] {f : ι → mv_power_series σ α} 
-  {κ : Type*} [decidable_eq κ] {g : κ → mv_power_series σ α}
+lemma mul {f : ι → mv_power_series σ α} {κ : Type*} {g : κ → mv_power_series σ α}
   (hf : strongly_summable f) (hg : strongly_summable g) :
   strongly_summable (λ (i : ι × κ), (f i.fst) * (g i.snd)) := 
 begin
+  classical,
   intro d, 
   apply set.finite.subset _ (support_mul hf hg d),
   apply finset.finite_to_set,
@@ -397,11 +395,12 @@ begin
     simpa only [set.finite.mem_to_finset, function.mem_support, not_not] using hi', },
 end
 
-lemma sum_add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
+lemma sum_add {f g : ι → mv_power_series σ α} 
   (hf : strongly_summable f) (hg : strongly_summable g) : 
   ∀ (hh : strongly_summable (f + g)),
   hh.sum = hf.sum + hg.sum :=
 begin
+  classical,
   intro hh,
   ext d, 
   simp only [coeff_sum, pi.add_apply, map_add],
@@ -414,12 +413,13 @@ begin
       set.subset_union_right, set.subset_union_left], },
 end
 
-lemma sum_mul [decidable_eq ι] {f : ι → mv_power_series σ α} 
-  {κ : Type*} [decidable_eq κ] {g : κ → mv_power_series σ α}
+lemma sum_mul {f : ι → mv_power_series σ α} 
+  {κ : Type*} {g : κ → mv_power_series σ α}
   (hf : strongly_summable f) (hg : strongly_summable g) :
   ∀ (hh : strongly_summable (λ (i : ι × κ), (f i.fst) * (g i.snd))),
   hh.sum = hf.sum * hg.sum := 
 begin
+  classical,
   intro hh,
   ext d,
   rw coeff_sum d _ (support_mul hf hg d),
@@ -680,6 +680,5 @@ lemma summable_of_order_tendsto_at_top {ι : Type*}
   summable f := (strongly_summable_of_order_tendsto_at_top w f hf).summable 
 
 end summable
-
 
 end mv_power_series
