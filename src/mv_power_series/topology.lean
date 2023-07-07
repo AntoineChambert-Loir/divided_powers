@@ -314,6 +314,88 @@ def strongly_summable (f : ι → mv_power_series σ α) : Prop :=
 
 namespace strongly_summable 
 
+section order
+
+instance enat.topology := preorder.topology ℕ∞
+
+
+-- Bourbaki, *Algèbre*, chap. 4, §4, page IV.25, exemple c)
+/-- A family of power series is strongly summable if their weighted orders tend to infinity. -/
+lemma of_weighted_order_tendsto_top {ι : Type*} 
+  (w : σ → ℕ) (f : ι → mv_power_series σ α) 
+  (hf : filter.tendsto (λ i, weighted_order w (f i)) filter.cofinite (nhds ⊤)) :
+  strongly_summable f := 
+begin
+  intro d,
+  rw filter.has_basis.tendsto_right_iff nhds_top_basis at hf,
+  specialize hf ((weight w d) : ℕ∞) (with_top.coe_lt_top _),
+  dsimp at hf,
+  refine set.finite.subset hf _,
+  intro i,
+  simp only [mem_support, ne.def, set.mem_set_of_eq],
+  intros h' h, apply h',
+  apply coeff_of_lt_weighted_order w,  exact h,
+  exact ⟨rfl⟩,
+  apply_instance,
+end
+
+lemma of_order_tendsto_top {ι : Type*} 
+  (f : ι → mv_power_series σ α) 
+  (hf : filter.tendsto (λ i, order (f i)) filter.cofinite (nhds ⊤)) :
+  strongly_summable f := of_weighted_order_tendsto_top _ f hf
+
+
+-- Réciproques quand σ est fini !
+/-- When σ is finite, a family of power series is strongly summable 
+iff their weighted orders tend to infinity. -/
+lemma weighted_order_tendsto_top_iff [hσ: finite σ] {ι : Type*} 
+  (w : σ → ℕ) (hw : ∀ x, w x ≠ 0) (f : ι → mv_power_series σ α) :
+  strongly_summable f ↔ 
+  filter.tendsto (λ i, weighted_order w (f i)) filter.cofinite (nhds ⊤) :=
+begin
+  classical,
+  split,
+  { intro hf,
+    rw filter.has_basis.tendsto_right_iff nhds_top_basis,
+    intros n hn,
+    induction n,
+    exfalso, exact lt_irrefl ⊤ hn,
+    simp only [set.mem_Ioi, filter.eventually_cofinite, not_lt],
+    let s := { d : σ →₀ ℕ | ↑(weight w d) ≤ n},
+    
+    suffices : { i | (f i).weighted_order w ≤ some n} ⊆ ⋃ (d : σ →₀ ℕ) (H : d ∈ s), { i | coeff α d (f i) ≠ 0},
+    refine set.finite.subset _ this,
+    refine set.finite.bUnion (finite_of_weight_le w hw n) _,
+
+    intros d hd, exact hf d,
+
+    intros i hi,
+    simp only [set.mem_set_of_eq] at hi,
+    simp only [set.mem_set_of_eq, nat.cast_id, ne.def, set.mem_Union, exists_prop],
+    obtain ⟨d, hd⟩ := exists_coeff_ne_zero_of_weighted_order w (f i) _, 
+    use d,
+    apply and.intro _ hd.2,
+    simpa [← hd.1, with_top.some_eq_coe, nat.cast_le ] using hi,
+
+    simp only [enat.coe_to_nat_eq_self], 
+    intro hi', rw [hi', top_le_iff] at hi,
+    exact with_top.coe_ne_top hi,
+
+    exact ⟨rfl⟩,
+    apply_instance, },
+  exact of_weighted_order_tendsto_top w f,
+end
+
+/-- When σ is finite, a family of power series is strongly summable 
+iff their orders tend to infinity. -/
+lemma order_tendsto_top_iff [hσ: finite σ] {ι : Type*} 
+  (f : ι → mv_power_series σ α) :
+  strongly_summable f ↔ 
+  filter.tendsto (λ i, order (f i)) filter.cofinite (nhds ⊤) :=
+weighted_order_tendsto_top_iff _ (by simp) f
+
+end order 
+
 lemma support_add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
   (hf : strongly_summable f) (hg : strongly_summable g):
   ∀ (d : σ →₀ ℕ), (λ i, coeff α d ((f + g) i)).support ⊆ ((hf d).to_finset ∪ (hg d).to_finset : finset ι) := 
@@ -652,32 +734,6 @@ variables {σ α}
 
 instance enat.topology := preorder.topology ℕ∞
 
--- Bourbaki, *Algèbre*, chap. 4, §4, page IV.25, exemple c)
-/-- A family of power series is strongly summable if their weighted orders tend to infinity. -/
-lemma strongly_summable_of_weighted_order_tendsto_top {ι : Type*} 
-  (w : σ → ℕ) (f : ι → mv_power_series σ α) 
-  (hf : filter.tendsto (λ i, weighted_order w (f i)) filter.cofinite (nhds ⊤)) :
-  strongly_summable f := 
-begin
-  intro d,
-  rw filter.has_basis.tendsto_right_iff nhds_top_basis at hf,
-  specialize hf ((weight w d) : ℕ∞) (with_top.coe_lt_top _),
-  dsimp at hf,
-  refine set.finite.subset hf _,
-  intro i,
-  simp only [mem_support, ne.def, set.mem_set_of_eq],
-  intros h' h, apply h',
-  apply coeff_of_lt_weighted_order w,  exact h,
-  exact ⟨rfl⟩,
-  apply_instance,
-end
-
-lemma strongly_summable_of_order_tendsto_top {ι : Type*} 
-  (f : ι → mv_power_series σ α) 
-  (hf : filter.tendsto (λ i, order (f i)) filter.cofinite (nhds ⊤)) :
-  strongly_summable f := 
-strongly_summable_of_weighted_order_tendsto_top _ f hf
-
 variable  [topological_space α]
 
 /-- A family of power series is summable if their weighted orders tend to infinity. -/
@@ -692,46 +748,6 @@ lemma summable_of_order_tendsto_top {ι : Type*}
   summable f :=
 summable_of_weighted_order_tendsto_top (λ s, 1) f hf 
 
--- Réciproques quand σ est fini !
-/-- When σ is finite, a family of power series is strongly summable 
-iff their orders tend to infinity. -/
-lemma strongly_summable_iff_order_tendsto_top [hσ: finite σ] {ι : Type*} 
-  (w : σ → ℕ) (f : ι → mv_power_series σ α) :
-  strongly_summable f ↔ 
-  filter.tendsto (λ i, order (f i)) filter.cofinite (nhds ⊤) :=
-begin
-  classical,
-  split,
-  { intro hf,
-    rw filter.has_basis.tendsto_right_iff nhds_top_basis,
-    intros n hn,
-    induction n,
-    exfalso, exact lt_irrefl ⊤ hn,
-    simp only [set.mem_Ioi, filter.eventually_cofinite, not_lt],
-    let s := { d : σ →₀ ℕ | ↑(degree d) ≤ n},
-    
-    suffices : { i | (f i).order ≤ some n} ⊆ ⋃ (d : σ →₀ ℕ) (H : d ∈ s), { i | coeff α d (f i) ≠ 0},
-    refine set.finite.subset _ this,
-    refine set.finite.bUnion (finite_of_degree_le n) _,
-
-    intros d hd, exact hf d,
-
-    intros i hi,
-    simp only [set.mem_set_of_eq] at hi,
-    simp only [set.mem_set_of_eq, nat.cast_id, ne.def, set.mem_Union, exists_prop],
-    obtain ⟨d, hd⟩ := exists_coeff_ne_zero_of_order (f i) _, 
-    use d,
-    apply and.intro _ hd.2,
-    simpa [← hd.1, with_top.some_eq_coe, nat.cast_le ] using hi,
-
-    simp only [enat.coe_to_nat_eq_self], 
-    intro hi', rw [hi', top_le_iff] at hi,
-    exact with_top.coe_ne_top hi,
-
-    exact ⟨rfl⟩,
-    apply_instance, },
-  exact strongly_summable_of_order_tendsto_top f,
-end
 
 section strongly_summable
 
