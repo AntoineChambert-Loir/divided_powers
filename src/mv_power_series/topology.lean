@@ -392,6 +392,7 @@ weighted_order_tendsto_top_iff _ (by simp) f
 
 end order 
 
+-- TODO : I feel we do this many times, maybe this is not the better formulation
 lemma support_finite' (f : ι → mv_power_series σ α) (hf : strongly_summable f)
   (d : σ →₀ ℕ) : 
   { i | ∃ e, e ≤ d ∧ coeff α e (f i) ≠ 0}.finite :=
@@ -794,7 +795,7 @@ begin
   intro fsι,
   intro F,
   intro d,
-  
+
   sorry
 end
 
