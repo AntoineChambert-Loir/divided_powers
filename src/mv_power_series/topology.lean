@@ -740,13 +740,13 @@ variable  [topological_space α]
 lemma summable_of_weighted_order_tendsto_top {ι : Type*} 
   (w : σ → ℕ) (f : ι → mv_power_series σ α) 
   (hf : filter.tendsto (λ i, weighted_order w (f i)) filter.cofinite (nhds ⊤)) :
-  summable f := (strongly_summable_of_weighted_order_tendsto_top w f hf).summable 
+  summable f := (strongly_summable.of_weighted_order_tendsto_top w f hf).summable 
 
 lemma summable_of_order_tendsto_top {ι : Type*} 
   (f : ι → mv_power_series σ α) 
   (hf : filter.tendsto (λ i, order (f i)) filter.cofinite (nhds ⊤)) :
   summable f :=
-summable_of_weighted_order_tendsto_top (λ s, 1) f hf 
+(strongly_summable.of_order_tendsto_top f hf).summable
 
 
 section strongly_summable
