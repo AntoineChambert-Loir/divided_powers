@@ -392,39 +392,12 @@ weighted_order_tendsto_top_iff _ (by simp) f
 
 end order 
 
--- TODO : I feel we do this many times, maybe this is not the better formulation
+-- TODO : now that the proof is two lines long, is the statement necessary?
 lemma support_finite' (f : ι → mv_power_series σ α) (hf : strongly_summable f)
-  (d : σ →₀ ℕ) : 
-  { i | ∃ e, e ≤ d ∧ coeff α e (f i) ≠ 0}.finite :=
+  (d : σ →₀ ℕ) : (⋃ e (H : e ≤ d), (λ i, coeff α e (f i)).support).finite := 
 begin
-  classical,
-  suffices : (⋃ (e : σ →₀ ℕ) (He : e ≤ d), { i : ι | coeff α e (f i) ≠ 0}).finite,
-  convert this,
-  { ext e,
-    simp only [ne.def, set.supr_eq_Union, set.mem_Union, set.mem_set_of_eq, exists_prop],
-    refl, },
   refine set.finite.bUnion _ (λ d H, hf d),
-  suffices : set.finite ((finsupp.antidiagonal d).image (λ (uv : (σ →₀ ℕ) × (σ →₀ ℕ)), uv.fst) : set (σ →₀ ℕ)),
-  convert this,
-  ext e,
-  change (e ∈ { e : σ →₀ ℕ | ∀ s, e s ≤ d s }) ↔ _, 
-  simp only [set.mem_set_of_eq, finset.mem_coe, finset.mem_image],
-  split,
-  { intro he, 
-    use ⟨e, d - e⟩,
-    split,
-    simp only [finsupp.mem_antidiagonal],
-    ext s,
-    simp only [finsupp.coe_add, finsupp.coe_tsub, pi.add_apply, pi.sub_apply],
-    rw add_comm,
-    rw nat.sub_add_cancel (he s),
-    refl, },
-  { rintro ⟨⟨a,b⟩, hab, rfl⟩,
-    rw [finsupp.mem_antidiagonal] at hab, rw ← hab,
-    intro s,
-    dsimp, 
-    exact le_self_add, },
-  apply finset.finite_to_set,
+  convert (set.Iic d).to_finite,
 end
 
 lemma support_add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
@@ -779,6 +752,7 @@ lemma summable_of_order_tendsto_top {ι : Type*}
   summable f :=
 (strongly_summable.of_order_tendsto_top f hf).summable
 
+end summable
 
 section strongly_summable
 
@@ -787,7 +761,9 @@ variables [comm_semiring α] [topological_space α]
 
 variables {σ α}
 
-lemma produit {ι : Type*}  (f : ι → mv_power_series σ α) (hf : strongly_summable f) :
+-- variable [decidable_eq σ]
+
+lemma partial_products_strongly_summable {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) :
   let fsι := { I : set ι | I.finite} in
   let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, f i) in 
   strongly_summable F := 
@@ -796,12 +772,73 @@ begin
   intro F,
   intro d,
 
-  sorry
+  suffices : { I : fsι | I.prop.to_finset ⊆ (hf.support_finite' f d).to_finset}.finite,
+  refine set.finite.subset this _,
+  intro I,
+  simp only [mem_support, ne.def, set.finite.subset_to_finset, set.finite.coe_to_finset, set.mem_set_of_eq],
+  contrapose, push_neg,
+  rw set.not_subset_iff_exists_mem_not_mem ,
+  rintro ⟨i, hi, h⟩,
+  simp only [set.mem_Union, mem_support, exists_prop, not_exists, not_and, not_not] at h,
+  simp only [F],
+  have hi' : i ∈ I.prop.to_finset,
+  { simp only [set.finite.mem_to_finset], exact hi, },
+  rw [finset.prod_eq_mul_prod_diff_singleton hi', coeff_mul],
+  apply finset.sum_eq_zero,
+  rintros ⟨x, y⟩  hxy, 
+  suffices hx : x ≤ d, rw [h x hx, zero_mul],
+  simp only [finsupp.mem_antidiagonal] at hxy, rw ← hxy,
+  rw [finsupp.le_def],
+  intro s, simp only [finsupp.coe_add, pi.add_apply, le_self_add],
+
+  have hP := set.finite.finite_subsets (hf.support_finite' f d),
+  let φ : fsι → set ι := λ I, I.val,
+  have hφ : function.injective φ := subtype.coe_injective,
+  apply set.finite.of_finite_image _ (set.inj_on_of_injective hφ _), 
+  apply set.finite.subset hP, 
+  intro I,
+  rintro ⟨I, hI, rfl⟩,
+  simp only [set.finite.subset_to_finset, set.finite.coe_to_finset, set.mem_set_of_eq] at hI, 
+  exact hI,
 end
+
+lemma has_prod_of_one_add {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) :
+  let fsι := { I : set ι | I.finite} in
+  let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, f i) in 
+has_prod (λ i, (1 + f i)) (tsum F)  :=  sorry
+
+lemma multipliable_of_one_add {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) : 
+  multipliable (λ i, (1 + f i))  := 
+(has_prod_of_one_add f hf).multipliable
+
+lemma tprod_eq_of_one_add [_root_.t2_space α] {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) : 
+  let fsι := { I : set ι | I.finite} in
+  let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, f i) in 
+  tprod (λ i, (1 + f i)) = (tsum F)  := 
+begin
+  intros fsι F,
+  haveI : _root_.t2_space (mv_power_series σ α) := t2_space σ α,
+  exact (has_prod_of_one_add f hf).tprod_eq,
+end
+
+-- TODO : treat the case of arbitrary topologies on α 
+/- 
+  but the statement is incorrect because `tsum F` has already used
+  the given topology of `α`. 
+  Except for this problem, this runs roughly as follows:
+
+  let h := @has_prod_of_one_add σ α _ (default) ι _ f hf,
+  
+  have := @has_prod.tprod_eq (mv_power_series σ α) ι _
+    (@mv_power_series.topological_space σ α default)
+    (@mv_power_series.t2_space σ α default (@discrete_topology.to_t2_space α default (discrete_topology_bot α))),
+
+  exact this h,
+
+-/
+
 
 
 end strongly_summable
-
-end summable
 
 end mv_power_series
