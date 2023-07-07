@@ -38,6 +38,43 @@ def weight : (σ →₀ ℕ) →+ ℕ :=
     { intros i m n, rw mul_add }, 
   end }
 
+lemma weight_apply (d : σ →₀ ℕ) : weight w d = d.sum (λ x, has_mul.mul (w x)) := 
+by simp only [weight]; refl
+
+lemma le_weight (x : σ) (hx : w x ≠ 0) (d : σ →₀ ℕ): d x ≤ weight w d :=
+begin
+  classical,
+  simp only [weight_apply, finsupp.sum],
+  by_cases hxd : x ∈ d.support, 
+  { rw finset.sum_eq_add_sum_diff_singleton hxd,
+    refine le_trans _ (nat.le_add_right _ _),
+    exact nat.le_mul_of_pos_left (zero_lt_iff.mpr hx), },
+  simp only [finsupp.mem_support_iff, not_not] at hxd,
+  rw hxd, 
+  apply zero_le,
+end
+
+lemma finite_of_weight_le [finite σ] (hw : ∀ x, w x ≠ 0) (n : ℕ) : 
+  { f : σ →₀ ℕ | weight w f ≤ n}.finite :=
+begin
+  classical,
+  let fg := finsupp.antidiagonal (finsupp.equiv_fun_on_finite.symm (function.const σ n)),
+  suffices : {f : σ →₀ ℕ | weight w f ≤ n} ⊆ ↑(fg.image (λ uv, uv.fst)),
+  apply set.finite.subset _ this,
+  apply finset.finite_to_set,
+  intros f hf,
+  simp only [finset.coe_image, set.mem_image, finset.mem_coe, finsupp.mem_antidiagonal, prod.exists, exists_and_distrib_right,
+    exists_eq_right],
+  use (finsupp.equiv_fun_on_finite.symm (function.const σ n)) - f,
+  ext x,
+  simp only [finsupp.coe_add, finsupp.coe_tsub, pi.add_apply, pi.sub_apply, finsupp.equiv_fun_on_finite_symm_apply_to_fun,
+  function.const_apply],
+  rw add_comm,
+  apply nat.sub_add_cancel , 
+  apply le_trans (le_weight w x (hw x) f),
+  simpa only [set.mem_set_of_eq] using hf,
+end
+
 lemma exists_coeff_ne_zero_of_weight_iff_ne_zero : 
   (∃ (n : ℕ), ∃ (d : σ →₀ ℕ), weight w d = n ∧ coeff α d f ≠ 0) ↔ f ≠ 0 :=
 begin
@@ -284,6 +321,27 @@ variable (f : mv_power_series σ α)
 /-- The degree of a monomial -/
 def degree : (σ →₀ ℕ) →+ ℕ := weight (λ i, 1)
 
+lemma degree_apply (d : σ →₀ ℕ) : degree d = d.sum (λ x, id) := 
+begin
+  simp only [degree, weight_apply], 
+  apply congr_arg,
+  ext x,
+  simp only [one_mul, id.def],
+ end
+
+lemma le_degree (x : σ) (d : σ →₀ ℕ): d x ≤ degree d :=
+begin
+  convert le_weight _ x _ d,
+  exact ne_zero.ne 1,
+end
+
+lemma finite_of_degree_le [finite σ] (n : ℕ) : 
+  { f : σ →₀ ℕ | degree f ≤ n}.finite :=
+begin
+  refine finite_of_weight_le (function.const σ 1) _ n,
+  simp only [ne.def, nat.one_ne_zero, not_false_iff, implies_true_iff],
+end
+
 lemma exists_coeff_ne_zero_of_degree_iff_ne_zero : 
   (∃ (n : ℕ), ∃ (d : σ →₀ ℕ), degree d = n ∧ coeff α d f ≠ 0) ↔ f ≠ 0 := 
 exists_coeff_ne_zero_of_weight_iff_ne_zero (λ i, 1) f
@@ -379,8 +437,6 @@ lemma coeff_mul_prod_one_sub_of_lt_order {α ι : Type*} [comm_ring α] (d : σ 
   (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
   (∀ i ∈ s, ↑(degree d) < order (g i)) → coeff α d (f * ∏ i in s, (1 - g i)) = coeff α d f :=
 coeff_mul_prod_one_sub_of_lt_weighted_order _ d s f g
-
-end order
 
 section homogeneous_component
 
