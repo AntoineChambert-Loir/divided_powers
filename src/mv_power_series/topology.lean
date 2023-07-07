@@ -318,11 +318,9 @@ section order
 
 instance enat.topology := preorder.topology ℕ∞
 
-
 -- Bourbaki, *Algèbre*, chap. 4, §4, page IV.25, exemple c)
 /-- A family of power series is strongly summable if their weighted orders tend to infinity. -/
-lemma of_weighted_order_tendsto_top {ι : Type*} 
-  (w : σ → ℕ) (f : ι → mv_power_series σ α) 
+lemma of_weighted_order_tendsto_top (w : σ → ℕ) (f : ι → mv_power_series σ α) 
   (hf : filter.tendsto (λ i, weighted_order w (f i)) filter.cofinite (nhds ⊤)) :
   strongly_summable f := 
 begin
@@ -339,11 +337,9 @@ begin
   apply_instance,
 end
 
-lemma of_order_tendsto_top {ι : Type*} 
-  (f : ι → mv_power_series σ α) 
+lemma of_order_tendsto_top (f : ι → mv_power_series σ α) 
   (hf : filter.tendsto (λ i, order (f i)) filter.cofinite (nhds ⊤)) :
   strongly_summable f := of_weighted_order_tendsto_top _ f hf
-
 
 -- Réciproques quand σ est fini !
 /-- When σ is finite, a family of power series is strongly summable 
@@ -388,13 +384,47 @@ end
 
 /-- When σ is finite, a family of power series is strongly summable 
 iff their orders tend to infinity. -/
-lemma order_tendsto_top_iff [hσ: finite σ] {ι : Type*} 
+lemma order_tendsto_top_iff [hσ: finite σ] 
   (f : ι → mv_power_series σ α) :
   strongly_summable f ↔ 
   filter.tendsto (λ i, order (f i)) filter.cofinite (nhds ⊤) :=
 weighted_order_tendsto_top_iff _ (by simp) f
 
 end order 
+
+lemma support_finite' (f : ι → mv_power_series σ α) (hf : strongly_summable f)
+  (d : σ →₀ ℕ) : 
+  { i | ∃ e, e ≤ d ∧ coeff α e (f i) ≠ 0}.finite :=
+begin
+  classical,
+  suffices : (⋃ (e : σ →₀ ℕ) (He : e ≤ d), { i : ι | coeff α e (f i) ≠ 0}).finite,
+  convert this,
+  { ext e,
+    simp only [ne.def, set.supr_eq_Union, set.mem_Union, set.mem_set_of_eq, exists_prop],
+    refl, },
+  refine set.finite.bUnion _ (λ d H, hf d),
+  suffices : set.finite ((finsupp.antidiagonal d).image (λ (uv : (σ →₀ ℕ) × (σ →₀ ℕ)), uv.fst) : set (σ →₀ ℕ)),
+  convert this,
+  ext e,
+  change (e ∈ { e : σ →₀ ℕ | ∀ s, e s ≤ d s }) ↔ _, 
+  simp only [set.mem_set_of_eq, finset.mem_coe, finset.mem_image],
+  split,
+  { intro he, 
+    use ⟨e, d - e⟩,
+    split,
+    simp only [finsupp.mem_antidiagonal],
+    ext s,
+    simp only [finsupp.coe_add, finsupp.coe_tsub, pi.add_apply, pi.sub_apply],
+    rw add_comm,
+    rw nat.sub_add_cancel (he s),
+    refl, },
+  { rintro ⟨⟨a,b⟩, hab, rfl⟩,
+    rw [finsupp.mem_antidiagonal] at hab, rw ← hab,
+    intro s,
+    dsimp, 
+    exact le_self_add, },
+  apply finset.finite_to_set,
+end
 
 lemma support_add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
   (hf : strongly_summable f) (hg : strongly_summable g):
@@ -758,11 +788,13 @@ variables {σ α}
 
 lemma produit {ι : Type*}  (f : ι → mv_power_series σ α) (hf : strongly_summable f) :
   let fsι := { I : set ι | I.finite} in
-  let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, 1 + f i) in 
-  summable F := 
+  let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, f i) in 
+  strongly_summable F := 
 begin
   intro fsι,
   intro F,
+  intro d,
+  
   sorry
 end
 
