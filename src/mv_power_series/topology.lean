@@ -9,6 +9,23 @@ import topology.order.basic
 import data.set.finite
 import ..infinite_sum.basic
 
+
+lemma finset.prod_one_add {ι α: Type*} [comm_ring α] {f : ι → α} (s : finset ι) :
+  s.prod (λ i, 1 + f i) = s.powerset.sum (λ t, t.prod f) := 
+begin
+  simp_rw add_comm,
+  rw finset.prod_add,
+  congr,
+  ext t,
+  convert mul_one _,
+  apply finset.prod_eq_one,
+  intros i hi, refl,
+end
+
+lemma mv_power_series.coeff_eq_apply {σ α :Type*} [semiring α] 
+  (f : mv_power_series σ α) (d : σ →₀ ℕ) :
+  mv_power_series.coeff α d f = f d := rfl
+
 namespace function
 
 open_locale pointwise
@@ -251,7 +268,6 @@ begin
         (uniform_continuous_component σ α d) hr, -/
 end
 
-
 lemma uniform_topological_ring [ring α] [_root_.uniform_add_group α] [_root_.topological_ring α] : 
   _root_.topological_ring (mv_power_series σ α) :=
 { to_has_continuous_add := 
@@ -313,6 +329,9 @@ def strongly_summable (f : ι → mv_power_series σ α) : Prop :=
   ∀ (d : σ →₀ ℕ), (λ i, coeff α d (f i)).support.finite 
 
 namespace strongly_summable 
+
+lemma congr {f g: ι → mv_power_series σ α} (h : f = g) :
+  strongly_summable f ↔ strongly_summable g := by rw [h]
 
 section order
 
@@ -392,12 +411,40 @@ weighted_order_tendsto_top_iff _ (by simp) f
 
 end order 
 
+noncomputable def union_of_support_of_coeff_le [decidable_eq ι] 
+  {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (d : σ →₀ ℕ) : finset ι :=
+  finset.bUnion (finset.Iic d) (λ e, (hf e).to_finset) 
+
+lemma not_mem_union_of_support_of_coeff_le_iff [decidable_eq ι] 
+  {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (d : σ →₀ ℕ) (i : ι) : 
+  i ∉ hf.union_of_support_of_coeff_le d ↔ 
+  ∀ e (he : e ≤ d), coeff α e (f i) = 0 := 
+by simp only [union_of_support_of_coeff_le, finset.mem_bUnion, finset.mem_Iic, 
+  set.finite.mem_to_finset, mem_support, not_exists, not_not]
+
 -- TODO : now that the proof is two lines long, is the statement necessary?
-lemma support_finite' (f : ι → mv_power_series σ α) (hf : strongly_summable f)
-  (d : σ →₀ ℕ) : (⋃ e (H : e ≤ d), (λ i, coeff α e (f i)).support).finite := 
+lemma union_of_coeff_support_finite {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (d : σ →₀ ℕ) : 
+  (⋃ e (H : e ≤ d), (λ i, coeff α e (f i)).support).finite := 
 begin
   refine set.finite.bUnion _ (λ d H, hf d),
   convert (set.Iic d).to_finite,
+end
+
+lemma of_subset_union_of_coeff_support_finite [decidable_eq ι] 
+  {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (d : σ →₀ ℕ) : 
+  { I : finset ι | I ⊆ hf.union_of_support_of_coeff_le d }.finite := 
+begin
+  suffices : {I : finset ι | I ⊆ hf.union_of_support_of_coeff_le d}
+    = (hf.union_of_support_of_coeff_le d).powerset, 
+  rw this,
+  apply finset.finite_to_set,
+  ext I,
+  simp only [set.mem_set_of_eq, finset.coe_powerset, set.mem_preimage, 
+    set.mem_powerset_iff, finset.coe_subset],
 end
 
 lemma support_add [decidable_eq ι] {f g : ι → mv_power_series σ α} 
@@ -485,6 +532,16 @@ begin
     simpa only [set.finite.mem_to_finset, function.mem_support, not_not] using hi', },
 end
 
+lemma sum_congr {f g : ι → mv_power_series σ α} {hf : strongly_summable f}
+  {hg : strongly_summable g} (h : f = g) : hf.sum = hg.sum :=
+begin
+  ext d,
+  simp only [coeff_sum.def],  
+  apply finset.sum_congr,
+  ext i, simp only [set.finite.mem_to_finset, mem_support, ne.def, h], 
+  intros i hi, rw h,
+end
+
 lemma sum_add {f g : ι → mv_power_series σ α} 
   (hf : strongly_summable f) (hg : strongly_summable g) : 
   ∀ (hh : strongly_summable (f + g)),
@@ -524,6 +581,42 @@ begin
     exact @set.subset_bUnion_of_mem _ _ _ _ bc hbc, },
 end
 
+lemma of_indicator {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (s : set ι) :
+  strongly_summable (λ i, s.indicator f i) := 
+begin
+  intro d,
+  apply set.finite.subset (hf d),
+  intro i,
+  simp only [mem_support, ne.def, not_imp_not],
+  intro hi,
+  cases s.indicator_eq_zero_or_self f i; simp only [h, hi, map_zero],
+end
+
+lemma add_compl {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (s : set ι) :
+  hf.sum = (hf.of_indicator s).sum + (hf.of_indicator sᶜ).sum := 
+begin
+  have hf' : strongly_summable (s.indicator f + sᶜ.indicator f),
+  { rw  s.indicator_self_add_compl f, exact hf, },
+  rw ← sum_add (hf.of_indicator s) (hf.of_indicator sᶜ) hf', 
+  exact sum_congr (s.indicator_self_add_compl f).symm,
+end
+
+lemma on_subtype {f : ι → mv_power_series σ α} 
+  (hf : strongly_summable f) (s : set ι) :
+  strongly_summable (f ∘ coe : ↥s → mv_power_series σ α) := 
+begin
+  intro d,
+  apply set.finite.of_finite_image _ (set.inj_on_of_injective subtype.coe_injective _),
+  apply set.finite.subset (hf d),
+  intro i,
+  rintro ⟨j, hj, rfl⟩,
+  simp only [comp_app, mem_support, ne.def] at hj,
+  simp only [mem_support, ne.def],
+  exact hj,
+end
+
 lemma has_sum_coeff [topological_space α] {f : ι → mv_power_series σ α} 
   (hf : strongly_summable f) (d : σ →₀ ℕ) : 
   _root_.has_sum (λ i, coeff α d (f i)) (coeff α d hf.sum) := 
@@ -544,6 +637,7 @@ pi.has_sum.mpr (hf.has_sum_coeff)
 
 lemma summable [topological_space α] {f : ι → mv_power_series σ α} 
   (hf : strongly_summable f) : summable f := ⟨hf.sum, hf.has_sum⟩
+
 
 lemma sum_eq_tsum [topological_space α] [_root_.t2_space α] {f : ι → mv_power_series σ α} 
   (hf : strongly_summable f) : hf.sum = tsum f :=
@@ -614,6 +708,7 @@ end strongly_summable
 end ring
 
 end strongly_summable
+
 
 section summable
 
@@ -754,72 +849,222 @@ lemma summable_of_order_tendsto_top {ι : Type*}
 
 end summable
 
-section strongly_summable
+/- 
+section finite_set
 
 
-variables [comm_semiring α] [topological_space α]
+
+def finite_set (α : Type*): Type* := { s : set α // s.finite }
+
+instance (ι : Type*) : set_like (finite_set ι) (ι) := {
+  coe := λ s, s.val,
+  coe_injective' := subtype.coe_injective }
+
+example (ι : Type*) (s t : finite_set ι) : s ⊆ t ↔  ↑s ⊆ ↑t := 
+begin
+
+end
+
+end finite_set
+ -/
+
+section strongly_multipliable
+
+
+variables {ι : Type*} 
+
+
+variable (f : ι → mv_power_series σ α)
+
+
+variables [comm_ring α] 
+
 
 variables {σ α}
 
+noncomputable def partial_product : 
+  finset ι → mv_power_series σ α := λ I, I.prod (λ i, f i)
+
+-- TODO ! The name is misleading! Maybe remove…
+/-- The family f is strongly multipliable if the family F on { I : set ι | I.finite} defined by… is strongly_summable -/
+def strongly_multipliable : Prop := strongly_summable (partial_product f)
+
+variable {f}
+/-- The product of the family of (1 + f ι), when it is strongly_multipliable  -/
+noncomputable def strongly_multipliable.prod (hf : strongly_multipliable f) : mv_power_series σ α := hf.sum 
+
+lemma strongly_multipliable.prod_eq (hf : strongly_multipliable f) : 
+  hf.prod = hf.sum := rfl
 -- variable [decidable_eq σ]
 
-lemma partial_products_strongly_summable {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) :
-  let fsι := { I : set ι | I.finite} in
-  let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, f i) in 
-  strongly_summable F := 
+lemma support_partial_product_le [decidable_eq ι] (hf : strongly_summable f) 
+  (d : σ →₀ ℕ) : support (λ I, coeff α d (partial_product f I))
+  ⊆ (hf.union_of_support_of_coeff_le d).powerset := 
 begin
-  intro fsι,
-  intro F,
-  intro d,
-
-  suffices : { I : fsι | I.prop.to_finset ⊆ (hf.support_finite' f d).to_finset}.finite,
-  refine set.finite.subset this _,
   intro I,
-  simp only [mem_support, ne.def, set.finite.subset_to_finset, set.finite.coe_to_finset, set.mem_set_of_eq],
-  contrapose, push_neg,
-  rw set.not_subset_iff_exists_mem_not_mem ,
+  simp only [mem_support, ne.def, finset.coe_powerset, set.mem_preimage, set.mem_powerset_iff, finset.coe_subset, not_imp_comm],
+  rw finset.not_subset,
   rintro ⟨i, hi, h⟩,
-  simp only [set.mem_Union, mem_support, exists_prop, not_exists, not_and, not_not] at h,
-  simp only [F],
-  have hi' : i ∈ I.prop.to_finset,
-  { simp only [set.finite.mem_to_finset], exact hi, },
-  rw [finset.prod_eq_mul_prod_diff_singleton hi', coeff_mul],
+  rw strongly_summable.not_mem_union_of_support_of_coeff_le_iff at h,
+  simp only [partial_product, finset.prod_eq_mul_prod_diff_singleton hi, coeff_mul],
   apply finset.sum_eq_zero,
-  rintros ⟨x, y⟩  hxy, 
-  suffices hx : x ≤ d, rw [h x hx, zero_mul],
-  simp only [finsupp.mem_antidiagonal] at hxy, rw ← hxy,
-  rw [finsupp.le_def],
-  intro s, simp only [finsupp.coe_add, pi.add_apply, le_self_add],
-
-  have hP := set.finite.finite_subsets (hf.support_finite' f d),
-  let φ : fsι → set ι := λ I, I.val,
-  have hφ : function.injective φ := subtype.coe_injective,
-  apply set.finite.of_finite_image _ (set.inj_on_of_injective hφ _), 
-  apply set.finite.subset hP, 
-  intro I,
-  rintro ⟨I, hI, rfl⟩,
-  simp only [set.finite.subset_to_finset, set.finite.coe_to_finset, set.mem_set_of_eq] at hI, 
-  exact hI,
+  rintros ⟨x, y⟩,
+  rw finsupp.mem_antidiagonal, 
+  dsimp,
+  intro hxy,
+  rw [h x _, zero_mul],
+  simp only [←hxy, finsupp.le_def, finsupp.coe_add, pi.add_apply, le_self_add],
 end
 
-lemma has_prod_of_one_add {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) :
-  let fsι := { I : set ι | I.finite} in
-  let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, f i) in 
-has_prod (λ i, (1 + f i)) (tsum F)  :=  sorry
+lemma strongly_summable.strongly_multipliable [decidable_eq ι] (hf : strongly_summable f) :
+  strongly_multipliable f :=
+begin
+  intro d,
+  refine set.finite.subset _ (support_partial_product_le hf d),
+  apply finset.finite_to_set,
+end
+
+
+lemma find_a_name [decidable_eq ι] (hf : strongly_summable (partial_product f))
+  (s : finset ι) : s.prod (λ i, 1 + f i) = (hf.of_indicator {I : finset ι | I ⊆ s}).sum :=
+begin
+  rw finset.prod_one_add,
+  ext d,
+  rw map_sum,
+  rw strongly_summable.coeff_sum d s.powerset,
+  apply finset.sum_congr rfl,
+  intros t ht,
+  apply congr_arg,
+  simp only [set.indicator],
+  rw if_pos, refl,
+  dsimp, simpa only [finset.mem_powerset] using ht,
+  intro t,
+  simp only [mem_support, ne.def, finset.mem_coe, finset.mem_powerset],
+  rw not_imp_comm,
+  intro ht', 
+  rw [set.indicator, if_neg, map_zero], 
+  exact ht',
+end
+
+lemma find_yet_another_name [decidable_eq ι] (hf : strongly_multipliable f)
+  (s : set ι) : 
+  hf.sum = (hf.of_indicator {I : finset ι | ↑I ⊆ s}).sum + (hf.of_indicator {I : finset ι | (↑I ⊆ s)}ᶜ).sum := by rw [← hf.add_compl]
+
+lemma find_another_name [decidable_eq ι] (hf : strongly_summable (partial_product f))
+  (s : finset ι) : 
+  hf.sum = s.prod (λ i, 1 + f i) + (hf.of_indicator {I : finset ι | (I ⊆ s)}ᶜ).sum := 
+by rw [find_a_name hf s, hf.add_compl]
+
+section 
+
+variables [_root_.uniform_space α] [_root_.uniform_add_group α] 
+[_root_.t2_space α]
+
+/- example [decidable_eq ι] (s : finset ι) (I : finset ι): decidable (I ⊆ s) := 
+begin
+exact finset.decidable_dforall_finset,
+end
+
+noncomputable lemma _root_.set.finite.decidable_mem [decidable_eq ι] (a : ι) (s : set ι) (hs : s.finite) :
+  decidable (a ∈ s) := 
+begin
+  suffices : a ∈ hs.to_finset ↔ a ∈ s,
+  apply decidable_of_iff _ this,
+  simp only [set.finite.mem_to_finset],
+end
+
+noncomputable lemma _root_.set.decidable_dforall_finite
+  [decidable_eq ι] {s : set ι} (hs : s.finite) 
+  {I : set ι} (hI : I.finite): 
+  decidable (I ⊆ s) := 
+begin
+  suffices : hI.to_finset ⊆ hs.to_finset ↔ I ⊆ s,
+  apply decidable_of_iff _ this,
+  simp only [set.finite.subset_to_finset, set.finite.coe_to_finset], 
+end
+  -/
+
+
+lemma strongly_summable.has_prod_of_one_add [decidable_eq ι] (hf : strongly_summable f) :
+  has_prod (λ i, 1 + f i) hf.strongly_multipliable.prod := 
+begin
+  haveI := uniform_add_group σ α,
+  -- obtain ⟨a, ha⟩ := (of_strongly_summable f hf).summable,
+  intros V hV,
+  simp only [filter.mem_map, filter.mem_at_top_sets, ge_iff_le, 
+    finset.le_eq_subset, set.mem_preimage],
+  let V₀ := (has_add.add (hf.strongly_multipliable.prod)) ⁻¹' V,
+  have hV'₀ : V = (has_add.add (- hf.strongly_multipliable.prod)) ⁻¹' V₀,
+  { simp only [V₀, ← set.preimage_comp, comp_add_left, add_right_neg], 
+    convert set.preimage_id,
+    ext x, rw zero_add, },
+  have hV₀ : V₀ ∈ nhds(0 : mv_power_series σ α),
+  { simp only [V₀], 
+    apply continuous_at_def.mp, 
+    apply continuous.continuous_at,
+    apply continuous_add_left _,
+    apply_instance,
+    rw add_zero,  exact hV, },
+  simp only [nhds_pi, filter.mem_pi] at hV₀,
+  obtain ⟨D, hD, t, ht, htV₀⟩ := hV₀,
+  suffices : ∃ I : finset ι, ∀ i, i ∉ I → ∀ d ∈ D, ∀ e ≤ d, coeff α e (f i) = 0,
+  obtain ⟨I, hI⟩ := this,
+  use I,
+  intros J hIJ,
+  simp only [hV'₀], -- set.mem_preimage],
+  rw set.mem_preimage,
+  apply htV₀,
+  simp only [set.mem_pi, pi.add_apply, pi.neg_apply],
+  intros d hd,
+  rw strongly_multipliable.prod_eq, 
+  rw find_another_name hf.strongly_multipliable J,
+  simp only [pi.add_apply, neg_add_rev, neg_add_cancel_right],
+  convert mem_of_mem_nhds (ht d),
+  simp only [pi.zero_apply, neg_eq_zero],
+  rw ← coeff_eq_apply (strongly_summable.sum _) d,
+  rw strongly_summable.coeff_sum.def,
+  apply finset.sum_eq_zero,
+  intros t ht,
+  simp only [set.indicator],
+  split_ifs,
+  simp only [set.mem_compl_iff, set.mem_set_of_eq, finset.not_subset] at h,
+  obtain ⟨i, hit, hiJ⟩ := h,
+  simp only [partial_product, finset.prod_eq_mul_prod_diff_singleton hit, coeff_mul],
+  apply finset.sum_eq_zero,
+  rintros ⟨x, y⟩,
+  rw finsupp.mem_antidiagonal, 
+  dsimp,
+  intro hxy,
+  rw [hI i _ d hd x _, zero_mul],
+  intro hi, apply hiJ, exact hIJ hi,
+  simp only [←hxy, finsupp.le_def, finsupp.coe_add, pi.add_apply, le_self_add],
+  rw map_zero,
+
+  -- A `finset ι` outside of which coeff α d (f i) = 0 for all d smaller than one in D
+  use hf.union_of_support_of_coeff_le (hD.to_finset.sup id),
+  intros i hi d hD e he,
+  rw strongly_summable.not_mem_union_of_support_of_coeff_le_iff at hi,
+  apply hi, 
+  apply le_trans he, 
+  convert finset.le_sup _, 
+  exact (id.def d).symm,
+  simp only [set.finite.mem_to_finset], exact hD,
+end
 
 lemma multipliable_of_one_add {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) : 
   multipliable (λ i, (1 + f i))  := 
-(has_prod_of_one_add f hf).multipliable
+hf.has_prod_of_one_add.multipliable
 
 lemma tprod_eq_of_one_add [_root_.t2_space α] {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) : 
-  let fsι := { I : set ι | I.finite} in
-  let F : fsι → mv_power_series σ α := λ I, I.prop.to_finset.prod (λ i, f i) in 
-  tprod (λ i, (1 + f i)) = (tsum F)  := 
+  tprod (λ i, (1 + f i)) = tsum (partial_product f)  := 
 begin
-  intros fsι F,
   haveI : _root_.t2_space (mv_power_series σ α) := t2_space σ α,
-  exact (has_prod_of_one_add f hf).tprod_eq,
+  rw hf.has_prod_of_one_add.tprod_eq,
+  rw strongly_multipliable.prod_eq, 
+  rw mv_power_series.strongly_summable.sum_eq_tsum,
 end
+
+end 
 
 -- TODO : treat the case of arbitrary topologies on α 
 /- 
@@ -837,8 +1082,6 @@ end
 
 -/
 
-
-
-end strongly_summable
+end strongly_multipliable
 
 end mv_power_series
