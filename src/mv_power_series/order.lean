@@ -329,6 +329,13 @@ begin
   simp only [one_mul, id.def],
  end
 
+lemma degree_eq_zero_iff (d : σ →₀ ℕ) : degree d = 0 ↔ d = 0 :=
+begin
+  simp only [degree, weight, one_mul, add_monoid_hom.coe_mk], 
+  simp only [finsupp.sum, finset.sum_eq_zero_iff, finsupp.mem_support_iff, not_imp_self], 
+  simp only [finsupp.ext_iff, finsupp.coe_zero, pi.zero_apply], 
+end
+
 lemma le_degree (x : σ) (d : σ →₀ ℕ): d x ≤ degree d :=
 begin
   convert le_weight _ x _ d,

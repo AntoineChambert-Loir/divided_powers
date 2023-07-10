@@ -1,13 +1,15 @@
 import ring_theory.power_series.basic
 import mv_power_series.order
 -- import topology.algebra.infinite_sum.basic
+import ..infinite_sum.basic
 import topology.algebra.ring.basic
 import topology.uniform_space.basic
 import topology.uniform_space.pi
 import topology.uniform_space.separation
 import topology.order.basic
 import data.set.finite
-import ..infinite_sum.basic
+
+import ..antidiagonal
 
 
 lemma finset.prod_one_add {ι α: Type*} [comm_ring α] {f : ι → α} (s : finset ι) :
@@ -1102,5 +1104,23 @@ end
 -/
 
 end strongly_multipliable
+
+
+section nilpotent
+
+
+
+theorem coeff_of_pow_eq_zero {f : mv_power_series σ α} {m : ℕ} 
+  (hf : (coeff α 0 f) ^ m = 0) {d : σ →₀ ℕ} {n : ℕ} (hn : n ≥ degree d + m) :
+  coeff α d (f ^ n) = 0 := 
+begin
+  -- order (f ^ m) > 0
+  -- order (f ^ (m + 1)) ≥ order (f ^ m) + order (f)
+
+end
+
+
+
+end nilpotent
 
 end mv_power_series
