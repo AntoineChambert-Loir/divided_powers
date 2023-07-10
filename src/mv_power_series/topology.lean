@@ -1106,21 +1106,5 @@ end
 end strongly_multipliable
 
 
-section nilpotent
-
-
-
-theorem coeff_of_pow_eq_zero {f : mv_power_series σ α} {m : ℕ} 
-  (hf : (coeff α 0 f) ^ m = 0) {d : σ →₀ ℕ} {n : ℕ} (hn : n ≥ degree d + m) :
-  coeff α d (f ^ n) = 0 := 
-begin
-  -- order (f ^ m) > 0
-  -- order (f ^ (m + 1)) ≥ order (f ^ m) + order (f)
-
-end
-
-
-
-end nilpotent
 
 end mv_power_series
