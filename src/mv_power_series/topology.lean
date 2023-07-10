@@ -955,10 +955,6 @@ lemma find_another_name [decidable_eq ι] (hf : strongly_summable (partial_produ
   hf.sum = s.prod (λ i, 1 + f i) + (hf.of_indicator {I : finset ι | (I ⊆ s)}ᶜ).sum := 
 by rw [find_a_name hf s, hf.add_compl]
 
-section 
-
-variables [_root_.uniform_space α] [_root_.uniform_add_group α] 
-[_root_.t2_space α]
 
 /- example [decidable_eq ι] (s : finset ι) (I : finset ι): decidable (I ⊆ s) := 
 begin
@@ -985,6 +981,43 @@ end
   -/
 
 
+lemma strongly_summable.finset.prod_of_one_add_eq [decidable_eq ι] (hf : strongly_summable f) (d : σ →₀ ℕ) (J : finset ι) (hJ : hf.union_of_support_of_coeff_le d ⊆ J) : (coeff α d) (J.prod (λi, 1 + f i)) = (coeff α d) hf.strongly_multipliable.prod :=
+begin
+--  suffices : ∃ I : finset ι, ∀ i, i ∉ I → ∀ e ≤ d, coeff α e (f i) = 0,
+--  obtain ⟨I, hI⟩ := this,
+--  use I,
+--  intros J hIJ,
+  rw strongly_multipliable.prod_eq, 
+  rw find_another_name hf.strongly_multipliable J,
+  simp only [map_add, self_eq_add_right],
+  rw strongly_summable.coeff_sum.def,
+  apply finset.sum_eq_zero,
+  intros t ht,
+  simp only [set.indicator],
+  split_ifs,
+  simp only [set.mem_compl_iff, set.mem_set_of_eq, finset.not_subset] at h,
+  obtain ⟨i, hit, hiJ⟩ := h,
+  simp only [partial_product, finset.prod_eq_mul_prod_diff_singleton hit, coeff_mul],
+  apply finset.sum_eq_zero,
+  rintros ⟨x, y⟩,
+  rw finsupp.mem_antidiagonal, 
+  dsimp,
+  intro hxy,
+  rw (hf.not_mem_union_of_support_of_coeff_le_iff d i).mp 
+    -- i ∉ hf.union_of_support_of_coeff_le d
+    (show i ∉ _, by exact λ hi, hiJ (hJ hi)) 
+    x _,
+  rw zero_mul,
+  simp only [← hxy, finsupp.le_def, finsupp.coe_add, pi.add_apply, le_self_add],
+  rw map_zero,
+end
+
+
+section 
+
+variables [_root_.uniform_space α] [_root_.uniform_add_group α] 
+[_root_.t2_space α]
+
 lemma strongly_summable.has_prod_of_one_add [decidable_eq ι] (hf : strongly_summable f) :
   has_prod (λ i, 1 + f i) hf.strongly_multipliable.prod := 
 begin
@@ -1007,48 +1040,34 @@ begin
     rw add_zero,  exact hV, },
   simp only [nhds_pi, filter.mem_pi] at hV₀,
   obtain ⟨D, hD, t, ht, htV₀⟩ := hV₀,
-  suffices : ∃ I : finset ι, ∀ i, i ∉ I → ∀ d ∈ D, ∀ e ≤ d, coeff α e (f i) = 0,
-  obtain ⟨I, hI⟩ := this,
-  use I,
+
+  use hf.union_of_support_of_coeff_le (hD.to_finset.sup id),
+  
   intros J hIJ,
   simp only [hV'₀], -- set.mem_preimage],
   rw set.mem_preimage,
   apply htV₀,
   simp only [set.mem_pi, pi.add_apply, pi.neg_apply],
   intros d hd,
-  rw strongly_multipliable.prod_eq, 
-  rw find_another_name hf.strongly_multipliable J,
-  simp only [pi.add_apply, neg_add_rev, neg_add_cancel_right],
+
   convert mem_of_mem_nhds (ht d),
   simp only [pi.zero_apply, neg_eq_zero],
-  rw ← coeff_eq_apply (strongly_summable.sum _) d,
-  rw strongly_summable.coeff_sum.def,
-  apply finset.sum_eq_zero,
-  intros t ht,
-  simp only [set.indicator],
-  split_ifs,
-  simp only [set.mem_compl_iff, set.mem_set_of_eq, finset.not_subset] at h,
-  obtain ⟨i, hit, hiJ⟩ := h,
-  simp only [partial_product, finset.prod_eq_mul_prod_diff_singleton hit, coeff_mul],
-  apply finset.sum_eq_zero,
-  rintros ⟨x, y⟩,
-  rw finsupp.mem_antidiagonal, 
-  dsimp,
-  intro hxy,
-  rw [hI i _ d hd x _, zero_mul],
-  intro hi, apply hiJ, exact hIJ hi,
-  simp only [←hxy, finsupp.le_def, finsupp.coe_add, pi.add_apply, le_self_add],
-  rw map_zero,
+  rw [neg_add_eq_sub, sub_eq_zero],
 
-  -- A `finset ι` outside of which coeff α d (f i) = 0 for all d smaller than one in D
-  use hf.union_of_support_of_coeff_le (hD.to_finset.sup id),
-  intros i hi d hD e he,
-  rw strongly_summable.not_mem_union_of_support_of_coeff_le_iff at hi,
-  apply hi, 
-  apply le_trans he, 
+  convert strongly_summable.finset.prod_of_one_add_eq hf d J _, 
+
+  intros i hi,
+  apply hIJ,
+  revert hi,
+  contrapose,
+  simp only [strongly_summable.not_mem_union_of_support_of_coeff_le_iff],
+  intros h e hed,
+  apply h,
+  apply le_trans hed, 
   convert finset.le_sup _, 
   exact (id.def d).symm,
-  simp only [set.finite.mem_to_finset], exact hD,
+  simp only [set.finite.mem_to_finset], 
+  exact hd,
 end
 
 lemma multipliable_of_one_add {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) : 
