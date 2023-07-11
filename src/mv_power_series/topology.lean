@@ -138,7 +138,12 @@ lemma tendsto_iff_coeff_tendsto [semiring α] {ι : Type*} (f : ι → mv_power_
   (u : filter ι) (g : mv_power_series σ α) :
   filter.tendsto f u (nhds g) ↔ 
   ∀ (d : σ →₀ ℕ), filter.tendsto (λ i, coeff α d (f i)) u (nhds (coeff α d g)) :=
-sorry
+begin
+  rw nhds_pi, rw filter.tendsto_pi, 
+  apply forall_congr,
+  intro d,
+  refl,
+end
 
 variables (σ α)
 /-- The semiring topology on mv_power_series of a topological semiring -/
