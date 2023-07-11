@@ -2,7 +2,7 @@ import topology.algebra.ring.basic
 import ring_theory.ideal.basic
 import topology.algebra.nonarchimedean.bases
 import mv_power_series.topology
-α
+
 def has_submodules_basis 
   (α : Type*) [comm_ring α] [topological_space α] 
   (M : Type*) [add_comm_group M] [module α M] [H : topological_space M] : Prop :=
@@ -24,48 +24,132 @@ structure linear_topological_ring (α : Type*)[comm_ring α] [topological_space 
 
 section mv_power_series
 
-namespace mv_power_series
-
-variables (σ α : Type*) [comm_ring α] [topological_space α] [_root_.topological_ring α] [discrete_topology α] 
-
-variable {σ}
-noncomputable def S : (σ →₀ ℕ) → ideal (mv_power_series σ α) := λ d, ideal.span {monomial α d 1}
-
-lemma S_le_iff [nontrivial α] (d e : σ →₀ ℕ) : S α d ≤ S α e ↔ e ≤ d := 
+variable (σ : Type*) 
+lemma finsupp.le_iff_exists_add (d e : σ →₀ ℕ) : d ≤ e ↔  ∃ d', d + d' = e :=
 begin
-  simp only [S, ideal.span_le, set.singleton_subset_iff, ideal.mem_span_singleton, set_like.mem_coe],
   split,
-  { rintro ⟨f, hf⟩, 
-    rw ext_iff at hf, specialize hf d,
-    simp only [coeff_monomial_same, coeff_monomial_mul] at hf,
-    by_cases h : e ≤ d,
-    exact h,
-    rw if_neg h at hf, 
-    exfalso,
-    simpa only [one_ne_zero] using hf, },
-  { intro h,
-    suffices : ∃ e', e + e' = d, 
-    obtain ⟨e', rfl⟩ := this,
-    use monomial α e' 1,
-    rw mv_power_series.monomial_mul_monomial, rw mul_one,
-    use d - e,
-     sorry, },
+  { intro h, use e - d,
+    ext i, simp only [finsupp.coe_add, finsupp.coe_tsub, pi.add_apply, pi.sub_apply], 
+    rw finsupp.le_def at h, 
+    rw nat.add_sub_of_le (h i),},
+  { rintro ⟨d', rfl⟩, rw finsupp.le_def, intro i,
+    simp only [finsupp.coe_add, pi.add_apply, le_add_iff_nonneg_right, zero_le'],}
 end
 
+namespace mv_power_series
 
-example : submodules_basis (S σ α) := submodules_basis.mk 
+variables (α : Type*) [comm_ring α] [topological_space α] [_root_.topological_ring α] 
+
+def J : (σ →₀ ℕ) → ideal (mv_power_series σ α) := λ d, 
+{ carrier := {f | ∀ e ≤ d, coeff α e f = 0},
+  zero_mem' := by {rw set.mem_set_of, intros e he, rw coeff_zero, },
+  add_mem' := λ f g hf hg, by { 
+    rw set.mem_set_of at hf hg ⊢, 
+    intros e he, rw [map_add, hf e he, hg e he, add_zero], },
+  smul_mem' := λ f g hg, by {
+    rw set.mem_set_of at hg ⊢, 
+    intros e he, rw [smul_eq_mul, coeff_mul], 
+    apply finset.sum_eq_zero,
+    rintros uv huv, 
+    convert mul_zero _,
+    apply hg, 
+    apply le_trans _ he,
+    rw [finsupp.mem_antidiagonal, add_comm] at huv, 
+    rw finsupp.le_iff_exists_add, exact ⟨uv.fst, huv⟩, } }
+
+lemma mem_J (f : mv_power_series σ α) (d : σ →₀ ℕ) : 
+  f ∈ J σ α d ↔ ∀ e ≤ d, coeff α e f = 0 := by 
+simp only [J, submodule.mem_mk, set.mem_set_of_eq]
+  
+lemma J_le {e d : σ →₀ ℕ} (hed : e ≤ d) : J σ α d ≤ J σ α e :=
+begin
+  intro f, 
+  simp only [mem_J],
+  refine forall_imp _,
+  intros a h ha, exact h (le_trans ha hed),
+end
+
+lemma J_le_iff [nontrivial α] (d e : σ →₀ ℕ) : J σ α d ≤ J σ α e ↔ e ≤ d := 
+begin
+  split,
+  { simp only [J, submodule.mk_le_mk, set.set_of_subset_set_of], 
+    intro h,
+    rw ← inf_eq_right,
+    apply le_antisymm, exact inf_le_right,
+    by_contradiction h',
+    specialize h (monomial α e 1) _,
+    intros e' he', rw coeff_monomial_ne, intro hee', 
+    apply h',
+    rw le_inf_iff, apply and.intro _ le_rfl,
+    simpa [hee'] using he',
+    apply one_ne_zero' α,
+    convert h e le_rfl, rw coeff_monomial_same, },
+  apply J_le,
+end
+
+lemma J_antitone : antitone (J σ α) := λ d e h, J_le σ α h
+
+lemma J_mem_nhds_zero [discrete_topology α] (d : σ →₀ ℕ) : 
+  ↑(J σ α d) ∈ nhds (0 : mv_power_series σ α) := 
+begin
+  classical,
+  rw nhds_pi, rw filter.mem_pi,
+  use finset.Iic d, 
+  split,
+  apply finset.finite_to_set,
+  let t : (σ →₀ ℕ) → set α := (λ e, ite (e ≤ d) {0} set.univ), 
+  use t,
+  split, 
+  { intros e, simp only [t], 
+    split_ifs with h,
+    simp only [pi.zero_apply, nhds_discrete, filter.pure_zero, filter.mem_zero,
+      set.mem_singleton], 
+    simp only [filter.univ_mem], }, 
+  { intros f,
+    simp only [mem_J, finset.coe_Iio, set.mem_pi, set.mem_Iio, set.mem_ite_univ_right, set.mem_singleton_iff, set_like.mem_coe],
+    refine forall_imp _,
+    simp only [finset.coe_Iic, set.mem_Iic], intros e h,
+    intro he, exact h he he, },
+end
+
+lemma to_ring_subgroups_basis : ring_subgroups_basis (λ d, (J σ α d).to_add_subgroup) := 
+  ring_subgroups_basis.of_comm _
+  (λ d e, by { use d ⊔ e, apply antitone.map_sup_le (J_antitone σ α), })
+  (λ d, by { 
+    use d, intro f, rintro ⟨f, g, hf, hg, rfl⟩, 
+    simp only [submodule.coe_to_add_subgroup, set_like.mem_coe] at hf hg ⊢,
+    refine ideal.mul_mem_left _ _ hg, })
+  (λ f d, by { 
+    use d, intros g hg, rw set.mem_preimage, 
+    simp only [mem_J, submodule.coe_to_add_subgroup, set_like.mem_coe] at hg ⊢,
+    intros e he, rw coeff_mul,
+    apply finset.sum_eq_zero,
+    intros uv huv, convert mul_zero _, apply hg, 
+    rw finsupp.mem_antidiagonal at huv,
+    apply le_trans _ he, rw ← huv,
+    rw finsupp.le_iff_exists_add, use uv.fst, rw add_comm, })
+
+section discrete_topology
+
+variable [discrete_topology α]
+
+lemma to_submodule_basis : submodules_basis (J σ α) := submodules_basis.mk 
   (λ d e, by {
-    use d + e, sorry})
-  ({sorry})
+    use d + e, rw le_inf_iff, 
+    split,
+    apply J_antitone, rw finsupp.le_iff_exists_add, exact ⟨e, rfl⟩, 
+    apply J_antitone, rw [finsupp.le_iff_exists_add, add_comm], exact ⟨d, rfl⟩, })
+  (λ f d, by { rw filter.eventually_iff_exists_mem, 
+    use ↑(J σ α d), apply and.intro (J_mem_nhds_zero σ α d),
+    intros g hg, 
+    rw [smul_eq_mul, mul_comm], 
+    refine ideal.mul_mem_left _ f _, 
+    simpa only [set_like.mem_coe] using hg, } )
 
-
-example : has_ideals_basis (mv_power_series σ α) := sorry
-
-example (σ α : Type*) [comm_ring α] [topological_space α] [discrete_topology α] 
-  :
-    linear_topological_ring (mv_power_series σ α) :=
-{ to_has_ideal_basis := sorry }
+example : mv_power_series.topological_space σ α = (to_submodule_basis σ α).topology := 
 sorry
+
+end discrete_topology
 
 end mv_power_series
 
