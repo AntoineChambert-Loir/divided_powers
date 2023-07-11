@@ -521,9 +521,10 @@ begin
   simp only [←hxy, finsupp.le_def, finsupp.coe_add, pi.add_apply, le_self_add],
 end
 
-lemma strongly_summable.to_strongly_multipliable [decidable_eq ι] (hf : strongly_summable f) :
+lemma strongly_summable.to_strongly_multipliable (hf : strongly_summable f) :
   strongly_multipliable f :=
 begin
+  classical,
   intro d,
   refine set.finite.subset _ (hf.support_partial_product_le d),
   apply finset.finite_to_set,
@@ -542,8 +543,7 @@ begin
   intros i hi, refl,
 end
 
-lemma strongly_multipliable.finset_prod_eq [decidable_eq ι] 
-  (s : finset ι) (hf : strongly_multipliable f) : 
+lemma strongly_multipliable.finset_prod_eq (s : finset ι) (hf : strongly_multipliable f) : 
   s.prod (λ i, 1 + f i) = (hf.of_indicator {I : finset ι | I ⊆ s}).sum :=
 begin
   rw finset.prod_one_add',
@@ -564,12 +564,12 @@ begin
   exact ht',
 end
 
-lemma strongly_multipliable.prod_eq_sum_add_sum [decidable_eq ι] (hf : strongly_multipliable f)
-  (s : set ι) : 
-  hf.prod = (hf.of_indicator {I : finset ι | ↑I ⊆ s}).sum + (hf.of_indicator {I : finset ι | (↑I ⊆ s)}ᶜ).sum := by rw [hf.prod_eq, ← hf.add_compl]
+lemma strongly_multipliable.prod_eq_sum_add_sum (hf : strongly_multipliable f) (s : set ι) : 
+  hf.prod = (hf.of_indicator {I : finset ι | ↑I ⊆ s}).sum + 
+    (hf.of_indicator {I : finset ι | (↑I ⊆ s)}ᶜ).sum :=
+by rw [hf.prod_eq, ← hf.add_compl]
 
-lemma strongly_multipliable.prod_eq_finset_prod_add [decidable_eq ι] 
-  (hf : strongly_multipliable f) (s : finset ι) : 
+lemma strongly_multipliable.prod_eq_finset_prod_add (hf : strongly_multipliable f) (s : finset ι) : 
   hf.prod = s.prod (λ i, 1 + f i) + (hf.of_indicator {I : finset ι | (I ⊆ s)}ᶜ).sum := 
 begin
   rw [hf.prod_eq_sum_add_sum s, hf.finset_prod_eq s],
@@ -610,6 +610,6 @@ end
 
 end strongly_multipliable
 
-
-
 end mv_power_series
+
+#lint
