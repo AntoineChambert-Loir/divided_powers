@@ -11,7 +11,6 @@ import data.set.finite
 
 import ..antidiagonal
 
-
 lemma finset.prod_one_add {ι α: Type*} [comm_ring α] {f : ι → α} (s : finset ι) :
   s.prod (λ i, 1 + f i) = s.powerset.sum (λ t, t.prod f) := 
 begin
@@ -58,6 +57,7 @@ continuous_component σ α d
 lemma continuous_constant_coeff [semiring α] : continuous (constant_coeff σ α) :=
 continuous_component σ α 0
 
+/-- A family of power series converges iff it converges coefficientwise -/
 lemma tendsto_iff_coeff_tendsto [semiring α] {ι : Type*} (f : ι → mv_power_series σ α)
   (u : filter ι) (g : mv_power_series σ α) :
   filter.tendsto f u (nhds g) ↔ 
@@ -121,7 +121,6 @@ lemma topological_ring [ring α] [topological_ring α] :
     exact continuous_neg,
     exact continuous_component σ α d,
   end  }
-
 
 /-- mv_power_series form a t2-space -/
 lemma t2_space [t2_space α] :

@@ -1,18 +1,6 @@
 import ring_theory.power_series.basic
 import mv_power_series.topology
 
--- import mv_power_series.order
--- -- import topology.algebra.infinite_sum.basic
--- import ..infinite_sum.basic
--- import topology.algebra.ring.basic
--- import topology.uniform_space.basic
--- import topology.uniform_space.pi
--- import topology.uniform_space.separation
--- import topology.order.basic
--- import data.set.finite
-
--- import ..antidiagonal
-
 namespace function
 
 open_locale pointwise
