@@ -3,21 +3,32 @@ import ring_theory.ideal.basic
 import topology.algebra.nonarchimedean.bases
 import mv_power_series.topology
 
-def has_submodules_basis (R : Type*) [comm_ring R] [topological_space R] 
+def has_submodules_basis 
+  (R : Type*) [comm_ring R] [topological_space R] 
   (M : Type*) [add_comm_group M] [module R M] [H : topological_space M] : Prop :=
 ∃ (ι : Type*) [nonempty ι] (B : ι → submodule R M) (hB : submodules_basis B), 
 by exactI H = submodules_basis.topology hB
 
-structure linear_topological_module {R : Type*} [comm_ring R] [topological_space R] 
+structure linear_topological_module 
+  (R : Type*) [comm_ring R] [topological_space R] 
   (M : Type*) [add_comm_group M] [module R M] [H : topological_space M]
 (to_has_submodules_basis : has_submodules_basis R M)
+
+def has_ideals_basis 
+  (R : Type*) [comm_ring R] [H : topological_space R] : Prop :=
+∃ (ι : Type*) [nonempty ι] (B : ι → ideal R) (hB : submodules_basis B), 
+by exactI H = submodules_basis.topology hB
 
 structure linear_topological_ring (R : Type*)[comm_ring R] [topological_space R]
 (to_has_ideal_basis : has_submodules_basis R R)
 
+example (σ R : Type*) [comm_ring R] [topological_space R] [discrete_topology R] :
+  has_ideals_basis R := sorry
+
 example (σ R : Type*) [comm_ring R] [topological_space R] [discrete_topology R] 
   :
-  linear_topological_ring (mv_power_series σ R) :=
+    linear_topological_ring (mv_power_series σ R) :=
+(to_has_ideal_basis := sorry)
 sorry
 
 
