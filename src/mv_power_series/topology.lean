@@ -125,6 +125,22 @@ lemma continuous_component :
   ∀  (d : σ →₀ ℕ), continuous (λ a : mv_power_series σ α, a d) :=
 continuous_pi_iff.mp continuous_id
 
+variables {σ α} 
+/-- coeff are continuous-/
+lemma continuous_coeff [semiring α] (d : σ →₀ ℕ) : continuous (mv_power_series.coeff α d) :=
+continuous_component σ α d
+
+/-- constant_coeff is continuous -/
+lemma continuous_constant_coeff [semiring α] : continuous (constant_coeff σ α) :=
+continuous_component σ α 0
+
+lemma tendsto_iff_coeff_tendsto [semiring α] {ι : Type*} (f : ι → mv_power_series σ α)
+  (u : filter ι) (g : mv_power_series σ α) :
+  filter.tendsto f u (nhds g) ↔ 
+  ∀ (d : σ →₀ ℕ), filter.tendsto (λ i, coeff α d (f i)) u (nhds (coeff α d g)) :=
+sorry
+
+variables (σ α)
 /-- The semiring topology on mv_power_series of a topological semiring -/
 lemma topological_semiring [semiring α] [topological_semiring α] :
   topological_semiring (mv_power_series σ α) := 
@@ -317,6 +333,53 @@ begin
 end
 
 
+section
+
+variables {σ α}
+variables [topological_space α] [comm_ring α] [_root_.topological_ring α]
+
+theorem pow_tendsto_zero_of_is_nilpotent 
+  (f : mv_power_series σ α)
+  (hf : is_nilpotent (constant_coeff σ α f)) :
+  filter.tendsto (λ (n : ℕ), f ^ n)  filter.at_top (nhds 0) := 
+begin
+  classical,
+  obtain⟨m, hm⟩ := hf,
+  rw mv_power_series.tendsto_iff_coeff_tendsto,
+  intro d,
+  simp only [coeff_zero], 
+  apply tendsto_at_top_of_eventually_const,
+  intros n hn, 
+  exact coeff_eq_zero_of_constant_coeff_nilpotent f m hm d n hn, 
+end
+
+/-- Bourbaki, Algèbre, chap. 4, §4, n°2, corollaire de la prop. 3 -/
+theorem pow_tendsto_zero_iff_is_nilpotent [discrete_topology α] 
+  (f : mv_power_series σ α) :
+  filter.tendsto (λ (n : ℕ), f ^ n)  filter.at_top (nhds 0)
+  ↔ is_nilpotent (constant_coeff σ α f) :=
+begin
+  split,
+  { intro h, 
+    suffices : filter.tendsto (λ (n : ℕ), constant_coeff σ α (f ^ n))  filter.at_top (nhds 0),
+    simp only [filter.tendsto_def] at this,
+    specialize this {0} _,
+    suffices : ∀ x : α, {x} ∈ nhds x, exact this 0,
+    rw ← discrete_topology_iff_singleton_mem_nhds, apply_instance,
+    simp only [map_pow, filter.mem_at_top_sets, ge_iff_le, set.mem_preimage, set.mem_singleton_iff] at this,
+    obtain ⟨m, hm⟩ := this,
+    use m, apply hm m (le_refl m), 
+
+    rw ← filter.tendsto_map'_iff ,
+    simp only [filter.tendsto, filter.map_le_iff_le_comap] at h ⊢,
+    apply le_trans h,
+    apply filter.comap_mono,
+    rw ← filter.map_le_iff_le_comap,
+    exact continuous_constant_coeff.continuous_at,  },
+  exact pow_tendsto_zero_of_is_nilpotent f, 
+end
+
+end
 
 section strongly_summable
 
