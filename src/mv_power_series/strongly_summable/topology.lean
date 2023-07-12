@@ -99,6 +99,8 @@ variables {σ α}
 
 variable  [topological_space α]
 
+local attribute [instance] enat.topology
+
 /-- A family of power series is summable if their weighted orders tend to infinity. -/
 lemma summable_of_weighted_order_tendsto_top {ι : Type*} 
   (w : σ → ℕ) (f : ι → mv_power_series σ α) 
