@@ -38,7 +38,13 @@ end
 
 namespace mv_power_series
 
-variables (α : Type*) [comm_ring α] [topological_space α] [_root_.topological_ring α] 
+section ideals 
+
+variables (α : Type*) [comm_ring α] [topological_space α] 
+-- [_root_.topological_ring α]
+-- [_root_.uniform_ring α] 
+-- [_root_.topological_add_group α]
+-- [_root_.uniform_add_group α]
 
 def J : (σ →₀ ℕ) → ideal (mv_power_series σ α) := λ d, 
 { carrier := {f | ∀ e ≤ d, coeff α e f = 0},
@@ -129,8 +135,11 @@ lemma to_ring_subgroups_basis : ring_subgroups_basis (λ d, (J σ α d).to_add_s
     apply le_trans _ he, rw ← huv,
     rw finsupp.le_iff_exists_add, use uv.fst, rw add_comm, })
 
+end ideals
+
 section discrete_topology
 
+variables (α : Type*) [comm_ring α] [uniform_space α] [_root_.uniform_add_group α]
 variable [discrete_topology α]
 
 lemma to_submodule_basis : submodules_basis (J σ α) := submodules_basis.mk 
@@ -146,8 +155,47 @@ lemma to_submodule_basis : submodules_basis (J σ α) := submodules_basis.mk
     refine ideal.mul_mem_left _ f _, 
     simpa only [set_like.mem_coe] using hg, } )
 
+@[ext]
+lemma _root_.topological_space_eq_iff_nhds_eq {α : Type*} (τ τ': topological_space α) : 
+  τ = τ' ↔
+  (∀ (a : α) (s : set α) (has : a ∈ s), s ∈ @nhds α τ a ↔ s ∈ @nhds α τ' a) :=
+begin
+  split, 
+  { intros h a s has, rw h, },
+  intro h, ext s, 
+  simp only [is_open_iff_mem_nhds],
+  apply forall_congr, intro a, 
+  apply imp_congr_right, exact h a s,
+end
+
 example : mv_power_series.topological_space σ α = (to_submodule_basis σ α).topology := 
-sorry
+begin
+  let τ := mv_power_series.topological_space σ α,
+  let τ' := (to_submodule_basis σ α).topology, 
+  suffices : τ = τ', exact this,
+  rw topological_space_eq_iff_nhds_eq, 
+  suffices : ∀ s, s ∈ @nhds _ τ 0 ↔ s ∈ @nhds _ τ' 0,
+  -- mv nhds from 0 to a
+  sorry, 
+  intro s,
+  rw (ring_subgroups_basis.has_basis_nhds (to_ring_subgroups_basis σ α) 0).mem_iff,
+  simp only [sub_zero, submodule.mem_to_add_subgroup, exists_true_left],
+  split,
+  { rw nhds_pi, rw filter.mem_pi,
+    rintro ⟨D, hD, t, ht, ht'⟩,
+    use finset.sup hD.to_finset id,
+    apply subset_trans _ ht', 
+    intros f hf, 
+    rw set.mem_pi, intros e he, 
+    change f ∈ J σ α _ at hf, 
+    rw ← coeff_eq_apply f e, rw hf e, -- (hd e he), 
+    exact mem_of_mem_nhds (ht e), 
+    convert finset.le_sup _,
+    simp only [id.def], 
+    simp only [set.finite.mem_to_finset], exact he, },
+  { rintro ⟨d, hd⟩,
+    exact (nhds 0).sets_of_superset (J_mem_nhds_zero σ α d) hd,}  
+end
 
 end discrete_topology
 

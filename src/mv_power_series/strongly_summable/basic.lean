@@ -491,6 +491,13 @@ variables {σ α}
 noncomputable def partial_product : 
   finset ι → mv_power_series σ α := λ I, I.prod (λ i, f i)
 
+/- TODO : give a more general (and easier) definition 
+ A family `f` is strongly multipliable if for each `d`,
+ the coefficients `coeff α d (s.prod f)` of the finite products 
+ are eventually constant 
+ and rewrite the case of sums in the same spirit
+ But beware of subfamilies when `∃ i, f i = 0` -/
+
 /-- The family f is strongly multipliable if the family F on { I : set ι | I.finite} defined by… is strongly_summable -/
 def strongly_multipliable : Prop := strongly_summable (partial_product f)
 
@@ -575,7 +582,6 @@ begin
   rw [hf.prod_eq_sum_add_sum s, hf.finset_prod_eq s],
   refl,
 end
-
 
 lemma strongly_summable.finset.prod_of_one_add_eq [decidable_eq ι] (hf : strongly_summable f) (d : σ →₀ ℕ) (J : finset ι) (hJ : hf.union_of_support_of_coeff_le d ⊆ J) : (coeff α d) (J.prod (λi, 1 + f i)) = (coeff α d) hf.to_strongly_multipliable.prod :=
 begin

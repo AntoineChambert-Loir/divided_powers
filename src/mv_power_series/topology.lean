@@ -122,7 +122,7 @@ lemma topological_ring [ring α] [topological_ring α] :
     exact continuous_component σ α d,
   end  }
 
-/-- mv_power_series form a t2-space -/
+/-- mv_power_series on a t2_space form a t2_space -/
 lemma t2_space [t2_space α] :
   t2_space (mv_power_series σ α) := 
 begin
