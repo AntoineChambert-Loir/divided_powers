@@ -266,9 +266,45 @@ section
 variables {σ α}
 variables [topological_space α] [comm_ring α] [_root_.topological_ring α]
 
-theorem pow_tendsto_zero_of_is_nilpotent 
-  (f : mv_power_series σ α)
-  (hf : is_nilpotent (constant_coeff σ α f)) :
+theorem variables_tendsto_zero :
+  filter.tendsto (λ (s : σ), (X s : mv_power_series σ α)) filter.cofinite (nhds 0) :=
+begin
+  classical,
+  simp only [tendsto_pi_nhds, pi.zero_apply],
+  intro d, 
+  intros s hs, 
+  simp only [filter.mem_map, filter.mem_cofinite],
+  rw ← set.preimage_compl,
+  
+  by_cases h : ∃ i, d = finsupp.single i 1,
+
+  obtain ⟨i, rfl⟩ := h, 
+  apply set.finite.subset (set.finite_singleton i),
+  intro x,
+  rw set.mem_preimage,
+  simp only [set.mem_compl_iff, set.mem_singleton_iff],
+  rw not_imp_comm,
+  intro hx, 
+  convert mem_of_mem_nhds hs, 
+  rw ← coeff_eq_apply (X x) (finsupp.single i 1), 
+  rw [coeff_X ],
+  rw if_neg, intro hx', 
+  rw finsupp.ext_iff at hx',
+  apply zero_ne_one' ℕ,
+  specialize hx' x, 
+  simpa only [finsupp.single_eq_same, finsupp.single_eq_of_ne (ne.symm hx)] using hx', 
+
+  convert set.finite_empty,
+  rw set.eq_empty_iff_forall_not_mem,
+  intros x,
+  simp only [set.mem_preimage, set.not_mem_compl_iff],
+  convert mem_of_mem_nhds hs,
+  rw ← coeff_eq_apply (X x) d, rw coeff_X, rw if_neg,
+  intro h', apply h, exact ⟨x, h'⟩,
+end
+
+theorem pow_tendsto_zero_of_constant_coeff_nilpotent 
+  {f : mv_power_series σ α} (hf : is_nilpotent (constant_coeff σ α f)) :
   filter.tendsto (λ (n : ℕ), f ^ n)  filter.at_top (nhds 0) := 
 begin
   classical,
@@ -279,6 +315,15 @@ begin
   apply tendsto_at_top_of_eventually_const,
   intros n hn, 
   exact coeff_eq_zero_of_constant_coeff_nilpotent f m hm d n hn, 
+end
+
+theorem pow_tendsto_zero_of_constant_coeff_zero 
+  {f : mv_power_series σ α} (hf : constant_coeff σ α f = 0) : 
+  filter.tendsto (λ (n : ℕ), f ^ n)  filter.at_top (nhds 0) := 
+begin
+  apply pow_tendsto_zero_of_constant_coeff_nilpotent,
+  rw hf, 
+  exact is_nilpotent.zero,
 end
 
 /-- Bourbaki, Algèbre, chap. 4, §4, n°2, corollaire de la prop. 3 -/
@@ -304,7 +349,7 @@ begin
     apply filter.comap_mono,
     rw ← filter.map_le_iff_le_comap,
     exact continuous_constant_coeff.continuous_at,  },
-  exact pow_tendsto_zero_of_is_nilpotent f, 
+  exact pow_tendsto_zero_of_constant_coeff_nilpotent f, 
 end
 
 end
