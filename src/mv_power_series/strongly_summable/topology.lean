@@ -43,8 +43,6 @@ end semiring
 section ring 
 
 
-namespace strongly_summable 
-
 variable [ring α]
 /- 
 # Comparisons of the various convergences on `mv_power_series σ α`
@@ -89,8 +87,6 @@ begin
   exact finite_support_of_tendsto_zero, 
 end
 
-end strongly_summable
-
 end ring
 
 end strongly_summable
@@ -100,8 +96,6 @@ section summable
 variables [semiring α] 
 
 variables {σ α}
-
-instance enat.topology := preorder.topology ℕ∞
 
 variable  [topological_space α]
 
@@ -130,16 +124,17 @@ variables [comm_ring α]
 variables {σ α}
 
 
-section 
+namespace strongly_summable
 
 variables [_root_.uniform_space α] [_root_.uniform_add_group α] 
-[_root_.t2_space α]
+
 
 variable {f}
 
-lemma strongly_summable.has_prod_of_one_add [decidable_eq ι] (hf : strongly_summable f) :
+lemma has_prod_of_one_add (hf : strongly_summable f) :
   has_prod (λ i, 1 + f i) hf.to_strongly_multipliable.prod := 
 begin
+  classical,
   haveI := uniform_add_group σ α,
   -- obtain ⟨a, ha⟩ := (of_strongly_summable f hf).summable,
   intros V hV,
@@ -189,21 +184,20 @@ begin
   exact hd,
 end
 
-lemma multipliable_of_one_add {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α)
-  (hf : strongly_summable f) : 
-  multipliable (λ i, (1 + f i))  := 
-hf.has_prod_of_one_add.multipliable
+lemma multipliable_of_one_add {ι : Type*} (f : ι → mv_power_series σ α)
+  (hf : strongly_summable f) : multipliable (λ i, (1 + f i)) := 
+by classical; exact hf.has_prod_of_one_add.multipliable
 
-lemma tprod_eq_of_one_add [_root_.t2_space α] {ι : Type*} [decidable_eq ι] (f : ι → mv_power_series σ α) (hf : strongly_summable f) : 
-  tprod (λ i, (1 + f i)) = tsum (partial_product f)  := 
+variable [_root_.t2_space α]
+
+lemma tprod_eq_of_one_add {ι : Type*} {f : ι → mv_power_series σ α}
+  (hf : strongly_summable f) : tprod (λ i, (1 + f i)) = tsum (partial_product f)  := 
 begin
   haveI : _root_.t2_space (mv_power_series σ α) := t2_space σ α,
-  rw hf.has_prod_of_one_add.tprod_eq,
-  rw strongly_multipliable.prod_eq, 
-  rw mv_power_series.strongly_summable.sum_eq_tsum,
+  rw [hf.has_prod_of_one_add.tprod_eq, strongly_multipliable.prod_eq, sum_eq_tsum]
 end
 
-end 
+end strongly_summable
 
 -- TODO : treat the case of arbitrary topologies on α 
 /- 
@@ -222,7 +216,5 @@ end
 -/
 
 end strongly_multipliable
-
-
 
 end mv_power_series
