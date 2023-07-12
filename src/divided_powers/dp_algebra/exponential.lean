@@ -3,7 +3,7 @@ import mv_power_series.order
 import mv_power_series.topology
 
 
-variables (R : Type*) [semiring R]
+variables (R : Type*) [comm_semiring R]
 
 def is_exponential (f : ℕ → R) : Prop := f 0 = 1 ∧ ∀ p q, f (p + q) = (nat.choose (p + q) q) * f p * f q
 
