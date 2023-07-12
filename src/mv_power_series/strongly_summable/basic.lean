@@ -73,12 +73,11 @@ namespace mv_power_series
 
 open function
 
-variables (σ : Type*) (α : Type*) 
+variables {σ α : Type*} 
 
 section strongly_summable
 
 variables {ι : Type*}
-variables {σ α}
 
 section semiring 
 
@@ -391,13 +390,11 @@ lemma summable_coeff [topological_space α] {f : ι → mv_power_series σ α}
   (hf : strongly_summable f) (d : σ →₀ ℕ) : summable (λ i, coeff α d (f i)) :=
 ⟨coeff α d hf.sum, hf.has_sum_coeff d⟩
 
-
 end strongly_summable
 
 end semiring
 
 section ring 
-
 
 namespace strongly_summable 
 
@@ -457,16 +454,6 @@ end
 
 end strongly_summable
 
-section summable
-
-variables [semiring α] 
-
-variables {σ α}
-
-variable  [topological_space α]
-
-
-end summable
 
 section strongly_multipliable
 
