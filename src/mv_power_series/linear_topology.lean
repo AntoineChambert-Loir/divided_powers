@@ -3,6 +3,58 @@ import ring_theory.ideal.basic
 import topology.algebra.nonarchimedean.bases
 import mv_power_series.topology
 
+
+section complements
+
+lemma topological_space_eq_iff_nhds_eq {α : Type*} (τ τ': topological_space α) : 
+  τ = τ' ↔
+  (∀ (a : α) (s : set α) (has : a ∈ s), s ∈ @nhds α τ a ↔ s ∈ @nhds α τ' a) :=
+begin
+  split, 
+  { intros h a s has, rw h, },
+  intro h, ext s, 
+  simp only [is_open_iff_mem_nhds],
+  apply forall_congr, intro a, 
+  apply imp_congr_right, exact h a s,
+end
+
+lemma topological_space_le_iff_nhds_le {α : Type*} (τ τ': topological_space α) : 
+  τ ≤ τ' ↔
+  (∀ (a : α) (s : set α) (has : a ∈ s), s ∈ @nhds α τ' a → s ∈ @nhds α τ a) :=
+begin
+  rw topological_space.le_def, 
+  split, 
+  { intros h a s has,
+    simp only [mem_nhds_iff],
+    apply exists_imp_exists, intro t, 
+    apply exists_imp_exists, intro ht,
+    rintro ⟨ht_open, h'⟩, exact ⟨h t ht_open, h'⟩, },
+  intro h, 
+  intros s,
+  simp only [is_open_iff_mem_nhds],
+  intros hs a has,
+  exact h a s has (hs a has),
+end
+
+lemma mem_nhds_add_iff {α : Type*}
+  [add_group α] [topological_space α] [topological_add_group α] 
+  (V : set α) (a b : α) : V ∈ nhds (a + b) ↔ (has_add.add a) ⁻¹' V ∈ nhds (b) :=
+begin
+  split,
+  exact λ hV, (continuous_add_left a).continuous_at hV,
+  { intro hV,
+    suffices : V = has_add.add (-a) ⁻¹' ((has_add.add a) ⁻¹' V),
+    rw this,
+    apply (continuous_add_left (-a)).continuous_at,
+    simp only [neg_add_cancel_left],
+    exact hV,
+    rw set.preimage_preimage,
+    simp only [add_neg_cancel_left, set.preimage_id'],},
+end
+
+end complements
+
+
 /-- A family of ideals of a ring `α` is an `ideals_basis` if the ideals 
   are both left- and right-ideals, 
   and if every intersection of two of them contains another one. -/
@@ -15,6 +67,7 @@ namespace ideals_basis
 
 variables {α : Type*} [ring α] 
 
+/-- An `ideals_basis` on a `comm_ring` -/
 def of_comm {α : Type*} [comm_ring α] {ι : Type*} {B : ι → ideal α} 
 (inter : ∀ i j, ∃ k, B k ≤ B i ⊓ B j) :  ideals_basis B :=
 { inter := inter,
@@ -147,9 +200,9 @@ end ideals
 
 section discrete_topology
 
-variables {α : Type*} [comm_ring α] [topological_space α] [discrete_topology α]
+variables (α : Type*) [comm_ring α] [topological_space α] 
 
-lemma J_mem_nhds_zero (d : σ →₀ ℕ) : ↑(J σ α d) ∈ nhds (0 : mv_power_series σ α) := 
+lemma J_mem_nhds_zero [discrete_topology α] (d : σ →₀ ℕ) : ↑(J σ α d) ∈ nhds (0 : mv_power_series σ α) := 
 begin
   classical,
   rw nhds_pi, rw filter.mem_pi,
@@ -171,58 +224,44 @@ begin
     intro he, exact h he he, },
 end
 
-@[ext]
-lemma _root_.topological_space_eq_iff_nhds_eq {α : Type*} (τ τ': topological_space α) : 
-  τ = τ' ↔
-  (∀ (a : α) (s : set α) (has : a ∈ s), s ∈ @nhds α τ a ↔ s ∈ @nhds α τ' a) :=
+lemma has_ideals_basis_topolgy [discrete_topology α] : 
+  mv_power_series.topological_space σ α = (to_ring_subgroups_basis σ α).topology := 
 begin
-  split, 
-  { intros h a s has, rw h, },
-  intro h, ext s, 
-  simp only [is_open_iff_mem_nhds],
-  apply forall_congr, intro a, 
-  apply imp_congr_right, exact h a s,
-end
-
-@[ext]
-lemma _root_.topological_space_le_iff_nhds_le {α : Type*} (τ τ': topological_space α) : 
-  τ ≤ τ' ↔
-  (∀ (a : α) (s : set α) (has : a ∈ s), s ∈ @nhds α τ' a → s ∈ @nhds α τ a) :=
-begin
-  rw topological_space.le_def, 
-  split, 
-  { intros h a s has,
-    simp only [mem_nhds_iff],
-    apply exists_imp_exists, intro t, 
-    apply exists_imp_exists, intro ht,
-    rintro ⟨ht_open, h'⟩, exact ⟨h t ht_open, h'⟩, },
-  intro h, 
-  intros s,
-  simp only [is_open_iff_mem_nhds],
-  intros hs a has,
-  exact h a s has (hs a has),
-end
-
-lemma mem_nhds_add_iff {α : Type*}
-  [add_group α] [topological_space α] [topological_add_group α] 
-  (V : set α) (a b : α) : V ∈ nhds (a + b) ↔ (has_add.add a) ⁻¹' V ∈ nhds (b) :=
-begin
+  let τ := mv_power_series.topological_space σ α,
+  let τ' := (to_ring_subgroups_basis σ α).topology, 
+  change τ = τ', 
+  rw topological_space_eq_iff_nhds_eq, 
+  suffices : ∀ s, s ∈ @nhds _ τ 0 ↔ s ∈ @nhds _ τ' 0,
+  -- mv nhds from 0 to a
+  { intros a s ha, 
+    rw ← add_zero a, 
+    haveI := (topological_ring σ α), rw mem_nhds_add_iff,
+    rw mem_nhds_add_iff, 
+    apply this, },
+  -- neighborhoods of 0
+  intro s,
+  rw (ring_subgroups_basis.has_basis_nhds (to_ring_subgroups_basis σ α) 0).mem_iff,
+  simp only [sub_zero, submodule.mem_to_add_subgroup, exists_true_left],
   split,
-  exact λ hV, (continuous_add_left a).continuous_at hV,
-  { intro hV,
-    suffices : V = has_add.add (-a) ⁻¹' ((has_add.add a) ⁻¹' V),
-    rw this,
-    apply (continuous_add_left (-a)).continuous_at,
-    simp only [neg_add_cancel_left],
-    exact hV,
-    rw set.preimage_preimage,
-    simp only [add_neg_cancel_left, set.preimage_id'],},
+  { rw nhds_pi, rw filter.mem_pi,
+    rintro ⟨D, hD, t, ht, ht'⟩,
+    use finset.sup hD.to_finset id,
+    apply subset_trans _ ht', 
+    intros f hf, 
+    rw set.mem_pi, intros e he, 
+    change f ∈ J σ α _ at hf, 
+    rw ← coeff_eq_apply f e, rw hf e, 
+    exact mem_of_mem_nhds (ht e), 
+    convert finset.le_sup _,
+    simp only [id.def], 
+    simp only [set.finite.mem_to_finset], exact he, },
+  { rintro ⟨d, hd⟩,
+    exact (nhds 0).sets_of_superset (J_mem_nhds_zero σ α d) hd,}  
 end
 
-variables (α : Type*) [comm_ring α] [uniform_space α] [_root_.uniform_add_group α]
-[discrete_topology α]
+/- 
 
-lemma to_submodules_basis : submodules_basis (J σ α) := submodules_basis.mk 
+lemma to_submodules_basis [discrete_topology α] : submodules_basis (J σ α) := submodules_basis.mk 
   (λ d e, by {
     use d + e, rw le_inf_iff, 
     split,
@@ -235,8 +274,7 @@ lemma to_submodules_basis : submodules_basis (J σ α) := submodules_basis.mk
     refine ideal.mul_mem_left _ f _, 
     simpa only [set_like.mem_coe] using hg, } )
 
-
-example : mv_power_series.topological_space σ α = (to_submodules_basis σ α).topology := 
+lemma has_submodules_basis_topology [discrete_topology α] : mv_power_series.topological_space σ α = (to_submodules_basis σ α).topology := 
 begin
   let τ := mv_power_series.topological_space σ α,
   let τ' := (to_submodules_basis σ α).topology, 
@@ -244,7 +282,12 @@ begin
   rw topological_space_eq_iff_nhds_eq, 
   suffices : ∀ s, s ∈ @nhds _ τ 0 ↔ s ∈ @nhds _ τ' 0,
   -- mv nhds from 0 to a
-  sorry, 
+  { intros a s ha, 
+    rw ← add_zero a, 
+    haveI := (topological_ring σ α), rw mem_nhds_add_iff,
+    rw mem_nhds_add_iff, 
+    apply this, },
+  -- neighborhoods of 0
   intro s,
   rw (ring_subgroups_basis.has_basis_nhds (to_ring_subgroups_basis σ α) 0).mem_iff,
   simp only [sub_zero, submodule.mem_to_add_subgroup, exists_true_left],
@@ -256,7 +299,7 @@ begin
     intros f hf, 
     rw set.mem_pi, intros e he, 
     change f ∈ J σ α _ at hf, 
-    rw ← coeff_eq_apply f e, rw hf e, -- (hd e he), 
+    rw ← coeff_eq_apply f e, rw hf e, 
     exact mem_of_mem_nhds (ht e), 
     convert finset.le_sup _,
     simp only [id.def], 
@@ -264,6 +307,7 @@ begin
   { rintro ⟨d, hd⟩,
     exact (nhds 0).sets_of_superset (J_mem_nhds_zero σ α d) hd,}  
 end
+ -/
 
 end discrete_topology
 
@@ -271,9 +315,11 @@ end mv_power_series
 
 end mv_power_series
 
+/- 
 example {α : Type*} [comm_ring α] [topological_space α] [topological_ring α] 
   (V : set α) (a b : α) (hV : V ∈ nhds (a + b)) : (has_add.add a) ⁻¹' V ∈ nhds b :=
 begin
     rw [(homeomorph.add_left a).nhds_eq_comap],
     exact filter.preimage_mem_comap hV,
 end
+ -/
