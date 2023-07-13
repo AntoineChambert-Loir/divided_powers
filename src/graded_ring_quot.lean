@@ -478,8 +478,7 @@ variable (𝒜 : ι → σ) [h𝒜 : graded_algebra 𝒜]
 -/
 
 section
-variables {σ : Type*} [set_like σ A] [add_submonoid_class σ A] 
-[submodule_class σ R A] 
+variables {σ : Type*} [set_like σ A] [add_submonoid_class σ A] [smul_mem_class σ R A] 
 
 #check graded_algebra
 
@@ -738,7 +737,9 @@ end,
   .. ring_quot.ring_quot_equiv_ideal_quotient  r
 }
 
-example [decidable_eq (submodule R A)] (i : ι) : quot_submodule R 𝒜 (ideal.of_rel r) i = submodule.map ((ideal.quotient.mkₐ  R _).comp (ring_quot.mk_alg_hom R r)) i :=
+example [decidable_eq (submodule R A)] (i : ι) : 
+quot_submodule R 𝒜 (ideal.of_rel r) i = submodule.map ((ideal.quotient.mkₐ  R _).comp 
+  (ring_quot.mk_alg_hom R r)) i :=
 begin
 
 end
