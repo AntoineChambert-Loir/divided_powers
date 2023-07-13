@@ -349,7 +349,7 @@ begin
     apply filter.comap_mono,
     rw ← filter.map_le_iff_le_comap,
     exact continuous_constant_coeff.continuous_at,  },
-  exact pow_tendsto_zero_of_constant_coeff_nilpotent f, 
+  exact pow_tendsto_zero_of_constant_coeff_nilpotent, 
 end
 
 end
