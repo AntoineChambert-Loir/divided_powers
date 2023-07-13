@@ -737,12 +737,12 @@ end,
   .. ring_quot.ring_quot_equiv_ideal_quotient  r
 }
 
-example [decidable_eq (submodule R A)] (i : ι) : 
+/- example [decidable_eq (submodule R A)] (i : ι) : 
 quot_submodule R 𝒜 (ideal.of_rel r) i = submodule.map ((ideal.quotient.mkₐ  R _).comp 
   (ring_quot.mk_alg_hom R r)) i :=
 begin
 
-end
+end -/
 
 def graded_quot_alg_rel [graded_algebra 𝒜] [decidable_eq (submodule R A)]
   (hr : rel_is_homogeneous 𝒜 r) : graded_algebra 
