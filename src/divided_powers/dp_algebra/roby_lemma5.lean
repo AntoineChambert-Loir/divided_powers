@@ -158,7 +158,7 @@ function.left_inverse (algebra.tensor_product.product_map
   (inv_f f g hf) (inv_g f g hg)) id := sorry
  -/
 
-set_option profiler true
+--set_option profiler true
 
 -- Roby, lemma 5
 lemma ker_tens (hf : function.surjective f) (hg : function.surjective g) : 
@@ -172,7 +172,7 @@ begin
   suffices : function.left_inverse (algebra.tensor_product.product_map
   (inv_f g hf) (inv_g f hg)) _,
   apply function.left_inverse.injective this,
-  sorry,
+  --sorry,
   rw [function.left_inverse_iff_comp, 
    ← alg_hom.coe_comp,
    ← alg_hom.coe_id A], 
