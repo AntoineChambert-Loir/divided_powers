@@ -3,8 +3,9 @@ Copyright (c) 2017 Johannes Hölzl. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Johannes Hölzl
 -/
+
+import infinite_sum.basic
 import algebra.order.archimedean
-import topology.algebra.infinite_sum.basic
 import topology.algebra.order.field
 import topology.algebra.order.monotone_convergence
 
