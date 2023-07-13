@@ -196,5 +196,3 @@ end
 end discrete_topology
 
 end mv_power_series
-
-end mv_power_series
