@@ -661,7 +661,7 @@ begin
     ι_mem_aug_ideal S N (f m)],
 end
 
-#check lift'_eq_dp_lift
+--#check lift'_eq_dp_lift
 
 theorem roby_prop_8 (R : Type u) [comm_ring R] 
   {M : Type u} [add_comm_group M] [module R M]
