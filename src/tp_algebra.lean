@@ -29,7 +29,7 @@ example : with_top unit := ⊤
 
 example : (unit.star  : with_top unit) ≠ (⊤ : with_top unit) := with_top.coe_ne_top
 
-#check unit.star
+--#check unit.star
 
-#eval unit.star
+--#eval unit.star
 
