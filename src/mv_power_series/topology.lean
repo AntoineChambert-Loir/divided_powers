@@ -303,7 +303,7 @@ begin
   intro h', apply h, exact ⟨x, h'⟩,
 end
 
-theorem pow_tendsto_zero_of_constant_coeff_nilpotent 
+theorem tendsto_pow_of_constant_coeff_nilpotent 
   {f : mv_power_series σ α} (hf : is_nilpotent (constant_coeff σ α f)) :
   filter.tendsto (λ (n : ℕ), f ^ n)  filter.at_top (nhds 0) := 
 begin
@@ -317,17 +317,17 @@ begin
   exact coeff_eq_zero_of_constant_coeff_nilpotent f m hm d n hn, 
 end
 
-theorem pow_tendsto_zero_of_constant_coeff_zero 
+theorem tendsto_pow_of_constant_coeff_zero 
   {f : mv_power_series σ α} (hf : constant_coeff σ α f = 0) : 
   filter.tendsto (λ (n : ℕ), f ^ n)  filter.at_top (nhds 0) := 
 begin
-  apply pow_tendsto_zero_of_constant_coeff_nilpotent,
+  apply tendsto_pow_of_constant_coeff_nilpotent,
   rw hf, 
   exact is_nilpotent.zero,
 end
 
 /-- Bourbaki, Algèbre, chap. 4, §4, n°2, corollaire de la prop. 3 -/
-theorem pow_tendsto_zero_iff_is_nilpotent [discrete_topology α] 
+theorem tendsto_pow_of_constant_coeff_nilpotent_iff [discrete_topology α] 
   (f : mv_power_series σ α) :
   filter.tendsto (λ (n : ℕ), f ^ n)  filter.at_top (nhds 0)
   ↔ is_nilpotent (constant_coeff σ α f) :=
@@ -349,7 +349,7 @@ begin
     apply filter.comap_mono,
     rw ← filter.map_le_iff_le_comap,
     exact continuous_constant_coeff.continuous_at,  },
-  exact pow_tendsto_zero_of_constant_coeff_nilpotent, 
+  exact tendsto_of_pow_of_constant_coeff_nilpotent, 
 end
 
 end

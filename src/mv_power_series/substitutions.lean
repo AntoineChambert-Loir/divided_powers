@@ -29,17 +29,17 @@ begin
 refine filter.tendsto.comp hψ hφ,
 end
 
-example (φ : mv_power_series σ α →ₐ[α] R) 
+lemma continuous.tendsto_apply_pow_of_constant_coeff_zero (φ : mv_power_series σ α →ₐ[α] R) 
   (hφ : continuous φ) (s : σ):
   filter.tendsto (λ n : ℕ, φ((X s) ^ n)) filter.at_top (nhds 0) := 
 begin
   rw ← φ.map_zero, 
   refine filter.tendsto.comp hφ.continuous_at _, 
-  apply pow_tendsto_zero_of_constant_coeff_zero, 
+  apply tendsto_pow_of_constant_coeff_zero, 
   simp only [constant_coeff_X],
 end
 
-example (φ : mv_power_series σ α →ₐ[α] R) 
+lemma continuous.apply_variables (φ : mv_power_series σ α →ₐ[α] R) 
   (hφ : continuous φ) (s : σ):
   filter.tendsto (λ s : σ, φ(X s)) filter.cofinite (nhds 0) := 
 begin
