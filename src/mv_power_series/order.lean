@@ -2,7 +2,6 @@ import ring_theory.power_series.basic
 
 namespace mv_power_series
 
-
 noncomputable theory
 
 open enat with_top
@@ -444,6 +443,8 @@ lemma coeff_mul_prod_one_sub_of_lt_order {α ι : Type*} [comm_ring α] (d : σ 
   (f : mv_power_series σ α) (g : ι → mv_power_series σ α) :
   (∀ i ∈ s, ↑(degree d) < order (g i)) → coeff α d (f * ∏ i in s, (1 - g i)) = coeff α d f :=
 coeff_mul_prod_one_sub_of_lt_weighted_order _ d s f g
+
+end order
 
 section homogeneous_component
 
