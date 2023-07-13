@@ -57,13 +57,15 @@ begin
   { intros n x y, dsimp only, simp only [tensor_product.tmul_add], rw dp_add, }
 end
 
-noncomputable
+--noncomputable
 def dp_scalar_extension_inv (A : Type u) [comm_ring A] 
   (R : Type u) [comm_ring R] [algebra A R]
   (M : Type u) [add_comm_group M] [module A M] :
   divided_power_algebra R (R ⊗[A] M) →ₐ[R] R ⊗[A] (divided_power_algebra A M) :=
 begin
-  let f : ℕ × M → R ⊗[A] (divided_power_algebra A M) :=
+  -- TODO: There is an error in this proof
+  sorry
+  /- let f : ℕ × M → R ⊗[A] (divided_power_algebra A M) :=
   λ nm, algebra.tensor_product.include_right (dp A nm.1 nm.2),
   apply lift_aux R M (λ nm, algebra.tensor_product.include_right (dp A nm.1 nm.2)),
   { intro m, dsimp only, rw dp_zero, rw map_one, },
@@ -71,7 +73,7 @@ begin
   -- does not seem obvious !
     sorry, },
   { intros n p m, dsimp only, rw [← map_mul, ← map_nsmul,dp_mul], },
-  { intros n x y, dsimp only, simp_rw [← map_mul, ← map_sum], rw dp_add, }
+  { intros n x y, dsimp only, simp_rw [← map_mul, ← map_sum], rw dp_add, } -/
 end
 
 -- TODO ! But in Roby, this follows from the exponential power series interpretation 
