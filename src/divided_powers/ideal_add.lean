@@ -408,7 +408,7 @@ finset.sum (finset.range (m * n + 1))
 := 
 begin
   rw dpow_eq hI hJ hIJ n ha hb, 
-  rw sum_dpow_aux (dpow hI hJ) (dpow_zero hI hJ hIJ) (dpow_add hI hJ hIJ),
+  rw dpow_sum_aux (dpow hI hJ) (dpow_zero hI hJ hIJ) (dpow_add hI hJ hIJ),
   
   /- i ≠0, n : 
    (a^[i]*b^[n-i])^[c i] 
