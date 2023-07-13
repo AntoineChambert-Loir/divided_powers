@@ -74,7 +74,7 @@ class graded_module {ι : Type*}  [decidable_eq ι] [add_monoid ι]
   {R M : Type*} 
   [semiring R] [add_comm_monoid M] 
   [module R M] 
-  {τ : Type*} [set_like τ M] [add_submonoid_class τ M] [submodule_class τ R M] (ℳ : ι → τ) 
+  {τ : Type*} [set_like τ M] [add_submonoid_class τ M] [smul_mem_class τ R M] (ℳ : ι → τ) 
   extends direct_sum.decomposition ℳ
 
 
@@ -439,7 +439,12 @@ variables (I : ideal A) (N : submodule R M)
 variable [graded_module ℳ]
 include A
 
-lemma ideal.is_homogeneous.mul {I : ideal A}
+#exit
+
+instance has_smul' : has_smul (ideal A) (submodule R M) :=
+sorry
+
+lemma ideal.is_homogeneous.smul {I : ideal A}
   (HI : I.is_homogeneous 𝒜) (HN : N.is_homogeneous ℳ) : (I • N).is_homogeneous ℳ :=
 begin
   rw ideal.is_homogeneous.iff_exists at HI HJ ⊢,
