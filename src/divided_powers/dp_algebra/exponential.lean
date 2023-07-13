@@ -5,7 +5,8 @@ import mv_power_series.topology
 
 variables (R : Type*) [comm_semiring R]
 
-def is_exponential (f : ℕ → R) : Prop := f 0 = 1 ∧ ∀ p q, f (p + q) = (nat.choose (p + q) q) * f p * f q
+def is_exponential (f : ℕ → R) : Prop := 
+f 0 = 1 ∧ ∀ p q, f (p + q) = (nat.choose (p + q) q) * f p * f q
 
 structure Exp (R : Type*) [semiring R] := 
 (to_fun : ℕ → R)
@@ -31,8 +32,8 @@ protected def copy (f : Exp R) (f' : ℕ → R) (h : f' = f) : Exp R :=
 def add : (Exp R) → (Exp R) → (Exp R) := λ f g ,
 { to_fun := λ p, (finset.nat.antidiagonal p).sum 
   (λ rs, (f rs.1) * (g rs.2)), 
-  map_zero := by
-    simp only [finset.nat.antidiagonal_zero, finset.sum_singleton, ← to_fun_eq_coe, map_zero, mul_one],
+  map_zero := by simp only [finset.nat.antidiagonal_zero, finset.sum_singleton, ← to_fun_eq_coe,
+    map_zero, mul_one],
   map_add := begin
     
   
@@ -40,8 +41,9 @@ def add : (Exp R) → (Exp R) → (Exp R) := λ f g ,
   end
   
   }
-example : add_comm_group (Exp R) := {
+/- example : add_comm_group (Exp R) := {
   
-}
-#print is_exponential
-end exponential
+} -/
+--#print is_exponential
+
+end Exp
