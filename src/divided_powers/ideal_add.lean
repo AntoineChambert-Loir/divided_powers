@@ -501,7 +501,7 @@ begin
     rw sum_range_sym_mul_compl hk.1, 
     simp only [← mul_assoc], 
     simp only [← hk.2, φ],  apply congr_arg2 _ _ rfl,
-    rw mul_comm,  },
+    rw mul_comm, },
   { -- hφ
     intros k hk,
     simp only [φ, finset.mem_range, nat.lt_succ_iff],
